@@ -1,0 +1,3 @@
+email,deal_name,amount,currency,stage,pipeline,close_date,status,won_reason,lost_reason,description
+jane.doe@acme.com,Acme Enterprise License,75000,USD,Proposal,Default,2025-09-30,open,,,Enterprise license for sales team of 50
+john.smith@globex.com,Globex Pilot,15000,USD,Closed Won,Default,2025-05-15,won,Strong ROI demonstrated,,3-month pilot converted to annual contract

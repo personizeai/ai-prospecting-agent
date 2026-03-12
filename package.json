@@ -1,0 +1,37 @@
+{
+  "name": "ai-prospecting-agent",
+  "version": "1.0.0",
+  "description": "Full end-to-end AI prospecting agent powered by Personize + Trigger.dev",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "setup:schemas": "npx tsx src/setup/create-schemas.ts",
+    "setup:governance": "npx tsx src/setup/create-governance.ts",
+    "setup:workspace": "npx tsx src/setup/create-workspace-schema.ts",
+    "setup": "npm run setup:schemas && npm run setup:governance && npm run setup:workspace",
+    "gmail:auth": "npx tsx src/setup/gmail-auth.ts",
+    "sync:csv": "npx tsx src/scripts/run-csv-sync.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/__tests__/*.test.ts",
+    "test:integration": "node --import tsx --test src/__tests__/integration/*.test.ts",
+    "test:all": "npm test && npm run test:integration",
+    "dev": "npx trigger.dev@latest dev",
+    "deploy": "npx trigger.dev@latest deploy"
+  },
+  "dependencies": {
+    "@personize/sdk": "^0.6.2",
+    "@trigger.dev/sdk": "^3.0.0",
+    "@hubspot/api-client": "^12.0.0",
+    "googleapis": "^144.0.0",
+    "csv-parse": "^5.6.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}

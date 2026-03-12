@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.trigger/
+
+# Private SDK — remove before publishing to public GitHub
+personize-sdk-*.tgz
