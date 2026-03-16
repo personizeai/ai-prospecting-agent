@@ -250,6 +250,83 @@ export const CONTACT_SOURCING_DEFAULTS = {
   roles: [] as string[],
 };
 
+// ─── generate-linkedin-message.ts ──────────────────────────────────────
+
+export const LINKEDIN_MESSAGE_SCHEMA = {
+  type: {
+    description: 'Message type: connection_request, inmail, or message',
+    type: 'string',
+    required: true,
+    enumValues: ['connection_request', 'inmail', 'message'] as const,
+  },
+  message: {
+    description: 'The LinkedIn message text. Connection requests max 300 chars, messages max 500 chars.',
+    type: 'string',
+    required: true,
+  },
+  angle: {
+    description: '1-sentence description of the personalization angle used',
+    type: 'string',
+    required: true,
+  },
+} as const satisfies SchemaMap;
+
+export const LINKEDIN_MESSAGE_DEFAULTS = {
+  type: 'connection_request',
+  message: '',
+  angle: '',
+};
+
+// ─── generate-call-script.ts ────────────────────────────────────────
+
+export const CALL_SCRIPT_SCHEMA = {
+  opener: {
+    description: '2 sentences: who you are + why calling. Natural, not scripted.',
+    type: 'string',
+    required: true,
+  },
+  hook: {
+    description: '1 sentence connecting to their specific situation (reference a fact).',
+    type: 'string',
+    required: true,
+  },
+  ask: {
+    description: '1 sentence — the meeting request. Clear and direct.',
+    type: 'string',
+    required: true,
+  },
+  objection_handlers: {
+    description: 'Array of "objection | response" strings, 2-3 entries',
+    type: 'string[]',
+    required: true,
+  },
+  human_playbook: {
+    description: 'Short playbook for human callers: mindset, pacing, do\'s and don\'ts, when to pivot. 3-5 bullet points.',
+    type: 'string',
+    required: true,
+  },
+  ai_caller_script: {
+    description: 'Full verbatim script for AI voice callers (Bland.ai/Vapi). Include greeting, pitch, objection handling, and close. Conversational tone, complete sentences.',
+    type: 'string',
+    required: true,
+  },
+  angle: {
+    description: '1-sentence description of the personalization angle used',
+    type: 'string',
+    required: true,
+  },
+} as const satisfies SchemaMap;
+
+export const CALL_SCRIPT_DEFAULTS = {
+  opener: '',
+  hook: '',
+  ask: '',
+  objection_handlers: [] as string[],
+  human_playbook: '',
+  ai_caller_script: '',
+  angle: '',
+};
+
 // ─── account-strategy.ts ─────────────────────────────────────────────
 
 export const ACCOUNT_STRATEGY_SCHEMA = {
@@ -308,4 +385,119 @@ export const ACCOUNT_STRATEGY_DEFAULTS = {
   angle_blacklist: [] as string[],
   angle_recommendations: [] as string[],
   strategy_summary: '',
+};
+
+// ─── analyze-call.ts ─────────────────────────────────────────────────
+
+export const CALL_ANALYSIS_SCHEMA = {
+  outcome: {
+    description: 'Overall call outcome',
+    type: 'string',
+    required: true,
+    enumValues: ['interested', 'meeting_booked', 'not_interested', 'callback_requested', 'voicemail', 'no_answer', 'wrong_person', 'neutral'] as const,
+  },
+  summary: {
+    description: '2-3 sentence summary of what happened on the call',
+    type: 'string',
+    required: true,
+  },
+  key_points: {
+    description: 'Key topics discussed or mentioned by the contact',
+    type: 'string[]',
+    required: true,
+  },
+  sentiment: {
+    description: 'Contact sentiment during the call',
+    type: 'string',
+    required: true,
+    enumValues: ['positive', 'neutral', 'negative'] as const,
+  },
+  urgency: {
+    description: 'How urgently follow-up is needed',
+    type: 'string',
+    required: true,
+    enumValues: ['high', 'medium', 'low'] as const,
+  },
+  next_action: {
+    description: 'Specific next action to take (e.g., "Send calendar link", "Add to nurture", "Do not contact")',
+    type: 'string',
+    required: true,
+  },
+  objections_raised: {
+    description: 'Objections the contact raised during the call',
+    type: 'string[]',
+    required: false,
+    default: [],
+  },
+  callback_time: {
+    description: 'If callback requested, when (e.g., "next Tuesday", "after Q1"). N/A otherwise.',
+    type: 'string',
+    required: false,
+    default: 'N/A',
+  },
+  referred_contact: {
+    description: 'If referred to another person, their name/title. N/A otherwise.',
+    type: 'string',
+    required: false,
+    default: 'N/A',
+  },
+} as const satisfies SchemaMap;
+
+export const CALL_ANALYSIS_DEFAULTS = {
+  outcome: 'neutral',
+  summary: 'Call completed',
+  key_points: [] as string[],
+  sentiment: 'neutral',
+  urgency: 'medium',
+  next_action: 'Review call transcript',
+  objections_raised: [] as string[],
+  callback_time: 'N/A',
+  referred_contact: 'N/A',
+};
+
+// ─── LinkedIn Event Analysis Schema ───────────────────────────────
+
+export const LINKEDIN_EVENT_ANALYSIS_SCHEMA = {
+  outcome: {
+    description: 'Classification of the LinkedIn event significance',
+    type: 'string',
+    required: true,
+    enumValues: ['interested', 'not_interested', 'question', 'referral', 'neutral', 'positive_signal'] as const,
+  },
+  summary: {
+    description: '1-2 sentence summary of the event and its significance',
+    type: 'string',
+    required: true,
+  },
+  key_points: {
+    description: 'Key points from the message (empty for non-message events)',
+    type: 'string[]',
+    required: true,
+  },
+  sentiment: {
+    description: 'Contact sentiment',
+    type: 'string',
+    required: true,
+    enumValues: ['positive', 'neutral', 'negative'] as const,
+  },
+  urgency: {
+    description: 'How urgently follow-up is needed',
+    type: 'string',
+    required: true,
+    enumValues: ['high', 'medium', 'low'] as const,
+  },
+  next_action: {
+    description: 'Specific next action to take',
+    type: 'string',
+    required: true,
+  },
+};
+
+export const LINKEDIN_EVENT_ANALYSIS_DEFAULTS = {
+  outcome: 'neutral',
+  summary: 'LinkedIn event received',
+  key_points: [] as string[],
+  sentiment: 'neutral',
+  urgency: 'low',
+  next_action: 'Review LinkedIn activity',
 };

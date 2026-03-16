@@ -55,10 +55,11 @@
 <!-- Feature grid -->
 <table>
   <tr>
-    <td align="center" width="25%"><strong>AI Email Writer</strong><br /><sub>Multi-email sequences with company-specific personalization, enforced brand voice, and self-evaluation</sub></td>
-    <td align="center" width="25%"><strong>Signal Detection</strong><br /><sub>AI scores accounts against your ICP, detects buying signals, and surfaces hot accounts daily</sub></td>
-    <td align="center" width="25%"><strong>Account Strategy</strong><br /><sub>Coordinates outreach across all contacts at a company — prevents carpet bombing, adjusts tone, blocks bad timing</sub></td>
-    <td align="center" width="25%"><strong>Reply Handling</strong><br /><sub>Classifies intent (interested, question, referral, not interested), acts automatically, alerts your team</sub></td>
+    <td align="center" width="20%"><strong>AI Email Writer</strong><br /><sub>Multi-email sequences with company-specific personalization, enforced brand voice, and self-evaluation</sub></td>
+    <td align="center" width="20%"><strong>Signal Detection</strong><br /><sub>AI scores accounts against your ICP, detects buying signals, and surfaces hot accounts daily</sub></td>
+    <td align="center" width="20%"><strong>Account Strategy</strong><br /><sub>Coordinates outreach across all contacts at a company — prevents carpet bombing, adjusts tone, blocks bad timing</sub></td>
+    <td align="center" width="20%"><strong>Multi-Channel</strong><br /><sub>Email + LinkedIn (via HeyReach) + AI voice calls (Bland.ai, Vapi, ElevenLabs) — sequenced and coordinated</sub></td>
+    <td align="center" width="20%"><strong>Reply Handling</strong><br /><sub>Classifies intent across all channels (email, LinkedIn, call transcripts), acts automatically, alerts your team</sub></td>
   </tr>
 </table>
 
@@ -70,9 +71,13 @@ Built with ❤️ by the <a href="https://personize.ai" target="_blank">Personiz
 
 **Email delivery:** [Smartlead](https://smartlead.ai) (default — managed deliverability) &middot; SendGrid &middot; Gmail API &middot; Manual HubSpot tasks &middot; [add yours — PRs welcome]
 
-**Also works with:** [Parallel.ai](https://parallel.ai) &middot; [Exo](https://exo.ai) &middot; [Clay](https://clay.com) &middot; [add yours — PRs welcome]
+**LinkedIn automation:** [HeyReach](https://heyreach.io) (API-based — connection requests, messages, InMails, follows) &middot; Manual HubSpot tasks
 
-**Data sources:** HubSpot &middot; CSV &middot; [Personize Zapier](https://zapier.com) (memorize from 8,000+ apps) &middot; *Coming soon:* Salesforce &middot; [add yours — PRs welcome]
+**AI voice calls:** [Bland.ai](https://bland.ai) &middot; [Vapi](https://vapi.ai) &middot; [ElevenLabs](https://elevenlabs.io) &middot; Manual HubSpot call tasks
+
+**Also works with:** [Clay](https://clay.com) &middot; Salesforce &middot; [add yours — PRs welcome]
+
+**Data sources:** HubSpot &middot; Salesforce &middot; CSV &middot; Clay &middot; [Personize Zapier](https://zapier.com) (memorize from 8,000+ apps) &middot; [add yours — PRs welcome]
 
 **AI-native setup:** Ships with [Skills](.agents/skills/) — onboarding wizard, diagnostics, pipeline builder, and more. Point your AI coding assistant (Claude Code, Cursor, Windsurf, Copilot) at this repo and it configures, customizes, and extends the agent for you through guided conversation. No manual config editing required.
 
@@ -82,17 +87,19 @@ Built with ❤️ by the <a href="https://personize.ai" target="_blank">Personiz
 
 A fully autonomous prospecting agent that runs your outbound pipeline end to end:
 
-1. **Syncs your CRM** — Pulls contacts, companies, and engagement history from HubSpot or CSV files (or both)
+1. **Syncs your CRM** — Pulls contacts, companies, and engagement history from HubSpot, Salesforce, Clay, or CSV files
 2. **Scores accounts** — AI evaluates each company against your Ideal Customer Profile and detects buying signals
 3. **Researches hot accounts** — Searches the web for funding rounds, hiring surges, product launches, and competitive intel
 4. **Discovers contacts** — Finds decision-makers at high-scoring accounts via Apollo
 5. **Coordinates account strategy** — AI evaluates all contacts at a company together, prevents carpet bombing, adjusts tone for engaged accounts, and blocks outreach during negative events
 6. **Writes personalized emails** — Generates multi-email sequences with enforced JSON output, HTML sanitization, and email validation — referencing specific facts about each prospect
-7. **Manages sequences** — Named cadences (aggressive, standard, enterprise) auto-selected by ICP score, with smart timing and durable waits. Stops on reply or opt-out
-8. **Handles replies** — Classifies intent (interested, question, not interested, referral) and takes action automatically
-9. **Executes tasks** — Humans and agents create tasks; the AI picks them up, decides what to do, and acts or escalates
-10. **Monitors itself** — Health checks every 15 minutes, daily Slack digest with outreach stats, pipeline health, and items needing attention
-11. **Reports weekly** — Posts performance summaries to Slack every Friday
+7. **Sends LinkedIn outreach** — Adds leads to HeyReach campaigns for automated connection requests, messages, and InMails. Receives webhook events when connections are accepted or replies come in
+8. **Makes AI voice calls** — Generates call scripts and triggers outbound calls via Bland.ai, Vapi, or ElevenLabs. Receives post-call transcripts, analyzes outcomes, and takes action
+9. **Manages sequences** — Named cadences (aggressive, standard, enterprise) auto-selected by ICP score, with smart timing and durable waits. Multi-channel sequencing: Email 1 → LinkedIn → Email 2 → Call → Email 3
+10. **Handles replies across all channels** — Classifies intent from email replies, LinkedIn messages, and call transcripts. Acts automatically: creates tasks, updates CRM, alerts Slack
+11. **Executes tasks** — Humans and agents create tasks; the AI picks them up, decides what to do, and acts or escalates
+12. **Monitors itself** — Health checks every 15 minutes, daily Slack digest with outreach stats, pipeline health, and items needing attention
+13. **Reports weekly** — Posts performance summaries to Slack every Friday
 
 No babysitting. No manual data entry. Your sales team gets warm, qualified conversations — not busywork.
 
@@ -155,13 +162,20 @@ Architecture docs, setup guides, flow diagrams, API integration details, cost an
 ai-prospecting-agent/
 ├── data/                 # CSV import files (contacts, companies, notes, deals)
 ├── src/
-│   ├── trigger/          # 10 scheduled + event-driven tasks (Trigger.dev)
-│   │   ├── daily-digest.ts    # Slack daily operations dashboard (9am Mon-Fri)
-│   │   └── health-check.ts    # Automated health monitoring (every 15 min)
-│   ├── pipelines/        # 15 standalone processing pipelines
+│   ├── trigger/          # 14 scheduled + event-driven tasks (Trigger.dev)
+│   │   ├── multichannel-engine.ts # LinkedIn + Call schedulers (sequenced after email)
+│   │   ├── call-webhooks.ts       # Bland.ai, Vapi, ElevenLabs post-call receivers
+│   │   ├── heyreach-webhook.ts    # HeyReach LinkedIn event receiver (11 event types)
+│   │   ├── daily-digest.ts        # Slack daily operations dashboard (9am Mon-Fri)
+│   │   └── health-check.ts        # Automated health monitoring (every 15 min)
+│   ├── pipelines/        # 18 standalone processing pipelines
 │   │   ├── account-strategy.ts    # AI account strategizer (multi-contact coordination)
 │   │   ├── account-preflight.ts   # Pre-outreach gate (proceed/modify/delay/block)
-│   ├── delivery/         # 4 output channels (Gmail, HubSpot, Slack, SendGrid)
+│   │   ├── analyze-call.ts        # Call transcript analysis (memorize → classify → act)
+│   │   ├── analyze-linkedin-event.ts  # LinkedIn event analysis (memorize → classify → act)
+│   │   ├── generate-linkedin-message.ts  # LinkedIn message generation (connection notes, DMs)
+│   │   ├── generate-call-script.ts    # Call script generation (human playbook + AI script)
+│   ├── delivery/         # 7 output channels (Gmail, SendGrid, Smartlead, HubSpot, Slack, HeyReach LinkedIn, AI Voice)
 │   ├── lib/              # Utilities and integration clients
 │   │   ├── llm-output.ts      # Structured JSON parser + regex fallback
 │   │   ├── llm-schemas.ts     # Schema definitions for all 6 pipelines
@@ -192,8 +206,9 @@ ai-prospecting-agent/
 | **AI email generation** | Full sequences with company-specific personalization | Templates + tokens | Templates + tokens | AI-generated | AI-generated |
 | **Deep prospect memory** | Full engagement history, call transcripts, deal context, web research — all feeds into personalization | CRM fields only | CRM fields only | Limited context | Limited context |
 | **Governance & brand voice** | Editable rules — no code, no redeploy. AI follows your ICP, tone, and compliance policies. | Approval workflows | Approval workflows | Preset controls | Preset controls |
-| **Multi-source enrichment** | Apollo + Tavily + any API you add | HubSpot data only | Salesforce data only | Built-in (closed) | Built-in (closed) |
-| **Reply handling** | AI classifies intent, creates tasks, updates CRM, alerts Slack — automatically | Manual or basic rules | Manual or basic rules | Automated | Automated |
+| **Multi-channel outreach** | Email + LinkedIn (HeyReach) + AI voice calls | Email only | Email only | Email + LinkedIn | Email + LinkedIn |
+| **Multi-source enrichment** | Apollo + Tavily + Clay + any API you add | HubSpot data only | Salesforce data only | Built-in (closed) | Built-in (closed) |
+| **Reply handling** | AI classifies intent across email, LinkedIn, and call transcripts — automatically | Manual or basic rules | Manual or basic rules | Automated | Automated |
 | **Customizable** | 100% — change any pipeline, add sources, swap channels | Config only | Config + Apex | No | No |
 | **Vendor lock-in** | None — swap any integration | High | High | High | High |
 | **No server to manage** | Runs on Trigger.dev — serverless, durable, auto-retries | N/A (SaaS) | N/A (SaaS) | N/A (SaaS) | N/A (SaaS) |
@@ -217,7 +232,13 @@ ai-prospecting-agent/
 | [**Smartlead**](https://smartlead.ai) | Email delivery (default) | Managed warmed mailboxes. Handles sending infrastructure and deliverability — the agent owns personalization and sequence timing. |
 | **Gmail API** | Email delivery (alt) | Sends from your Google Workspace mailbox(es). Supports multiple senders with round-robin rotation. |
 | **SendGrid** | Email delivery (alt) | Transactional email API. Use if you manage your own sender domain and warmup. |
-| **Slack** | Alerts & reports | Real-time notifications for hot prospects, replies, errors, and weekly performance reports. |
+| [**HeyReach**](https://heyreach.io) | LinkedIn automation | API-based LinkedIn outreach — connection requests, messages, InMails, follows. Webhook events close the memory loop (connection accepted, reply received). |
+| [**Bland.ai**](https://bland.ai) | AI voice calls | Outbound calls via API. Post-call webhook delivers transcript for AI analysis. |
+| [**Vapi**](https://vapi.ai) | AI voice calls (alt) | Voice AI agents via API. End-of-call-report webhook with full transcript and analysis. |
+| [**ElevenLabs**](https://elevenlabs.io) | AI voice calls (alt) | Conversational AI + Twilio. Post-call transcription webhook with structured analysis. |
+| [**Salesforce**](https://salesforce.com) | CRM (alt) | Source of contacts and accounts. Uses jsforce SDK. Supports SOQL filters, activities, and opportunities. |
+| [**Clay**](https://clay.com) | Enrichment + data | Webhook or pull mode. Waterfall enrichment with 100+ providers. |
+| **Slack** | Alerts & reports | Real-time notifications for hot prospects, replies across all channels, errors, and weekly performance reports. |
 
 ### Why Personize?
 
@@ -338,7 +359,7 @@ Set via `BUDGET_TIER` environment variable or in the config file. Default: `bala
 
 ### Code (Full Control)
 
-Every pipeline is a standalone TypeScript file. Swap Gmail for SendGrid. Replace Apollo with your own enrichment API. Add a LinkedIn step. The architecture is modular by design.
+Every pipeline is a standalone TypeScript file. Swap Gmail for SendGrid. Replace Apollo with your own enrichment API. Swap HeyReach for another LinkedIn tool. The architecture is modular by design.
 
 ---
 
@@ -422,26 +443,33 @@ await personize.memorize('contacts', {
 
 **Built-in connectors:**
 - HubSpot (contacts, companies, engagements, deals)
+- Salesforce (contacts, accounts, activities, opportunities)
+- Clay (webhook or pull mode — waterfall enrichment with 100+ providers)
 - CSV files (contacts, companies, notes, deals)
 - Apollo.io (contact discovery, enrichment)
 - Tavily (web research)
+- HeyReach (LinkedIn automation — connection requests, messages, InMails, webhook events)
+- Bland.ai, Vapi, ElevenLabs (AI voice calls — outbound calls, post-call transcript webhooks)
 
 **Add your own:**
-- Any CRM — Salesforce, Pipedrive, Close
 - Any enrichment API — Clearbit, ZoomInfo, Lusha
 - Any data source — webhooks, databases, spreadsheet exports
 
-**Use Personize's Zapier integration to sync and memorize from 8,000+ apps** — no code required. Connect to Salesforce, Google Sheets, Postgres, Stripe, Intercom, Zendesk, and hundreds more. Also available as n8n workflows for self-hosted visual automation.
+**Use Personize's Zapier integration to sync and memorize from 8,000+ apps** — no code required. Connect to Google Sheets, Postgres, Stripe, Intercom, Zendesk, and hundreds more. Also available as n8n workflows for self-hosted visual automation.
 
-### Add More Channels
+### Outreach Channels
 
-The agent sends emails today. Add more outreach channels:
+The agent ships with three fully integrated outreach channels:
 
-- LinkedIn messages and connection requests
-- SMS via Twilio
-- Direct mail triggers
-- Slack DMs for internal champions
-- Custom webhooks to any platform
+| Channel | Provider | How It Works |
+|---|---|---|
+| **Email** | Smartlead (default), Gmail API, SendGrid | AI-generated multi-email sequences with brand voice enforcement |
+| **LinkedIn** | HeyReach (API), Manual HubSpot tasks | Adds leads to HeyReach campaigns. Webhook events fire on connection accepted, reply received. AI analyzes replies and updates workspace |
+| **Voice calls** | Bland.ai, Vapi, ElevenLabs, Manual HubSpot tasks | AI generates call scripts. Triggers outbound calls via API. Post-call webhooks deliver transcripts. AI classifies outcome and takes action |
+
+Multi-channel sequencing: `Email 1 → LinkedIn Connection → Email 2 → Call (80+ score) → Email 3`
+
+**Add more channels** — SMS via Twilio, direct mail triggers, Slack DMs, or custom webhooks. Each channel is a standalone delivery file.
 
 ### Share With the Community
 
@@ -478,9 +506,11 @@ We're building a library of community-contributed pipelines, data connectors, an
 
 ---
 
-## Reply Handling
+## Reply Handling (All Channels)
 
-When a prospect replies, the agent classifies intent and acts:
+When a prospect replies — via email, LinkedIn, or phone — the agent classifies intent and acts:
+
+### Email Replies
 
 | Reply Type | Action | HubSpot |
 |---|---|---|
@@ -490,6 +520,27 @@ When a prospect replies, the agent classifies intent and acts:
 | **Out of Office** | Sequence paused, reschedule after return | — |
 | **Referral** | Task to thank sender + reach out to referral | Email task (24hr SLA) |
 | **Unclear** | Task for sales rep to review | — |
+
+### LinkedIn Events (via HeyReach Webhooks)
+
+| Event | Action |
+|---|---|
+| **Connection Accepted** | Memorized, lead status → Engaged, Slack notification |
+| **Message Reply — Interested** | Urgent Slack alert, HubSpot task, workspace updated |
+| **Message Reply — Not Interested** | Opted out, all sequences stopped |
+| **Message Reply — Question** | HubSpot task with AI analysis |
+| **Campaign Completed** | Workspace updated, next steps task created |
+
+### Call Outcomes (via Voice AI Webhooks)
+
+| Outcome | Action |
+|---|---|
+| **Interested** | Urgent Slack alert, HubSpot task (2hr SLA), account strategy re-evaluated |
+| **Meeting Booked** | Slack celebration, HubSpot task to confirm, lead status → Meeting Set |
+| **Not Interested** | Opted out, all sequences stopped, account impact assessed |
+| **Callback Requested** | Task created with requested timing |
+| **Wrong Person** | Issue raised, referral task if name given |
+| **Voicemail / No Answer** | Retry task created |
 
 ---
 
@@ -678,12 +729,16 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 | What | When | Frequency |
 |---|---|---|
 | Health check | Every 15 minutes | Continuous |
-| CRM sync (HubSpot and/or CSV — contacts + companies + engagements) | Every hour, Mon–Fri | Hourly |
+| CRM sync (HubSpot, Salesforce, Clay, CSV) | Every hour, Mon–Fri | Hourly |
 | Signal detection + web research + contact discovery | 8am UTC, Mon–Fri | Daily |
 | Daily operations digest (Slack) | 9am UTC, Mon–Fri | Daily |
-| Outreach generation and sending | 10am and 2pm UTC, Mon–Fri | Twice daily |
+| Email outreach generation and sending | 10am and 2pm UTC, Mon–Fri | Twice daily |
+| LinkedIn outreach (HeyReach) | 11am UTC, Mon–Fri | Daily |
+| Call outreach (high-score contacts) | 1pm UTC, Mon–Fri | Daily |
 | Weekly performance report | 4pm UTC, Fridays | Weekly |
-| Reply handling | Real-time (webhook) | Instant |
+| Email reply handling | Real-time (webhook) | Instant |
+| LinkedIn event handling (HeyReach) | Real-time (webhook) | Instant |
+| Call transcript processing | Real-time (webhook) | Instant |
 
 ---
 

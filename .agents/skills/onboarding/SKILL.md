@@ -8,25 +8,36 @@ metadata: {"author": "personize-ai", "version": "1.0", "emoji": "\U0001F680", "r
 
 # Skill: Onboarding Wizard
 
-This skill transforms a generic AI prospecting agent into a fully configured, business-specific outbound sales machine. It interviews the user about their business, then writes all configuration, governance, schemas, and cadence settings.
+This skill transforms a generic AI prospecting agent into a fully configured, business-specific outreach machine. It interviews the user about their business, selects the right agent mode, then writes all configuration, governance, schemas, and cadence settings.
 
 ## What This Skill Does
 
-The AI Prospecting Agent ships with placeholder configuration (generic B2B SaaS ICP, placeholder competitors, default cadences). This skill replaces ALL placeholders with real business-specific settings through a guided conversation.
+The AI Prospecting Agent ships with 18 pre-built modes (outbound-sdr, ecommerce-winback, talent-sourcing, member-renewal, donor-engagement, etc.) and placeholder configuration. This skill helps the user pick the right mode, replaces ALL placeholders with business-specific settings through a guided conversation, and produces a fully configured agent.
 
-**End result:** A fully configured agent ready to prospect on behalf of the user's specific business.
+**End result:** A fully configured agent ready to run outreach on behalf of the user's specific business and use case.
 
 ---
 
 ## When This Skill is Activated
 
-**If the user hasn't given specifics yet**, introduce yourself and start the interview:
+**If the user hasn't given specifics yet**, introduce yourself and start with mode selection:
 
-> "I'm your onboarding wizard for the AI Prospecting Agent. I'll ask you some questions about your business, then configure everything — ICP, brand voice, outreach sequences, signal detection, and more. Let's start: **What's your company name and website?**"
+> "I'm your onboarding wizard for the AI Prospecting Agent. First — what are you using this for? Here are some popular modes:
+>
+> **Sales & GTM:** Outbound SDR, ABM, Cold Deal Revival, Partner Recruitment, Event Follow-Up
+> **Ecommerce:** Win-Back, Post-Purchase Upsell, Cart Abandonment
+> **Membership:** Member Renewal, Member Onboarding
+> **Recruiting:** Talent Sourcing, Employee Onboarding
+> **Education:** Student Enrollment, Alumni Engagement
+> **Other:** Real Estate Nurture, Agency New Business, Donor Engagement, Volunteer Recruitment
+>
+> Pick one and I'll pre-load the right defaults, then customize everything for your business."
 
-**If the user gives partial info** (e.g., "set up my agent for a cybersecurity company"), start from what you know and ask follow-up questions for the gaps.
+**If the user gives partial info** (e.g., "set up my agent for a cybersecurity company"), infer the most likely mode (probably `outbound-sdr`), confirm it, then start from what you know and ask follow-up questions for the gaps.
 
 **If the user wants to reconfigure** (e.g., "update my ICP"), jump directly to that section — don't re-interview everything.
+
+**If the user picks a mode**, read the mode definition from `src/config/agent-modes.ts` to pre-populate governance and config defaults, then interview for the business-specific details that the mode doesn't know (company name, specific ICP criteria, competitors, etc.).
 
 ---
 
@@ -58,11 +69,21 @@ You have 3 actions. They are sequential for first-time setup, but can be used in
 
 Gather everything needed to configure the agent. Ask in this order, 2-3 questions at a time.
 
+### Phase 0: Agent Mode
+
+> Read `src/config/agent-modes.ts` for all available modes and their preset configurations.
+
+0. **What are you using this for?** — Select the agent mode. This pre-loads governance, cadences, signals, and discovery targets for the chosen use case. The mode's defaults become the starting point — everything is further customized in subsequent phases.
+
+**Maps to:** `AGENT_MODE` env var and `prospecting.config.ts` → `AGENT_MODE`
+
+After mode selection, use the mode's `terminology` to adjust all subsequent questions. For example, if the user picks `patient-reactivation`, ask about "patients" not "prospects", and "appointments" not "meetings".
+
 ### Phase 1: The Business
 
 > Read `reference/interview-questions.md` for the full question set with context for each.
 
-1. **Company name and website** — Used in sender identity, governance, and brand voice
+1. **Company/organization name and website** — Used in sender identity, governance, and brand voice
 2. **What you sell** — Product/service description, value proposition, key differentiators
 3. **Your role** — Are you the founder? Sales leader? Marketing? This shapes how the agent talks
 

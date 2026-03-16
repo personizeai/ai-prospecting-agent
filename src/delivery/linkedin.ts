@@ -1,0 +1,245 @@
+/**
+ * LinkedIn Delivery Channel
+ *
+ * Sends LinkedIn connection requests and messages via:
+ *   - manual-hubspot: Creates a HubSpot task for a human to send (default)
+ *   - heyreach: Adds lead to a HeyReach campaign for automated LinkedIn outreach
+ *
+ * LinkedIn is the second outreach channel — connection requests go AFTER Email 1.
+ *
+ * HeyReach API Reference (from live docs + MCP source):
+ *   Base URL: https://api.heyreach.io/api/public
+ *   Auth: X-API-KEY header
+ *   Rate limit: 300 requests/minute
+ *   Endpoints used:
+ *     GET  /auth/CheckApiKey                — validate API key
+ *     POST /campaign/AddLeadsToListV2       — add leads to campaign
+ *     POST /campaign/GetAll                 — list campaigns (for validation)
+ *   Webhook events (configured in HeyReach dashboard → Webhooks):
+ *     CONNECTION_REQUEST_SENT, CONNECTION_REQUEST_ACCEPTED,
+ *     MESSAGE_SENT, MESSAGE_REPLY_RECEIVED,
+ *     INMAIL_SENT, INMAIL_REPLY_RECEIVED,
+ *     FOLLOW_SENT, LIKED_POST, VIEWED_PROFILE,
+ *     CAMPAIGN_COMPLETED, LEAD_TAG_UPDATED
+ */
+
+import { client } from '../config.js';
+import { LINKEDIN_CONFIG, MANUAL_HUBSPOT_CONFIG } from '../config/prospecting.config.js';
+import { createHubSpotFollowUpTask } from './hubspot-deliver.js';
+import { workspace } from '../lib/workspace.js';
+import { logger } from '../lib/logger.js';
+import type { GeneratedLinkedInMessage } from '../types.js';
+
+const log = logger.child({ pipeline: 'linkedin-deliver' });
+
+/** Daily send tracking (resets per UTC day). */
+const dailySends = new Map<string, number>();
+
+function getTodayKey(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getRemainingCapacity(): number {
+  const today = getTodayKey();
+  const sent = dailySends.get(today) || 0;
+  return Math.max(0, LINKEDIN_CONFIG.dailyConnectionLimit - sent);
+}
+
+function recordSend(): void {
+  const today = getTodayKey();
+  dailySends.set(today, (dailySends.get(today) || 0) + 1);
+
+  // Clean up old days
+  for (const key of dailySends.keys()) {
+    if (key !== today) dailySends.delete(key);
+  }
+}
+
+export interface LinkedInSendResult {
+  messageId: string;
+  provider: string;
+  linkedinUrl: string;
+  type: string;
+}
+
+/**
+ * Send a LinkedIn message via the configured provider.
+ */
+export async function sendViaLinkedIn(
+  generated: GeneratedLinkedInMessage,
+  contactId: string,
+): Promise<LinkedInSendResult> {
+  if (!LINKEDIN_CONFIG.enabled) {
+    throw new Error('LinkedIn channel is not enabled. Set LINKEDIN_ENABLED=true');
+  }
+
+  if (getRemainingCapacity() <= 0) {
+    log.warn('LinkedIn daily limit reached', { limit: LINKEDIN_CONFIG.dailyConnectionLimit });
+    throw new Error('LinkedIn daily send limit reached');
+  }
+
+  const provider = LINKEDIN_CONFIG.provider;
+  let messageId = '';
+
+  if (provider === 'heyreach') {
+    messageId = await sendViaHeyReach(generated);
+  } else {
+    // manual-hubspot: create a task for a human
+    messageId = await createLinkedInTask(generated, contactId);
+  }
+
+  recordSend();
+
+  // Record in workspace
+  await workspace.addMessageSent(generated.email, {
+    channel: 'linkedin',
+    subject: `LinkedIn ${generated.type}`,
+    bodyPreview: generated.message.substring(0, 200),
+    step: generated.step,
+    angle: generated.angle,
+    sentBy: 'outreach-agent',
+    status: provider === 'manual-hubspot' ? 'sent' : 'delivered',
+  });
+
+  // Memorize in Personize
+  await client.memory.memorize({
+    email: generated.email,
+    content: [
+      `[LINKEDIN ${generated.type === 'connection_request' ? 'CONNECTION REQUEST' : 'MESSAGE'} — Step ${generated.step}]`,
+      `Date: ${new Date().toISOString()}`,
+      `Type: ${generated.type}`,
+      `Message: ${generated.message}`,
+      `Angle: ${generated.angle}`,
+      `Provider: ${provider}`,
+      `LinkedIn URL: ${generated.linkedinUrl}`,
+    ].join('\n'),
+    enhanced: true,
+    tags: ['generated', 'outreach', 'linkedin', `sequence:linkedin-${generated.step}`, `provider:${provider}`],
+  });
+
+  log.info('LinkedIn message sent', {
+    email: generated.email,
+    type: generated.type,
+    step: generated.step,
+    provider,
+  });
+
+  return {
+    messageId,
+    provider,
+    linkedinUrl: generated.linkedinUrl,
+    type: generated.type,
+  };
+}
+
+/**
+ * Create a HubSpot task for manual LinkedIn outreach.
+ */
+async function createLinkedInTask(
+  generated: GeneratedLinkedInMessage,
+  contactId: string,
+): Promise<string> {
+  const ownerId = MANUAL_HUBSPOT_CONFIG.ownerId;
+  if (!ownerId) {
+    log.warn('No HUBSPOT_OWNER_ID — skipping LinkedIn task creation');
+    return `manual-${Date.now()}`;
+  }
+
+  const typeLabel = generated.type === 'connection_request'
+    ? 'Connection Request'
+    : generated.type === 'inmail' ? 'InMail' : 'Message';
+
+  await createHubSpotFollowUpTask({
+    contactId,
+    ownerId,
+    subject: `LinkedIn ${typeLabel}: ${generated.email}`,
+    body: [
+      `**LinkedIn ${typeLabel}**`,
+      `**Profile:** ${generated.linkedinUrl}`,
+      `**Angle:** ${generated.angle}`,
+      ``,
+      `**Message to send:**`,
+      generated.message,
+      ``,
+      `---`,
+      `Generated by AI Prospecting Agent. Copy the message and send via LinkedIn.`,
+    ].join('\n'),
+    priority: 'HIGH',
+    taskType: 'TODO',
+  });
+
+  return `hubspot-task-${Date.now()}`;
+}
+
+/**
+ * Add lead to a HeyReach campaign for automated LinkedIn outreach.
+ *
+ * HeyReach handles:
+ *   - Connection requests, messages, InMails, follows, profile views
+ *   - Sender rotation and account safety
+ *   - Rate limiting and daily caps
+ *   - Conversation management
+ *
+ * We handle:
+ *   - Adding leads to the campaign with personalization data
+ *   - Receiving webhook events for memory loop (connection accepted, reply received, etc.)
+ *   - Memorizing outcomes to Personize + updating workspace
+ *
+ * API: POST /campaign/AddLeadsToListV2
+ * Docs: https://documenter.getpostman.com/view/23808049/2sA2xb5F75
+ * Auth: X-API-KEY header (plain key, not Bearer)
+ * Rate limit: 300 req/min
+ *
+ * Important: Campaign must be launched at least once in HeyReach before API lead additions work.
+ * Adding leads to a paused campaign will automatically reactivate it.
+ */
+async function sendViaHeyReach(generated: GeneratedLinkedInMessage): Promise<string> {
+  const { heyreachApiKey, heyreachCampaignId } = LINKEDIN_CONFIG;
+  if (!heyreachApiKey) {
+    throw new Error('HEYREACH_API_KEY required for heyreach provider');
+  }
+  if (!heyreachCampaignId) {
+    throw new Error('HEYREACH_CAMPAIGN_ID required for heyreach provider');
+  }
+
+  // Parse name from email if we don't have it separately
+  // The lead's LinkedIn URL is the primary identifier for HeyReach
+  const lead: Record<string, unknown> = {
+    profileUrl: generated.linkedinUrl,
+  };
+
+  // Add email if available (HeyReach uses it for matching)
+  if (generated.email) {
+    lead.emailAddress = generated.email;
+  }
+
+  const response = await fetch('https://api.heyreach.io/api/public/campaign/AddLeadsToListV2', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': heyreachApiKey,
+    },
+    body: JSON.stringify({
+      campaignId: Number(heyreachCampaignId),
+      leads: [lead],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HeyReach API error: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json() as any;
+
+  log.info('HeyReach lead added to campaign', {
+    campaignId: heyreachCampaignId,
+    linkedinUrl: generated.linkedinUrl,
+    email: generated.email,
+    addedCount: data?.addedCount,
+  });
+
+  return `heyreach-${heyreachCampaignId}-${Date.now()}`;
+}
+
+export { getRemainingCapacity };

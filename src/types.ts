@@ -70,6 +70,43 @@ export interface CompanyEnrichment {
   source: string;
 }
 
+/** Generated LinkedIn message (connection request or InMail). */
+export interface GeneratedLinkedInMessage {
+  email: string;
+  step: number;
+  type: 'connection_request' | 'inmail' | 'message';
+  /** Connection request note (max 300 chars) or full message. */
+  message: string;
+  /** Personalization angle used. */
+  angle: string;
+  /** LinkedIn profile URL of the recipient. */
+  linkedinUrl: string;
+}
+
+/** Generated call script for a sales call. */
+export interface GeneratedCallScript {
+  email: string;
+  step: number;
+  /** Who to call — name and title. */
+  contactName: string;
+  contactTitle: string;
+  phone: string;
+  /** 2-sentence opener: who you are + why calling. */
+  opener: string;
+  /** 1 sentence connecting to their specific situation. */
+  hook: string;
+  /** 1 sentence — the meeting request. */
+  ask: string;
+  /** 2-3 common objections with 1-sentence responses. */
+  objectionHandlers: Array<{ objection: string; response: string }>;
+  /** Short playbook for human callers: mindset, do's, don'ts. */
+  humanPlaybook: string;
+  /** Full verbatim script for AI callers (Bland.ai, Vapi, etc.). */
+  aiCallerScript: string;
+  /** Personalization angle used. */
+  angle: string;
+}
+
 /** Result summary from an enrichment pipeline run. */
 export interface EnrichmentRunResult {
   enriched: number;
@@ -83,6 +120,120 @@ export interface DiscoveryRunResult {
   accountsProcessed: number;
   contactsDiscovered: number;
   timestamp: string;
+}
+
+/** Normalized call result from any voice AI provider (Bland.ai, Vapi, ElevenLabs). */
+export interface CallResult {
+  /** Provider that handled the call. */
+  provider: 'bland-ai' | 'vapi' | 'elevenlabs';
+  /** Provider-specific call/conversation ID. */
+  callId: string;
+  /** Contact email (resolved from metadata passed when triggering the call). */
+  email: string;
+  /** Call status: completed, no-answer, busy, voicemail, failed. */
+  status: 'completed' | 'no-answer' | 'busy' | 'voicemail' | 'failed' | 'unknown';
+  /** Who answered: human, voicemail, unknown. */
+  answeredBy: 'human' | 'voicemail' | 'unknown' | 'no-answer';
+  /** Call duration in seconds. */
+  durationSecs: number;
+  /** Full transcript as a single string. */
+  transcript: string;
+  /** Structured transcript turns (if available from provider). */
+  turns: Array<{ role: 'user' | 'agent'; message: string; timeSecs?: number }>;
+  /** Provider-generated summary (if available). */
+  summary: string;
+  /** Who ended the call: assistant or user. */
+  endedBy: 'assistant' | 'user' | 'system' | 'unknown';
+  /** Why the call ended (provider-specific reason string). */
+  endedReason: string;
+  /** Cost in USD (if reported by provider). */
+  costUsd: number;
+  /** Recording URL (if available — stored by provider, not by us). */
+  recordingUrl: string;
+  /** Original metadata passed when triggering the call. */
+  metadata: Record<string, unknown>;
+}
+
+/** AI analysis of a completed call transcript. */
+export interface CallAnalysis {
+  /** Overall call outcome. */
+  outcome: 'interested' | 'meeting_booked' | 'not_interested' | 'callback_requested' | 'voicemail' | 'no_answer' | 'wrong_person' | 'neutral';
+  /** 2-3 sentence summary of what happened on the call. */
+  summary: string;
+  /** Key points discussed. */
+  keyPoints: string[];
+  /** Contact's sentiment during the call. */
+  sentiment: 'positive' | 'neutral' | 'negative';
+  /** Urgency of follow-up. */
+  urgency: 'high' | 'medium' | 'low';
+  /** Specific next action to take. */
+  nextAction: string;
+  /** Objections raised by the contact. */
+  objectionsRaised: string[];
+  /** If callback requested, when (e.g., "next Tuesday", "after Q1"). */
+  callbackTime?: string;
+  /** If referred to another person, who. */
+  referredContact?: string;
+}
+
+/** HeyReach webhook event types.
+ *  Docs: HeyReach dashboard → Integrations → Webhooks.
+ *  Source: Composio toolkit + Make module triggers. */
+export type HeyReachEventType =
+  | 'CONNECTION_REQUEST_SENT'
+  | 'CONNECTION_REQUEST_ACCEPTED'
+  | 'MESSAGE_SENT'
+  | 'MESSAGE_REPLY_RECEIVED'
+  | 'INMAIL_SENT'
+  | 'INMAIL_REPLY_RECEIVED'
+  | 'FOLLOW_SENT'
+  | 'LIKED_POST'
+  | 'VIEWED_PROFILE'
+  | 'CAMPAIGN_COMPLETED'
+  | 'LEAD_TAG_UPDATED';
+
+/** Normalized LinkedIn event from HeyReach webhook. */
+export interface LinkedInEvent {
+  /** HeyReach webhook event type. */
+  eventType: HeyReachEventType;
+  /** Campaign ID the event belongs to. */
+  campaignId: string;
+  /** Lead's LinkedIn profile URL. */
+  profileUrl: string;
+  /** Lead's LinkedIn member ID. */
+  linkedInId: string;
+  /** Lead's first name (if available). */
+  firstName: string;
+  /** Lead's last name (if available). */
+  lastName: string;
+  /** Lead's email (if available). */
+  email: string;
+  /** Lead's company (if available). */
+  company: string;
+  /** Message content (for MESSAGE_REPLY_RECEIVED, INMAIL_REPLY_RECEIVED). */
+  messageContent: string;
+  /** Conversation ID (for message events). */
+  conversationId: string;
+  /** HeyReach sender LinkedIn account ID. */
+  senderAccountId: string;
+  /** Raw webhook payload for debugging. */
+  rawPayload: Record<string, unknown>;
+}
+
+/** AI analysis of a LinkedIn event (reply, connection acceptance, etc.). */
+export interface LinkedInEventAnalysis {
+  /** Classification of the event's significance. */
+  outcome: 'interested' | 'not_interested' | 'question' | 'referral' | 'neutral' | 'positive_signal';
+  /** 1-2 sentence summary. */
+  summary: string;
+  /** Contact's sentiment. */
+  sentiment: 'positive' | 'neutral' | 'negative';
+  /** Urgency of follow-up. */
+  urgency: 'high' | 'medium' | 'low';
+  /** Specific next action to take. */
+  nextAction: string;
+  /** Key points from the message (if reply). */
+  keyPoints: string[];
 }
 
 /** Web research result from Tavily search + AI analysis. */

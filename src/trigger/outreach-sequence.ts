@@ -1,4 +1,5 @@
 import { task, wait } from "@trigger.dev/sdk/v3";
+import { client } from '../config.js';
 import { workspace } from '../lib/workspace.js';
 import { generateOutreachForContact } from '../pipelines/generate-outreach.js';
 import { sendAndLog } from '../delivery/hubspot-deliver.js';
@@ -185,10 +186,60 @@ export const fullSequenceTask = task({
       }
     }
 
-    // Sequence complete — create follow-up task
+    // Sequence complete — trigger multi-channel follow-up if enabled
+    const { LINKEDIN_CONFIG, CALL_CONFIG } = await import('../config/prospecting.config.js');
+    const channelActions: string[] = [];
+
+    if (LINKEDIN_CONFIG.enabled) {
+      // Trigger LinkedIn outreach for contacts with a LinkedIn URL
+      try {
+        const { generateLinkedInMessage } = await import('../pipelines/generate-linkedin-message.js');
+        const { sendViaLinkedIn } = await import('../delivery/linkedin.js');
+
+        const contactData = await client.memory.smartDigest({
+          email: contactEmail,
+          type: 'Contact',
+          token_budget: 300,
+          include_properties: true,
+        });
+        const linkedinUrl = (contactData.data as any)?.properties?.linkedin_url?.value || '';
+
+        if (linkedinUrl) {
+          const linkedInMsg = await generateLinkedInMessage(contactEmail, String(linkedinUrl), cadence.maxEmails + 1, dryRun);
+          if (linkedInMsg && !dryRun) {
+            await sendViaLinkedIn(linkedInMsg, crmId);
+          }
+          channelActions.push('LinkedIn connection request sent');
+        }
+      } catch (err) {
+        // Non-fatal — LinkedIn is optional
+      }
+    }
+
+    if (CALL_CONFIG.enabled && icpScore && icpScore >= CALL_CONFIG.minScoreForCall) {
+      // Trigger call script generation for high-score contacts
+      try {
+        const { generateCallScriptForContact } = await import('../pipelines/generate-call-script.js');
+        const { executeCall } = await import('../delivery/phone.js');
+
+        const script = await generateCallScriptForContact(contactEmail, icpScore, cadence.maxEmails + 1, dryRun);
+        if (script && !dryRun) {
+          await executeCall(script, crmId);
+        }
+        if (script) channelActions.push('Call script generated');
+      } catch (err) {
+        // Non-fatal — calls are optional
+      }
+    }
+
+    // Create follow-up task for remaining manual actions
+    const nextStepsDescription = channelActions.length > 0
+      ? `Multi-channel actions taken: ${channelActions.join(', ')}. Review results and evaluate: add to nurture? Mark as cold?`
+      : `All ${cadence.maxEmails} emails sent (${cadenceName} cadence) with no reply. Evaluate: try different channel (LinkedIn/call)? Add to nurture? Mark as cold?`;
+
     await workspace.addTask(contactEmail, {
       title: 'Sequence complete — evaluate for next steps',
-      description: `All ${cadence.maxEmails} emails sent (${cadenceName} cadence) with no reply. Evaluate: try different channel (LinkedIn/call)? Add to nurture? Mark as cold?`,
+      description: nextStepsDescription,
       status: 'pending',
       owner: 'sales-rep',
       createdBy: 'outreach-agent',
@@ -198,9 +249,11 @@ export const fullSequenceTask = task({
     await workspace.rewriteContext(contactEmail, [
       `Sequence Status: COMPLETE (${cadence.maxEmails}/${cadence.maxEmails} emails sent, no reply).`,
       `Cadence: ${cadenceName} (${cadence.label})`,
-      'Action: Sales rep to evaluate next steps — different channel, nurture, or archive.',
+      channelActions.length > 0
+        ? `Multi-channel: ${channelActions.join(', ')}`
+        : 'Action: Sales rep to evaluate next steps — different channel, nurture, or archive.',
     ].join('\n'), 'outreach-agent');
 
-    return { contactEmail, cadence: cadenceName, status: 'sequence_complete', results };
+    return { contactEmail, cadence: cadenceName, status: 'sequence_complete', results, channelActions };
   },
 });

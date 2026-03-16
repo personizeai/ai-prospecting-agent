@@ -1,14 +1,47 @@
 /**
  * Prospecting Agent Configuration
  *
- * All tunable settings in one place. Edit this file to change:
- * - HubSpot filtering
- * - Apollo enrichment & discovery settings
- * - Signal scanning frequency
- * - Contact discovery filters (titles, seniority, limits)
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │  START HERE — the only 3 settings most users need to touch      │
+ * │                                                                  │
+ * │  AGENT_MODE=outbound-sdr    # What kind of outreach?            │
+ * │  BUDGET_TIER=balanced       # How aggressive / expensive?       │
+ * │  CRM_SOURCE=hubspot         # Where does your data come from?   │
+ * │                                                                  │
+ * │  Set these in .env, run the onboarding skill to fill in your    │
+ * │  ICP and brand voice, then deploy. Everything else has sensible │
+ * │  defaults and can be changed when you actually need to.         │
+ * └─────────────────────────────────────────────────────────────────┘
  *
- * No code changes needed elsewhere — just update values here and redeploy.
+ * Everything below is organized from most-commonly-changed to least.
+ * Sections marked [OPTIONAL] are off by default or rarely need touching.
  */
+
+import { getAgentMode } from './agent-modes.js';
+
+// ─── Agent Mode ──────────────────────────────────────────────────
+//
+// Modes pre-configure governance, cadences, signals, and terminology
+// for different use cases. The pipeline architecture stays the same —
+// what changes is WHO you contact, WHY, and HOW you talk to them.
+//
+// Set via AGENT_MODE env var. Default: 'outbound-sdr'.
+//
+// Sales & GTM:        outbound-sdr, abm, cold-deals, partner-recruitment, event-followup
+// Ecommerce & D2C:    ecommerce-winback, post-purchase, cart-abandonment
+// Membership:         member-renewal, member-onboarding
+// Recruiting & HR:    talent-sourcing, employee-onboarding
+// Education:          student-enrollment, alumni-engagement
+// Real Estate:        real-estate-nurture
+// Agency:             agency-outreach
+// Nonprofit:          donor-engagement, volunteer-recruitment
+//
+// Each mode provides SUGGESTED governance, cadences, and discovery targets.
+// The onboarding skill uses these as a starting point and customizes further.
+
+export const AGENT_MODE = getAgentMode();
+export { AGENT_MODES, MODE_CATEGORIES, getAvailableModes, getModesByCategory, getModeById } from './agent-modes.js';
+export type { AgentModeDefinition, ModeCategory } from './agent-modes.js';
 
 // ─── Budget Tier ─────────────────────────────────────────────────
 //
@@ -140,8 +173,8 @@ export const CSV_CONFIG = {
 
 // ─── CRM Source Selection ──────────────────────────────────────────
 export const CRM_SOURCE_CONFIG = {
-  /** Which data sources to sync: 'hubspot', 'csv', or 'both'. */
-  source: (process.env.CRM_SOURCE || 'hubspot') as 'hubspot' | 'csv' | 'both',
+  /** Which data sources to sync: 'hubspot', 'salesforce', 'csv', 'clay', or 'all'. */
+  source: (process.env.CRM_SOURCE || 'hubspot') as 'hubspot' | 'salesforce' | 'csv' | 'clay' | 'all',
 };
 
 // ─── Email Delivery Provider ──────────────────────────────────────
@@ -476,6 +509,220 @@ export const ACCOUNT_STRATEGY_CONFIG = {
 
   /** Account stages where new contacts should get warm intros instead of cold outreach. */
   warmIntroStages: ['engaged', 'opportunity', 'multi_threaded'] as string[],
+};
+
+// ─── LinkedIn Outreach [OPTIONAL — off by default] ───────────────
+//
+// LinkedIn adds a second channel alongside email. Connection requests go out
+// AFTER Email 1 (per playbook rules). Messages use the contact's linkedin_url
+// from Apollo enrichment.
+//
+// Set LINKEDIN_ENABLED=true to activate. The agent creates HubSpot tasks
+// for manual LinkedIn actions unless HeyReach is configured.
+//
+// HeyReach handles all LinkedIn automation (connection requests, messages,
+// InMails, follows, profile views) via their API. We add leads to a campaign
+// and receive webhook events for the memory loop.
+//
+// HeyReach API: https://api.heyreach.io/api/public
+// Auth: X-API-KEY header, 300 req/min
+// Docs: https://documenter.getpostman.com/view/23808049/2sA2xb5F75
+
+export const LINKEDIN_CONFIG = {
+  /** Master toggle — enables LinkedIn as an outreach channel. */
+  enabled: process.env.LINKEDIN_ENABLED === 'true',
+
+  /** How LinkedIn actions are executed.
+   *  'manual-hubspot'  — Creates a HubSpot task for a human to send (default, safest)
+   *  'heyreach'        — Adds lead to a HeyReach campaign for automated LinkedIn outreach */
+  provider: (process.env.LINKEDIN_PROVIDER || 'manual-hubspot') as 'manual-hubspot' | 'heyreach',
+
+  /** Max connection requests per day (LinkedIn limits: ~100/week for Sales Nav, ~20/week free). */
+  dailyConnectionLimit: Number(process.env.LINKEDIN_DAILY_LIMIT) || 20,
+
+  /** Max characters for a connection request note (LinkedIn limit: 300). */
+  connectionNoteMaxChars: 300,
+
+  /** HeyReach API key.
+   *  Get it from: HeyReach → Settings → API → copy your API key.
+   *  Test it: GET https://api.heyreach.io/api/public/auth/CheckApiKey with X-API-KEY header. */
+  heyreachApiKey: process.env.HEYREACH_API_KEY || '',
+
+  /** HeyReach campaign ID to add leads to.
+   *  Create a LinkedIn outreach campaign in HeyReach, launch it at least once,
+   *  then paste the numeric campaign ID here.
+   *  Find it: HeyReach → Campaigns → click campaign → copy ID from URL. */
+  heyreachCampaignId: process.env.HEYREACH_CAMPAIGN_ID || '',
+};
+
+// ─── Phone / Call Outreach [OPTIONAL — off by default] ──────────────
+//
+// Call scripts are generated for contacts that score 80+ AND have a phone number.
+// Two output modes: a playbook for human SDRs, and a verbatim script for AI callers.
+//
+// The agent always creates a HubSpot CALL task. If an AI caller is configured,
+// it also triggers the call via API.
+
+export const CALL_CONFIG = {
+  /** Master toggle — enables phone call as an outreach channel. */
+  enabled: process.env.CALL_ENABLED === 'true',
+
+  /** Minimum ICP score to trigger a call task (high-intent only). */
+  minScoreForCall: Number(process.env.CALL_MIN_SCORE) || 80,
+
+  /** How calls are executed.
+   *  'manual-hubspot'  — Creates a HubSpot CALL task for a human rep (default)
+   *  'bland-ai'        — Triggers call via Bland.ai (POST /v1/calls, auth: authorization header)
+   *  'vapi'            — Triggers call via Vapi (POST /calls, auth: Bearer token)
+   *  'elevenlabs'      — Triggers call via ElevenLabs Conversational AI + Twilio (POST /v1/convai/twilio/outbound-call) */
+  provider: (process.env.CALL_PROVIDER || 'manual-hubspot') as 'manual-hubspot' | 'bland-ai' | 'vapi' | 'elevenlabs',
+
+  /** Max calls per day (protect rep capacity). */
+  dailyCallLimit: Number(process.env.CALL_DAILY_LIMIT) || 20,
+
+  /** Bland.ai API key (header: authorization). */
+  blandApiKey: process.env.BLAND_API_KEY || '',
+
+  /** Bland.ai outbound phone number (from field). */
+  blandPhoneNumberId: process.env.BLAND_PHONE_NUMBER_ID || '',
+
+  /** Vapi API key (header: Authorization: Bearer). */
+  vapiApiKey: process.env.VAPI_API_KEY || '',
+
+  /** Vapi assistant ID. */
+  vapiAssistantId: process.env.VAPI_ASSISTANT_ID || '',
+
+  /** ElevenLabs API key (header: xi-api-key). */
+  elevenlabsApiKey: process.env.ELEVENLABS_API_KEY || '',
+
+  /** ElevenLabs Conversational AI agent ID. */
+  elevenlabsAgentId: process.env.ELEVENLABS_AGENT_ID || '',
+
+  /** ElevenLabs phone number ID (registered with Twilio via ElevenLabs dashboard). */
+  elevenlabsPhoneNumberId: process.env.ELEVENLABS_PHONE_NUMBER_ID || '',
+
+  /** Webhook URL for receiving call completion events from AI voice providers.
+   *  Set this to your Trigger.dev webhook URL for the call-result-webhook task.
+   *  Bland.ai: passed as `webhook` in POST /v1/calls.
+   *  Vapi: configured as Server URL in Vapi dashboard or per-assistant.
+   *  ElevenLabs: configured in ElevenLabs General Settings → Webhooks. */
+  webhookUrl: process.env.CALL_WEBHOOK_URL || '',
+
+  /** ElevenLabs webhook secret for signature verification.
+   *  Set in ElevenLabs General Settings → Webhooks when creating the webhook. */
+  elevenlabsWebhookSecret: process.env.ELEVENLABS_WEBHOOK_SECRET || '',
+};
+
+// ─── Salesforce [OPTIONAL — only if CRM_SOURCE includes 'salesforce'] ──
+//
+// Salesforce CRM sync. Uses jsforce for REST API access.
+// Supports contacts, accounts (companies), tasks, and opportunities (deals).
+//
+// Set CRM_SOURCE=salesforce or CRM_SOURCE=both to enable.
+
+export const SALESFORCE_CONFIG = {
+  /** Salesforce login URL (use https://test.salesforce.com for sandboxes). */
+  loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
+
+  /** Salesforce username. */
+  username: process.env.SF_USERNAME || '',
+
+  /** Salesforce password. */
+  password: process.env.SF_PASSWORD || '',
+
+  /** Salesforce security token (appended to password). */
+  securityToken: process.env.SF_TOKEN || '',
+
+  /** SOQL WHERE clause to filter contacts (e.g., "Lead_Source__c = 'Personize'").
+   *  Leave empty to sync all contacts. */
+  contactFilter: process.env.SF_CONTACT_FILTER || '',
+
+  /** SOQL WHERE clause to filter accounts. */
+  accountFilter: process.env.SF_ACCOUNT_FILTER || '',
+
+  /** Contact fields to fetch during sync. */
+  contactFields: [
+    'Id', 'FirstName', 'LastName', 'Email', 'Title', 'Phone',
+    'Account.Name', 'Account.Website', 'LeadSource', 'Status__c',
+  ],
+
+  /** Account fields to fetch during sync. */
+  accountFields: [
+    'Id', 'Name', 'Website', 'Industry', 'NumberOfEmployees',
+    'AnnualRevenue', 'BillingCity', 'BillingState', 'BillingCountry',
+  ],
+
+  /** Sync opportunities (deals) for each contact. */
+  syncOpportunities: true,
+
+  /** Sync activities (tasks, events) for each contact. */
+  syncActivities: true,
+
+  /** Max activities per contact. */
+  maxActivitiesPerContact: 10,
+
+  /** Only sync activities from the last N days (0 = all). */
+  activityRecencyDays: 90,
+};
+
+// ─── Clay.com [OPTIONAL — off by default] ────────────────────────
+//
+// Clay is a data enrichment + workflow platform with 100+ providers.
+// Two integration modes:
+//
+//   webhook (default) — Clay POSTs enriched records to a Trigger.dev webhook.
+//                       Set up a Clay table, add enrichments, then add an HTTP POST
+//                       action pointing at your Trigger.dev webhook URL.
+//                       No polling, no API key needed on your side.
+//
+//   pull             — Your system pulls from a Clay table via HTTP API.
+//                       Requires CLAY_API_KEY. Runs on the crm-sync cron.
+//
+// Use Clay when you want waterfall enrichment (try Provider A, fall back to B, C),
+// AI-powered lead research, or to combine 75+ data sources without writing code.
+//
+// Set CLAY_ENABLED=true and configure your Clay table to POST to the webhook URL
+// shown in your Trigger.dev dashboard under "clay-webhook" task.
+
+export const CLAY_CONFIG = {
+  /** Master toggle — enables Clay as a data source. */
+  enabled: process.env.CLAY_ENABLED === 'true',
+
+  /** Integration mode.
+   *  'webhook' — Clay pushes enriched records to your Trigger.dev webhook (recommended)
+   *  'pull'    — Your system pulls from Clay table via API on the crm-sync schedule */
+  mode: (process.env.CLAY_MODE || 'webhook') as 'webhook' | 'pull',
+
+  /** Clay API key (only required for 'pull' mode).
+   *  Get it from: Clay → Settings → API Keys. */
+  apiKey: process.env.CLAY_API_KEY || '',
+
+  /** Clay table URL for pull mode (e.g., "https://api.clay.com/v1/tables/{table_id}/rows").
+   *  Find it in Clay → Table → Share → API. */
+  tableUrl: process.env.CLAY_TABLE_URL || '',
+
+  /** Webhook secret for verifying inbound Clay webhooks (optional but recommended).
+   *  Set the same value in Clay's HTTP POST action headers as X-Webhook-Secret. */
+  webhookSecret: process.env.CLAY_WEBHOOK_SECRET || '',
+
+  /** Which Personize collection to store Clay records in. */
+  targetCollection: (process.env.CLAY_TARGET_COLLECTION || 'contacts') as 'contacts' | 'companies',
+
+  /** Default tags applied to all Clay-imported records. */
+  tags: ['clay', 'enrichment', 'sync'],
+
+  /** Field mapping — maps Clay column names to Personize properties.
+   *  Set as JSON: {"clay_column": "personize_property"}
+   *  If empty, the pipeline uses sensible defaults (email, first_name, last_name, etc.). */
+  fieldMapping: process.env.CLAY_FIELD_MAPPING
+    ? JSON.parse(process.env.CLAY_FIELD_MAPPING) as Record<string, string>
+    : {} as Record<string, string>,
+
+  /** Max rows to pull per API call (pull mode only). */
+  pullBatchSize: Number(process.env.CLAY_PULL_BATCH_SIZE) || 100,
+
+  /** Max rows to pull per sync run (pull mode safety cap). */
+  maxRowsPerSync: Number(process.env.CLAY_MAX_ROWS_PER_SYNC) || 1000,
 };
 
 // ─── Enrichment ────────────────────────────────────────────────────

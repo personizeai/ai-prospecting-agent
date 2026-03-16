@@ -18,12 +18,22 @@ export const crmSyncTask = schedules.task({
 
       // Dynamic imports avoid crashing on missing env vars when a source is disabled.
       // e.g. HUBSPOT_ACCESS_TOKEN is not needed when source is 'csv'.
-      if (source === 'hubspot' || source === 'both') {
+      if (source === 'hubspot' || source === 'all') {
         const { syncHubSpot } = await import('../pipelines/sync-hubspot.js');
         await syncHubSpot();
       }
 
-      if (source === 'csv' || source === 'both') {
+      if (source === 'salesforce' || source === 'all') {
+        const { syncSalesforce } = await import('../pipelines/sync-salesforce.js');
+        await syncSalesforce();
+      }
+
+      if (source === 'clay' || source === 'all') {
+        const { syncClay } = await import('../pipelines/sync-clay.js');
+        await syncClay();
+      }
+
+      if (source === 'csv' || source === 'all') {
         const { syncCSV } = await import('../pipelines/sync-csv.js');
         await syncCSV();
       }
