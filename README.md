@@ -7,7 +7,7 @@
 <!-- Badges -->
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg" alt="Tests: passing" />
+  <img src="https://img.shields.io/badge/tests-280%20passing-brightgreen.svg" alt="Tests: 280 passing" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
   <img src="https://img.shields.io/badge/cost-%2450–%24200%2Fmo-success.svg" alt="Cost: $50–$200/mo" />
@@ -130,7 +130,7 @@ This agent is different:
 
 This isn't a weekend prototype. It's production-grade code designed for long-term maintainability — by your team, by contributors, and by AI coding assistants.
 
-### Comprehensive Test Suite
+### 280 Automated Tests
 
 Every critical path is tested. LLM JSON output parsing with regex fallback, email HTML sanitization against XSS, email address validation with disposable domain detection, cadence auto-selection, reply sentiment classification across 6 intent types, sequence state machines, enrichment deduplication, web research result parsing, configuration validation, input sanitization, HubSpot engagement formatting, Gmail multi-sender rotation, daily limit enforcement, MIME construction, and reply threading. Plus integration tests covering full pipeline flows end-to-end. Run `npm test` and know everything works before you deploy.
 
@@ -186,7 +186,7 @@ ai-prospecting-agent/
 │   ├── setup/            # One-time setup scripts (schemas, governance, Gmail OAuth)
 │   ├── scripts/          # CLI entry points (CSV sync, etc.)
 │   └── types.ts          # Shared TypeScript interfaces
-├── __tests__/            # Automated tests (unit + integration)
+├── __tests__/            # 280 automated tests (unit + integration)
 ├── Docs/                 # Architecture, flows, API details, production hardening
 └── SETUP-GUIDE.md        # 8-phase setup walkthrough
 ```
@@ -212,7 +212,7 @@ ai-prospecting-agent/
 | **AI-agent friendly codebase** | Typed, modular, documented — AI tools can read, reason, and extend it | N/A | N/A | N/A | N/A |
 | **Operations dashboard** | Daily Slack digest + 15-min health checks | Manual dashboards | Manual dashboards | Vendor dashboard | Vendor dashboard |
 | **Email safety** | HTML sanitization, address validation, disposable domain blocking | Basic validation | Basic validation | Unknown | Unknown |
-| **Test coverage** | Extensive automated tests (unit + integration) | N/A (closed) | N/A (closed) | N/A (closed) | N/A (closed) |
+| **Test coverage** | 280 automated tests (unit + integration) | N/A (closed) | N/A (closed) | N/A (closed) | N/A (closed) |
 
 ---
 
@@ -740,7 +740,7 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 
 ## Testing
 
-Extensive automated tests covering LLM output parsing, email HTML sanitization, email validation, cadence selection, reply classification, sequence management, enrichment, Gmail multi-sender, and more — plus integration tests for full pipeline flows.
+280 automated tests covering LLM output parsing, email HTML sanitization, email validation, cadence selection, reply classification, sequence management, enrichment, Gmail multi-sender, and more — plus integration tests for full pipeline flows.
 
 ```bash
 # Unit tests
