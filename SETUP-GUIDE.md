@@ -4,7 +4,7 @@ Everything you need to do, in order, to go from zero to a running AI prospecting
 
 ---
 
-## Phase 1: Get Your API Keys (30 minutes)
+## Phase 1: Get Your API Keys
 
 You need 4 accounts. All have free tiers or trials.
 

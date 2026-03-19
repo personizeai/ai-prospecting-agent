@@ -376,7 +376,7 @@ This allows running the OAuth flow on different ports or behind a reverse proxy.
 
 ## Test Coverage
 
-275 automated tests across unit and integration suites:
+Extensive automated tests across unit and integration suites:
 
 ```bash
 # Unit tests (all pipelines, utilities, configs)
