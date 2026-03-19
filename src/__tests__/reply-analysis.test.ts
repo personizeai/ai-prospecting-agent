@@ -113,7 +113,7 @@ REFERRED_CONTACT: N/A`;
 
 describe('Reply Action Routing', () => {
   it('positive reply creates urgent task for sales rep', () => {
-    const sentiment = 'positive';
+    const sentiment: string = 'positive';
     const urgency = 'high';
 
     const taskPriority = sentiment === 'positive' ? 'urgent' : 'medium';
@@ -126,7 +126,7 @@ describe('Reply Action Routing', () => {
   });
 
   it('question reply creates high-priority task with 4h SLA', () => {
-    const sentiment = 'question';
+    const sentiment: string = 'question';
     const dueInHours = sentiment === 'positive' ? 1 : sentiment === 'question' ? 4 : 24;
     assert.equal(dueInHours, 4);
   });
@@ -184,7 +184,7 @@ describe('Lead Status Updates by Sentiment', () => {
   });
 
   it('question reply sets status to Contacted', () => {
-    const sentiment = 'question';
+    const sentiment: string = 'question';
     const leadStatus = sentiment === 'positive' ? 'Engaged'
       : sentiment === 'question' ? 'Contacted'
       : 'Contacted';
@@ -208,19 +208,19 @@ describe('Lead Status Updates by Sentiment', () => {
 
 describe('HubSpot Task Creation', () => {
   it('positive reply creates CALL task', () => {
-    const sentiment = 'positive';
+    const sentiment: string = 'positive';
     const taskType = sentiment === 'positive' ? 'CALL' : 'EMAIL';
     assert.equal(taskType, 'CALL');
   });
 
   it('question reply creates EMAIL task', () => {
-    const sentiment = 'question';
+    const sentiment: string = 'question';
     const taskType = sentiment === 'positive' ? 'CALL' : 'EMAIL';
     assert.equal(taskType, 'EMAIL');
   });
 
   it('referral reply creates EMAIL task', () => {
-    const sentiment = 'referral';
+    const sentiment: string = 'referral';
     const taskType = sentiment === 'positive' ? 'CALL' : 'EMAIL';
     assert.equal(taskType, 'EMAIL');
   });

@@ -1,7 +1,21 @@
 node_modules/
 dist/
 .env
+.env.local
+.env.*.local
 .trigger/
 
-# Private SDK — remove before publishing to public GitHub
-personize-sdk-*.tgz
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts
+*.tgz

@@ -219,31 +219,31 @@ This reads from your `.env` file automatically.
 
 ## Phase 4: Set Up Personize (15 minutes)
 
-### 4.1 — Create Collections (Data Schema)
+### 4.1 — Run Setup (Collections + Governance)
 
-This creates 3 collections in Personize: Contacts, Companies, and Outreach Log.
+One command creates everything: 4 collections (Contacts, Companies, Outreach Log, Web Research) with workspace properties, and 8 governance variables that control the agent's behavior.
 
 ```bash
-npm run setup:schemas
+npm run setup
 ```
 
 **Expected output:**
 ```
-Created Contacts collection
-Created Companies collection
+Created Contacts collection (with workspace properties)
+Created Companies collection (with account workspace properties)
 Created Outreach Log collection
+Created Web Research collection
 Schema setup complete.
+Created: ICP Definition
+Created: Brand Voice
+Created: Outreach Playbook
+...
+Governance setup complete.
 ```
 
 If it says "already exists" — that's fine, it's idempotent.
 
-### 4.2 — Create Governance Variables
-
-This creates 5 governance variables that control the agent's behavior.
-
-```bash
-npm run setup:governance
-```
+### 4.2 — Customize Your Governance (IMPORTANT)
 
 **Expected output:**
 ```
@@ -253,8 +253,6 @@ Created: Outreach Playbook
 Created: Signal Definitions
 Created: Competitor Policy
 ```
-
-### 4.3 — Customize Your Governance (IMPORTANT)
 
 Go to [personize.ai](https://personize.ai) dashboard → **Governance** section.
 
@@ -270,12 +268,14 @@ Edit each variable with YOUR specific details:
 
 > **This is the most important step.** The quality of your outreach depends entirely on how specific and accurate these governance variables are. Spend 30-60 minutes getting these right.
 
-### 4.4 — Verify Setup
+### 4.3 — Verify Setup
 
 Go to the Personize dashboard and confirm:
-- 3 collections visible (Contacts, Companies, Outreach Log)
-- 5 governance variables visible
+- 4 collections visible (Contacts, Companies, Outreach Log, Web Research)
+- 8 governance variables visible
 - All governance variables have your real content (not the placeholder text)
+
+> The agent also runs a health check every 15 minutes that validates governance is configured. If governance variables are empty, you'll see a "degraded" warning in Slack.
 
 ---
 
@@ -533,9 +533,8 @@ These are optional integrations that make the agent smarter.
 # Install
 npm install
 
-# Setup (run once)
-npm run setup:schemas
-npm run setup:governance
+# Setup (run once — creates collections + governance)
+npm run setup
 
 # Test
 npm test

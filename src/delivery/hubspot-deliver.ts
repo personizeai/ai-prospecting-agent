@@ -1,7 +1,7 @@
 import { Client as HubSpotClient } from '@hubspot/api-client';
-import { client } from '../config.js';
+import { AssociationSpecAssociationCategoryEnum as EmailAssociationCategoryEnum } from '@hubspot/api-client/lib/codegen/crm/objects/emails/models/AssociationSpec.js';
+import { AssociationSpecAssociationCategoryEnum as TaskAssociationCategoryEnum } from '@hubspot/api-client/lib/codegen/crm/objects/tasks/models/AssociationSpec.js';
 import { sendViaGmail } from './gmail.js';
-import { sendViaSendGrid } from './sendgrid.js';
 import { sendViaSmartlead } from './smartlead.js';
 import { EMAIL_DELIVERY_CONFIG, MANUAL_HUBSPOT_CONFIG } from '../config/prospecting.config.js';
 import type { GeneratedEmail } from '../types.js';
@@ -26,7 +26,7 @@ export async function createHubSpotEmail(generated: GeneratedEmail, contactId: s
     associations: [
       {
         to: { id: contactId },
-        types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 198 }],
+        types: [{ associationCategory: EmailAssociationCategoryEnum.HubspotDefined, associationTypeId: 198 }],
       },
     ],
   });
@@ -54,7 +54,7 @@ export async function createHubSpotTask(generated: GeneratedEmail, contactId: st
     associations: [
       {
         to: { id: contactId },
-        types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 204 }],
+        types: [{ associationCategory: TaskAssociationCategoryEnum.HubspotDefined, associationTypeId: 204 }],
       },
     ],
   });
@@ -86,7 +86,7 @@ export async function createHubSpotFollowUpTask(params: {
       associations: [
         {
           to: { id: params.contactId },
-          types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 204 }],
+          types: [{ associationCategory: TaskAssociationCategoryEnum.HubspotDefined, associationTypeId: 204 }],
         },
       ],
     });
@@ -106,9 +106,9 @@ export async function createHubSpotFollowUpTask(params: {
  *   manual-hubspot — No send; creates a HubSpot task for human review
  *
  * All providers:
- *   - Record the email (sent or draft) in Personize memory so the next
- *     sequence step knows what was already written and which angles were used.
  *   - Log the activity in HubSpot (sent email record or review task).
+ *   - Return { messageId, senderEmail, isDraft } so callers can branch on draft status.
+ *   - Outreach state is tracked by workspace.addMessageSent() in the caller (outreach-sequence.ts).
  */
 export async function sendAndLog(generated: GeneratedEmail, contactId: string) {
   const log = logger.child({ pipeline: 'hubspot-deliver' });
@@ -122,72 +122,35 @@ export async function sendAndLog(generated: GeneratedEmail, contactId: string) {
     // Create HubSpot task for human review
     await createHubSpotTask(generated, contactId, ownerId);
 
-    // Memorize as DRAFT — sequence reads this to know the step was generated
-    // but will not advance past this step until a SENT record appears
-    await client.memory.memorize({
-      email: generated.email,
-      content: [
-        `[OUTREACH DRAFT \u2014 Email ${generated.step}]`,
-        `Date: ${new Date().toISOString()}`,
-        `Subject: ${generated.subject}`,
-        `Angle: ${generated.angle}`,
-        `Provider: manual-hubspot`,
-        `Status: Pending human review in HubSpot`,
-        `Body: ${generated.bodyText}`,
-      ].join('\n'),
-      enhanced: true,
-      tags: ['generated', 'outreach', `sequence:email-${generated.step}`, 'draft', 'manual-hubspot'],
-    });
-
     log.info('Manual draft created', { email: generated.email, step: generated.step, provider });
-    return { messageId: '', senderEmail: '' };
+    return { messageId: '', senderEmail: '', isDraft: true };
   }
 
   // ── send paths ─────────────────────────────────────────────────
   let messageId = '';
   let senderEmail = '';
-  let providerMeta = '';
 
   if (provider === 'smartlead') {
     const result = await sendViaSmartlead(generated);
     messageId = result.messageId;
     senderEmail = result.senderEmail;
-    providerMeta = `Smartlead Lead ID: ${result.leadId}`;
 
   } else if (provider === 'sendgrid') {
+    const { sendViaSendGrid } = await import('./sendgrid.js');
     const response = await sendViaSendGrid(generated);
     messageId = response[0]?.headers?.['x-message-id'] || '';
     senderEmail = process.env.SENDER_EMAIL || '';
-    providerMeta = `SendGrid Message ID: ${messageId}`;
 
   } else {
     // gmail (default fallback)
     const result = await sendViaGmail(generated);
     messageId = result.messageId;
     senderEmail = result.senderEmail;
-    providerMeta = `Gmail Message ID: ${result.messageId} | Thread ID: ${result.threadId}`;
   }
 
   // Log sent email activity in HubSpot
   await createHubSpotEmail(generated, contactId);
 
-  // Memorize as SENT — sequence reads this to advance to the next step
-  await client.memory.memorize({
-    email: generated.email,
-    content: [
-      `[OUTREACH SENT \u2014 Email ${generated.step}]`,
-      `Date: ${new Date().toISOString()}`,
-      `Subject: ${generated.subject}`,
-      `Angle: ${generated.angle}`,
-      `Provider: ${provider}`,
-      `Sender: ${senderEmail}`,
-      providerMeta,
-      `Body: ${generated.bodyText}`,
-    ].join('\n'),
-    enhanced: true,
-    tags: ['generated', 'outreach', `sequence:email-${generated.step}`, 'sent', `provider:${provider}`, `sender:${senderEmail}`],
-  });
-
   log.info('Email sent', { email: generated.email, step: generated.step, provider, senderEmail });
-  return { messageId, senderEmail };
+  return { messageId, senderEmail, isDraft: false };
 }

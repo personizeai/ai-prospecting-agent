@@ -4,61 +4,10 @@ import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { OUTREACH_EMAIL_SCHEMA, OUTREACH_EMAIL_DEFAULTS } from '../lib/llm-schemas.js';
 import { validateEmailHtml } from '../lib/email-html.js';
 import { getCadence, type CadenceDefinition, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
+import { AGENT_MODE } from '../config/prospecting.config.js';
 import { accountPreflight } from './account-preflight.js';
 import { logger } from '../lib/logger.js';
-
-// Matches SENT emails (all delivery providers)
-const OUTREACH_SENT_PATTERN = /\[OUTREACH SENT\s*[-\u2014\u2013]+\s*Email (\d+)\]/;
-
-// Matches DRAFT emails (manual-hubspot provider — task created, not yet sent by human)
-// Drafts count toward sequence position so the next step isn't regenerated,
-// but the sequence waits for a SENT record before advancing past a draft step.
-const OUTREACH_DRAFT_PATTERN = /\[OUTREACH DRAFT\s*[-\u2014\u2013]+\s*Email (\d+)\]/;
-
-/** Read outreach state from Personize memory (serverless-compatible). */
-async function getOutreachState(email: string): Promise<{
-  emailsSent: number;
-  lastSentAt: string;
-  hasDraftAtStep: number | null;
-}> {
-  const history = await client.memory.recall({
-    message: `outreach sequence emails sent to ${email}`,
-    limit: 10,
-  });
-
-  let emailsSent = 0;
-  let lastSentAt = '';
-  let hasDraftAtStep: number | null = null;
-
-  for (const item of history.data || []) {
-    const content = item.content || '';
-
-    const sentMatch = content.match(OUTREACH_SENT_PATTERN);
-    if (sentMatch) {
-      emailsSent = Math.max(emailsSent, parseInt(sentMatch[1], 10));
-      const dateMatch = content.match(/Date:\s*(.+)/);
-      if (dateMatch) {
-        const sentDate = dateMatch[1].trim();
-        const sentTime = new Date(sentDate).getTime();
-        const lastTime = lastSentAt ? new Date(lastSentAt).getTime() : 0;
-        if (!isNaN(sentTime) && sentTime > lastTime) {
-          lastSentAt = sentDate;
-        }
-      }
-      continue;
-    }
-
-    // Draft: counts toward position but flags that a human hasn't sent it yet
-    const draftMatch = content.match(OUTREACH_DRAFT_PATTERN);
-    if (draftMatch) {
-      const draftStep = parseInt(draftMatch[1], 10);
-      emailsSent = Math.max(emailsSent, draftStep);
-      hasDraftAtStep = draftStep;
-    }
-  }
-
-  return { emailsSent, lastSentAt, hasDraftAtStep };
-}
+import { workspace } from '../lib/workspace.js';
 
 /** Assemble full context: governance + contact + company + previous outreach. */
 export async function assembleContext(email: string): Promise<string> {
@@ -83,8 +32,13 @@ export async function assembleContext(email: string): Promise<string> {
     }),
   ]);
 
+  const governanceContent = guidelines.data?.compiledContext || '';
+  if (!governanceContent) {
+    logger.warn('Governance is empty — emails will generate without brand voice, ICP, or playbook rules. Run: npm run setup:governance');
+  }
+
   return [
-    '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
+    '## GOVERNANCE\n' + (governanceContent || 'No governance configured.'),
     '## CONTACT PROFILE\n' + (contactDigest.data?.compiledContext || ''),
     '## COMPANY CONTEXT\n' + (companyContext.data?.map((r: any) => r.content).join('\n') || 'No company data.'),
     '## PREVIOUS OUTREACH\n' + (previousOutreach.data?.map((r: any) => r.content).join('\n') || 'No previous outreach.'),
@@ -152,7 +106,7 @@ export async function generateOutreachForContact(
     cadence = getCadence(icpScore);
   }
 
-  const contactState = await getOutreachState(email);
+  const contactState = await workspace.getSequenceState(email);
 
   if (contactState.emailsSent >= cadence.maxEmails) {
     log.info('Sequence complete, skipping', { email, sent: cadence.maxEmails, max: cadence.maxEmails });
@@ -195,19 +149,25 @@ export async function generateOutreachForContact(
     context = `## ACCOUNT STRATEGY CONTEXT\n${accountContext}\n\n---\n\n${context}`;
   }
 
+  // Use agent mode terminology for multi-vertical support
+  const t = AGENT_MODE.terminology;
+  const entityLabel = t.entity; // e.g., "prospect", "member", "candidate", "donor"
+  const actionLabel = t.action; // e.g., "prospecting", "outreach", "follow-up", "nurture"
+  const conversionLabel = t.conversion; // e.g., "deal", "appointment", "renewal", "enrollment"
+
   const result = await client.ai.prompt({
     ...aiOptions,
     context,
     instructions: [
       {
-        prompt: `Analyze the contact and company. Identify: their role, likely pain points, strongest personalization angle, and what buying signals exist. If previous emails were sent, note what angles were used so we don't repeat.`,
+        prompt: `Analyze the ${entityLabel} and their ${t.organization}. Identify: their role, likely pain points, strongest personalization angle, and what signals exist. If previous emails were sent, note what angles were used so we don't repeat. If the ${entityLabel} opened or clicked previous emails, note which topics or links engaged them — prioritize those angles.`,
         maxSteps: 2,
       },
       {
-        prompt: `Generate Email ${nextStep} of ${cadence.maxEmails} for this prospect. This is a cold outreach sequence (${cadence.label}).
-${nextStep === 1 ? 'Email 1: Specific observation about them/their company + our value prop + soft CTA. Max 150 words.' : ''}
-${nextStep === 2 ? "Email 2: Different angle/insight than Email 1 + how it relates to their situation + medium CTA. Max 120 words. Reference Email 1 existence but don't repeat its content." : ''}
-${nextStep >= 3 && nextStep < cadence.maxEmails ? `Email ${nextStep}: New angle, build on previous touches. Medium CTA. Max 120 words.` : ''}
+        prompt: `Generate Email ${nextStep} of ${cadence.maxEmails} for this ${entityLabel}. This is a ${actionLabel} sequence (${cadence.label}).
+${nextStep === 1 ? `Email 1: Specific observation about them/their ${t.organization} + our value prop + soft CTA. Max 150 words.` : ''}
+${nextStep === 2 ? `Email 2: Different angle/insight than Email 1 + how it relates to their situation + medium CTA. Max 120 words. Reference Email 1 existence but don't repeat its content. If they opened or clicked Email 1, lean into the topic that engaged them.` : ''}
+${nextStep >= 3 && nextStep < cadence.maxEmails ? `Email ${nextStep}: New angle, build on previous touches. If they showed engagement (opens/clicks), reference those signals. Medium CTA. Max 120 words.` : ''}
 ${nextStep === cadence.maxEmails ? `Email ${nextStep} (final): Brief and direct. One final compelling reason + binary yes/no CTA. Max 100 words.` : ''}
 
 ${buildJsonInstruction(OUTREACH_EMAIL_SCHEMA)}`,
@@ -215,7 +175,7 @@ ${buildJsonInstruction(OUTREACH_EMAIL_SCHEMA)}`,
       },
     ],
     evaluate: true,
-    evaluationCriteria: 'Email must: (1) reference at least 1 specific fact about the contact/company from context, (2) follow brand voice guidelines, (3) have a single clear CTA, (4) stay within word limit, (5) not repeat angles from previous emails, (6) not invent any claims or stats.',
+    evaluationCriteria: `Email must: (1) reference at least 1 specific fact about the ${entityLabel}/${t.organization} from context, (2) follow brand voice guidelines, (3) have a single clear CTA, (4) stay within word limit, (5) not repeat angles from previous emails, (6) not invent any claims or stats.`,
   });
 
   const output = String(result.data || '');

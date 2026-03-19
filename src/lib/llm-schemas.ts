@@ -491,7 +491,7 @@ export const LINKEDIN_EVENT_ANALYSIS_SCHEMA = {
     type: 'string',
     required: true,
   },
-};
+} as const satisfies SchemaMap;
 
 export const LINKEDIN_EVENT_ANALYSIS_DEFAULTS = {
   outcome: 'neutral',

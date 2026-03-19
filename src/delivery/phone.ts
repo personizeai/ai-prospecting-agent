@@ -18,30 +18,18 @@ import { CALL_CONFIG, MANUAL_HUBSPOT_CONFIG } from '../config/prospecting.config
 import { createHubSpotFollowUpTask } from './hubspot-deliver.js';
 import { workspace } from '../lib/workspace.js';
 import { logger } from '../lib/logger.js';
+import { incrementCallCount, getCallCount } from '../lib/capacity-store.js';
+import { buildElevenLabsOutboundCallPayload } from '../lib/voice-provider-payloads.js';
 import type { GeneratedCallScript } from '../types.js';
 
 const log = logger.child({ pipeline: 'phone-deliver' });
 
-/** Daily call tracking (resets per UTC day). */
-const dailyCalls = new Map<string, number>();
-
-function getTodayKey(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
 function getRemainingCapacity(): number {
-  const today = getTodayKey();
-  const called = dailyCalls.get(today) || 0;
-  return Math.max(0, CALL_CONFIG.dailyCallLimit - called);
+  return Math.max(0, CALL_CONFIG.dailyCallLimit - getCallCount());
 }
 
 function recordCall(): void {
-  const today = getTodayKey();
-  dailyCalls.set(today, (dailyCalls.get(today) || 0) + 1);
-
-  for (const key of dailyCalls.keys()) {
-    if (key !== today) dailyCalls.delete(key);
-  }
+  incrementCallCount();
 }
 
 export interface CallSendResult {
@@ -311,22 +299,12 @@ async function triggerElevenLabsCall(script: GeneratedCallScript): Promise<strin
       'Content-Type': 'application/json',
       'xi-api-key': elevenlabsApiKey,
     },
-    body: JSON.stringify({
-      agent_id: elevenlabsAgentId,
-      agent_phone_number_id: elevenlabsPhoneNumberId,
-      to_number: script.phone,
-      conversation_initiation_client_data: {
-        dynamic_variables: {
-          contact_name: script.contactName,
-          contact_title: script.contactTitle,
-          opener: script.opener,
-          hook: script.hook,
-          ask: script.ask,
-          script: script.aiCallerScript,
-        },
-      },
-      call_recording_enabled: true,
-    }),
+    body: JSON.stringify(
+      buildElevenLabsOutboundCallPayload(script, {
+        agentId: elevenlabsAgentId,
+        phoneNumberId: elevenlabsPhoneNumberId,
+      }),
+    ),
   });
 
   if (!response.ok) {

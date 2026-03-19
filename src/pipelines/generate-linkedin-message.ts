@@ -20,6 +20,7 @@ import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { LINKEDIN_MESSAGE_SCHEMA, LINKEDIN_MESSAGE_DEFAULTS } from '../lib/llm-schemas.js';
 import { logger } from '../lib/logger.js';
 import type { GeneratedLinkedInMessage } from '../types.js';
+import { workspace } from '../lib/workspace.js';
 
 const log = logger.child({ pipeline: 'generate-linkedin' });
 
@@ -45,19 +46,10 @@ async function getLinkedInState(email: string): Promise<{
   return { connectionSent, messagesSent };
 }
 
-/** Check if Email 1 has been sent (LinkedIn only goes out AFTER Email 1). */
+/** Check if Email 1 has been sent via structured workspace state. */
 async function hasEmail1BeenSent(email: string): Promise<boolean> {
-  const history = await client.memory.recall({
-    message: `outreach sent email 1 to ${email}`,
-    limit: 5,
-  });
-
-  for (const item of history.data || []) {
-    const content = item.content || '';
-    if (/\[OUTREACH SENT\s*[-\u2014\u2013]+\s*Email 1\]/.test(content)) return true;
-  }
-
-  return false;
+  const state = await workspace.getSequenceState(email);
+  return state.emailsSent >= 1;
 }
 
 /**

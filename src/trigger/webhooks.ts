@@ -47,26 +47,15 @@ export const engagementWebhookTask = task({
     url?: string;
     subject?: string;
     body?: string;
+    timestamp?: string;
   }) => {
     if (!payload.email || !payload.event) {
       logger.warn('Malformed engagement payload, skipping', { payload });
       return { processed: false, reason: 'malformed_payload' };
     }
 
+    const idempotencyKey = `engagement-${payload.email}-${payload.event}-${payload.timestamp || Date.now()}`;
     const eventUpper = payload.event.toUpperCase();
-
-    // Write to raw memory (backward compatibility)
-    await client.memory.memorize({
-      email: payload.email,
-      content: [
-        `[EMAIL ENGAGEMENT \u2014 ${eventUpper}]`,
-        `Date: ${new Date().toISOString()}`,
-        `Event: ${payload.event}`,
-        payload.url ? `Link clicked: ${payload.url}` : '',
-      ].filter(Boolean).join('\n'),
-      enhanced: true,
-      tags: ['engagement', payload.event],
-    });
 
     // Write structured update to workspace
     await workspace.addUpdate(payload.email, {
@@ -135,13 +124,12 @@ export const engagementWebhookTask = task({
 
     // ─── Unsubscribe / Spam Report ─────────────────────────────
     if (payload.event === 'unsubscribe' || payload.event === 'spamreport') {
-      await workspace.raiseIssue(payload.email, {
-        title: `Lead ${payload.event === 'unsubscribe' ? 'unsubscribed' : 'reported as spam'}`,
-        description: `Do NOT send any more emails. ${payload.event === 'spamreport' ? 'Compliance risk — review immediately.' : ''}`,
-        severity: 'critical',
-        status: 'open',
-        raisedBy: 'engagement-webhook',
-      });
+      // Soft-delete: all read paths automatically exclude this record
+      await workspace.softDelete(
+        payload.email,
+        payload.event === 'spamreport' ? 'spam_report' : 'unsubscribe',
+        'engagement-webhook',
+      );
 
       await workspace.rewriteContext(payload.email, [
         `Sequence Status: STOPPED (${payload.event}).`,
@@ -149,7 +137,7 @@ export const engagementWebhookTask = task({
       ].join('\n'), 'engagement-webhook');
 
       await notifySlack(
-        `*${payload.event === 'spamreport' ? 'SPAM REPORT' : 'Unsubscribe'}* from ${payload.email} — removed from sequences.`
+        `*${payload.event === 'spamreport' ? 'SPAM REPORT' : 'Unsubscribe'}* from ${payload.email} — record soft-deleted from all queries.`
       );
     }
 
@@ -158,7 +146,7 @@ export const engagementWebhookTask = task({
       const state = await workspace.getSequenceState(payload.email);
       if (!state.hasReplied && !state.hasOptedOut) {
         await workspace.rewriteContext(payload.email, [
-          `Sequence Status: Email ${state.emailsSent}/3 sent. Lead ${eventUpper} the email.`,
+          `Sequence Status: Email ${state.emailsSent} sent. Lead ${eventUpper} the email.`,
           payload.event === 'click' ? `Clicked: ${payload.url}` : '',
           'Signal: Interested — prioritize next touchpoint.',
         ].filter(Boolean).join('\n'), 'engagement-webhook');

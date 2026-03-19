@@ -28,31 +28,17 @@ import { LINKEDIN_CONFIG, MANUAL_HUBSPOT_CONFIG } from '../config/prospecting.co
 import { createHubSpotFollowUpTask } from './hubspot-deliver.js';
 import { workspace } from '../lib/workspace.js';
 import { logger } from '../lib/logger.js';
+import { getLinkedInSendCount, incrementLinkedInSendCount } from '../lib/capacity-store.js';
 import type { GeneratedLinkedInMessage } from '../types.js';
 
 const log = logger.child({ pipeline: 'linkedin-deliver' });
 
-/** Daily send tracking (resets per UTC day). */
-const dailySends = new Map<string, number>();
-
-function getTodayKey(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
 function getRemainingCapacity(): number {
-  const today = getTodayKey();
-  const sent = dailySends.get(today) || 0;
-  return Math.max(0, LINKEDIN_CONFIG.dailyConnectionLimit - sent);
+  return Math.max(0, LINKEDIN_CONFIG.dailyConnectionLimit - getLinkedInSendCount());
 }
 
 function recordSend(): void {
-  const today = getTodayKey();
-  dailySends.set(today, (dailySends.get(today) || 0) + 1);
-
-  // Clean up old days
-  for (const key of dailySends.keys()) {
-    if (key !== today) dailySends.delete(key);
-  }
+  incrementLinkedInSendCount();
 }
 
 export interface LinkedInSendResult {

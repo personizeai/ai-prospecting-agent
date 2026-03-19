@@ -1,6 +1,7 @@
 import { client } from '../config.js';
 import { getRemainingCapacity } from '../delivery/gmail.js';
 import { GMAIL_CONFIG } from '../config/prospecting.config.js';
+import { memoryCrud } from './personize-crud.js';
 
 export interface DailyMetrics {
   timestamp: string;
@@ -30,8 +31,9 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   const needsAttention: DailyMetrics['needsAttention'] = [];
 
   // ─── Outreach Metrics ──────────────────────────────────────────────
-  const outreachMemory = await client.memory.recall({
-    message: 'outreach sent today',
+  const outreachResult = await memoryCrud.filterByProperty({
+    type: 'Contact',
+    conditions: [{ propertyName: 'emails_sent', operator: 'gt', value: 0 }],
     limit: 100,
   });
 
@@ -40,44 +42,43 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   let sequencesCompleted = 0;
   let optedOut = 0;
 
-  for (const entry of outreachMemory.data?.results ?? []) {
-    const text = entry.memory ?? '';
+  for (const record of outreachResult.records) {
+    const count = Number(record.matchedProperties?.emails_sent) || 0;
+    emailsSent += count;
 
-    if (text.includes('[OUTREACH SENT]')) {
-      emailsSent++;
-      const stepMatch = text.match(/step[:\s]*(\w+[\s\w]*\d*)/i);
-      const stepKey = stepMatch ? stepMatch[1].trim() : 'unknown';
-      byStep[stepKey] = (byStep[stepKey] || 0) + 1;
+    // Count by step from messages_sent if available
+    const msgs = record.matchedProperties?.messages_sent;
+    if (Array.isArray(msgs)) {
+      for (const msg of msgs) {
+        const stepKey = `Email ${msg.step}`;
+        byStep[stepKey] = (byStep[stepKey] || 0) + 1;
+      }
     }
 
-    if (text.includes('[SEQUENCE COMPLETED]')) {
+    // Track completed sequences
+    if (record.matchedProperties?.sequence_status === 'Completed') {
       sequencesCompleted++;
     }
 
-    if (text.includes('[OPT-OUT]') || text.includes('[OPTED OUT]')) {
+    // Track opt-outs
+    if (record.matchedProperties?.sequence_status === 'OptedOut') {
       optedOut++;
     }
   }
 
   // ─── Reply Metrics ─────────────────────────────────────────────────
-  const replyMemory = await client.memory.recall({
-    message: 'reply received today',
+  const replyResult = await memoryCrud.filterByProperty({
+    type: 'Contact',
+    conditions: [{ propertyName: 'sequence_status', operator: 'equals', value: 'Replied' }],
     limit: 50,
   });
 
-  let totalReplies = 0;
+  const totalReplies = replyResult.totalMatched;
   const bySentiment: Record<string, number> = {};
 
-  for (const entry of replyMemory.data?.results ?? []) {
-    const text = entry.memory ?? '';
-
-    if (text.includes('[REPLY')) {
-      totalReplies++;
-
-      const sentimentMatch = text.match(/sentiment[:\s]*(\w+)/i);
-      const sentiment = sentimentMatch ? sentimentMatch[1].toLowerCase() : 'unknown';
-      bySentiment[sentiment] = (bySentiment[sentiment] || 0) + 1;
-    }
+  for (const record of replyResult.records) {
+    const sentiment = (record.matchedProperties?.sentiment as string)?.toLowerCase() || 'unknown';
+    bySentiment[sentiment] = (bySentiment[sentiment] || 0) + 1;
   }
 
   // Flag replies needing follow-up

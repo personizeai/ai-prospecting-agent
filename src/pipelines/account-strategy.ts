@@ -66,8 +66,8 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
   // ── STEP 2: Format context for AI ───────────────────────────────
 
   const contactSummaries = contacts.map((c) => {
-    const ws = contactRollup.workspaceStates[c.email] ?? [];
-    const wsContext = ws.map((r: any) => r.text || r.content || '').join(' | ').substring(0, 300);
+    const ws = contactRollup.workspaceStates[c.email] ?? {};
+    const wsContext = `Status: ${ws.sequenceStatus || 'Unknown'} | Emails: ${ws.emailsSent || 0} | Tasks: ${(ws.pendingTasks || []).length} | Issues: ${(ws.openIssues || []).length}`;
     return [
       `- ${c.firstName} ${c.lastName} (${c.jobTitle || 'Unknown role'})`,
       `  Email: ${c.email}`,
@@ -80,13 +80,12 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
     ].join('\n');
   }).join('\n\n');
 
-  const previousStrategyText = ((previousStrategy.data as any)?.results ?? [])
-    .map((r: any) => r.text || r.content || '')
-    .join('\n---\n')
-    .substring(0, 2000);
+  const previousStrategyText = previousStrategy
+    ? JSON.stringify(previousStrategy).substring(0, 2000)
+    : 'No previous strategy.';
 
-  const issuesSummary = ((accountIssues.data as any)?.results ?? [])
-    .map((r: any) => r.text || r.content || '')
+  const issuesSummary = (Array.isArray(accountIssues) ? accountIssues : [])
+    .map((i: any) => `[${i.severity?.toUpperCase()}] ${i.title}: ${i.description}`)
     .join('\n')
     .substring(0, 1000);
 

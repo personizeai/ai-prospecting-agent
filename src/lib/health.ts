@@ -36,6 +36,9 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
     const capacity = getRemainingCapacity();
     const totalLimit = GMAIL_CONFIG.senders.reduce((sum, s) => sum + s.dailyLimit, 0);
     const percentRemaining = totalLimit > 0 ? (capacity.total / totalLimit) * 100 : 0;
+    const storeDetail = capacity.store.mode === 'file'
+      ? `tracked via ${capacity.store.path}`
+      : `using in-memory fallback (${capacity.store.lastError || 'store unavailable'})`;
 
     if (GMAIL_CONFIG.senders.length === 0) {
       hasDegraded = true;
@@ -44,18 +47,25 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
         latency_ms: Date.now() - gmailStart,
         detail: 'No Gmail senders configured',
       };
+    } else if (capacity.store.mode !== 'file') {
+      hasDegraded = true;
+      checks['gmail'] = {
+        status: 'estimated_capacity',
+        latency_ms: Date.now() - gmailStart,
+        detail: `${capacity.total}/${totalLimit} sends remaining; ${storeDetail}`,
+      };
     } else if (percentRemaining < 20) {
       hasDegraded = true;
       checks['gmail'] = {
         status: 'low_capacity',
         latency_ms: Date.now() - gmailStart,
-        detail: `${capacity.total}/${totalLimit} sends remaining (${Math.round(percentRemaining)}%)`,
+        detail: `${capacity.total}/${totalLimit} sends remaining (${Math.round(percentRemaining)}%); ${storeDetail}`,
       };
     } else {
       checks['gmail'] = {
         status: 'ok',
         latency_ms: Date.now() - gmailStart,
-        detail: `${capacity.total}/${totalLimit} sends remaining`,
+        detail: `${capacity.total}/${totalLimit} sends remaining; ${storeDetail}`,
       };
     }
   } catch (err) {
@@ -93,6 +103,37 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
     latency_ms: 0,
     detail: hubspotConfigured ? 'Access token configured' : 'HUBSPOT_ACCESS_TOKEN not set',
   };
+
+  // ─── Governance ──────────────────────────────────────────────────
+  const govStart = Date.now();
+  try {
+    const guidelines = await client.ai.smartGuidelines({
+      message: 'brand voice, outreach playbook, ICP definition',
+      mode: 'fast',
+    });
+    const content = guidelines.data?.compiledContext || '';
+    if (!content || content.length < 50) {
+      hasDegraded = true;
+      checks['governance'] = {
+        status: 'not_configured',
+        latency_ms: Date.now() - govStart,
+        detail: 'Governance variables empty or not set — emails will generate without brand voice. Run: npm run setup:governance',
+      };
+    } else {
+      checks['governance'] = {
+        status: 'ok',
+        latency_ms: Date.now() - govStart,
+        detail: `${content.length} chars of governance context available`,
+      };
+    }
+  } catch (err) {
+    hasDegraded = true;
+    checks['governance'] = {
+      status: 'error',
+      latency_ms: Date.now() - govStart,
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
 
   // ─── Aggregate Status ─────────────────────────────────────────────
   let status: HealthCheckResult['status'] = 'healthy';

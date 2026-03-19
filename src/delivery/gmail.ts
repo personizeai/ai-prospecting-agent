@@ -2,6 +2,11 @@ import { google } from 'googleapis';
 import { GMAIL_CONFIG, type GmailSender } from '../config/prospecting.config.js';
 import type { GeneratedEmail } from '../types.js';
 import { isValidEmail } from '../lib/email-validator.js';
+import {
+  getCapacityStoreStatus,
+  getGmailSendCount,
+  incrementGmailSendCount,
+} from '../lib/capacity-store.js';
 
 /**
  * Gmail API multi-sender for Google Workspace.
@@ -17,34 +22,6 @@ import { isValidEmail } from '../lib/email-validator.js';
  *   4. Configure via GMAIL_SENDERS env var (JSON array) or single-sender env vars
  */
 
-// ─── Daily Send Tracking ─────────────────────────────────────────────
-
-/** In-memory daily send counter per sender. Resets at midnight UTC. */
-const dailySends: Map<string, { count: number; date: string }> = new Map();
-
-function getTodayUTC(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
-function getSendCount(senderEmail: string): number {
-  const entry = dailySends.get(senderEmail);
-  const today = getTodayUTC();
-  if (!entry || entry.date !== today) return 0;
-  return entry.count;
-}
-
-function incrementSendCount(senderEmail: string): void {
-  const today = getTodayUTC();
-  const entry = dailySends.get(senderEmail);
-  if (!entry || entry.date !== today) {
-    dailySends.set(senderEmail, { count: 1, date: today });
-  } else {
-    entry.count++;
-  }
-}
-
-// ─── Sender Selection ─────────────────────────────────────────────────
-
 let roundRobinIndex = 0;
 
 /**
@@ -55,9 +32,8 @@ export function selectSender(): GmailSender | null {
   const { senders, strategy } = GMAIL_CONFIG;
   if (senders.length === 0) return null;
 
-  // Filter to senders under their daily limit
   const available = senders.filter(
-    (s) => getSendCount(s.email) < s.dailyLimit,
+    (sender) => getGmailSendCount(sender.email) < sender.dailyLimit,
   );
 
   if (available.length === 0) return null;
@@ -66,7 +42,6 @@ export function selectSender(): GmailSender | null {
     return available[Math.floor(Math.random() * available.length)];
   }
 
-  // Round-robin: cycle through available senders
   const sender = available[roundRobinIndex % available.length];
   roundRobinIndex = (roundRobinIndex + 1) % available.length;
   return sender;
@@ -75,19 +50,22 @@ export function selectSender(): GmailSender | null {
 /**
  * Get remaining capacity across all senders for today.
  */
-export function getRemainingCapacity(): { total: number; perSender: Array<{ email: string; remaining: number }> } {
-  const perSender = GMAIL_CONFIG.senders.map((s) => ({
-    email: s.email,
-    remaining: Math.max(0, s.dailyLimit - getSendCount(s.email)),
+export function getRemainingCapacity(): {
+  total: number;
+  perSender: Array<{ email: string; remaining: number }>;
+  store: ReturnType<typeof getCapacityStoreStatus>;
+} {
+  const perSender = GMAIL_CONFIG.senders.map((sender) => ({
+    email: sender.email,
+    remaining: Math.max(0, sender.dailyLimit - getGmailSendCount(sender.email)),
   }));
 
   return {
-    total: perSender.reduce((sum, s) => sum + s.remaining, 0),
+    total: perSender.reduce((sum, sender) => sum + sender.remaining, 0),
     perSender,
+    store: getCapacityStoreStatus(),
   };
 }
-
-// ─── OAuth2 ───────────────────────────────────────────────────────────
 
 function getOAuth2Client(sender: GmailSender) {
   if (!GMAIL_CONFIG.clientId || !GMAIL_CONFIG.clientSecret) {
@@ -102,8 +80,6 @@ function getOAuth2Client(sender: GmailSender) {
   oauth2.setCredentials({ refresh_token: sender.refreshToken });
   return oauth2;
 }
-
-// ─── MIME Building ────────────────────────────────────────────────────
 
 /**
  * Build a RFC 2822 MIME message with both HTML and plain-text parts.
@@ -122,21 +98,21 @@ export function buildMimeMessage(params: {
     `From: ${params.fromName} <${params.from}>`,
     `To: ${params.to}`,
     `Subject: ${params.subject}`,
-    `MIME-Version: 1.0`,
+    'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    ``,
+    '',
     `--${boundary}`,
-    `Content-Type: text/plain; charset="UTF-8"`,
-    `Content-Transfer-Encoding: quoted-printable`,
-    ``,
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: 8bit',
+    '',
     params.bodyText,
-    ``,
+    '',
     `--${boundary}`,
-    `Content-Type: text/html; charset="UTF-8"`,
-    `Content-Transfer-Encoding: quoted-printable`,
-    ``,
+    'Content-Type: text/html; charset="UTF-8"',
+    'Content-Transfer-Encoding: 8bit',
+    '',
     params.bodyHtml,
-    ``,
+    '',
     `--${boundary}--`,
   ];
 
@@ -154,8 +130,6 @@ export function encodeMessage(mime: string): string {
     .replace(/=+$/, '');
 }
 
-// ─── Send ─────────────────────────────────────────────────────────────
-
 export interface GmailSendResult {
   messageId: string;
   threadId: string;
@@ -170,7 +144,6 @@ export interface GmailSendResult {
  * Throws if no senders are available (all exhausted or none configured).
  */
 export async function sendViaGmail(generated: GeneratedEmail): Promise<GmailSendResult> {
-  // Validate email before sending — fail fast on bad addresses
   if (!isValidEmail(generated.email)) {
     throw new Error(`Invalid recipient email address: "${generated.email}"`);
   }
@@ -204,7 +177,7 @@ export async function sendViaGmail(generated: GeneratedEmail): Promise<GmailSend
     },
   });
 
-  incrementSendCount(sender.email);
+  incrementGmailSendCount(sender.email);
 
   return {
     messageId: response.data.id || '',
@@ -225,10 +198,9 @@ export async function sendGmailReply(
   threadId: string,
   senderEmail?: string,
 ): Promise<GmailSendResult> {
-  // Use the specified sender, or fall back to auto-selection
   let sender: GmailSender | null = null;
   if (senderEmail) {
-    sender = GMAIL_CONFIG.senders.find((s) => s.email === senderEmail) || null;
+    sender = GMAIL_CONFIG.senders.find((configuredSender) => configuredSender.email === senderEmail) || null;
   }
   if (!sender) {
     sender = selectSender();
@@ -257,7 +229,7 @@ export async function sendGmailReply(
     },
   });
 
-  incrementSendCount(sender.email);
+  incrementGmailSendCount(sender.email);
 
   return {
     messageId: response.data.id || '',

@@ -9,6 +9,7 @@ describe('Tavily Config Validation', () => {
     assert.ok(TAVILY_CONFIG.recencyDays > 0);
     assert.ok(TAVILY_CONFIG.maxResearchPerRun > 0);
     assert.ok(TAVILY_CONFIG.rateLimitPauseMs >= 100);
+    assert.ok(TAVILY_CONFIG.maxRetries >= 0 && TAVILY_CONFIG.maxRetries <= 10);
   });
 
   it('skip window is reasonable', async () => {
@@ -19,6 +20,30 @@ describe('Tavily Config Validation', () => {
 });
 
 describe('Tavily Search Result Parsing', () => {
+  it('builds Tavily requests with bearer auth', async () => {
+    const { buildTavilyRequest } = await import('../lib/tavily.js');
+    const request = buildTavilyRequest('TVLY-test', 'Acme funding news', {
+      maxResults: 3,
+      searchDepth: 'advanced',
+      days: 14,
+    });
+
+    assert.equal(request.method, 'POST');
+    assert.deepEqual(request.headers, {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer TVLY-test',
+    });
+
+    const body = JSON.parse(String(request.body));
+    assert.equal(body.query, 'Acme funding news');
+    assert.equal(body.max_results, 3);
+    assert.equal(body.search_depth, 'advanced');
+    assert.equal(body.days, 14);
+    assert.equal(body.include_answer, true);
+    assert.equal(body.include_raw_content, false);
+    assert.equal(body.api_key, undefined);
+  });
+
   it('parses a well-formed search response', () => {
     const response = {
       answer: 'Acme Corp recently raised $50M in Series B funding.',
@@ -56,6 +81,27 @@ describe('Tavily Search Result Parsing', () => {
 
     assert.equal(response.results.length, 0);
     assert.equal(response.answer, '');
+  });
+
+  it('stops retrying after the configured number of 429s', async () => {
+    process.env.TAVILY_API_KEY = 'TVLY-test';
+
+    const originalFetch = global.fetch;
+    let attempts = 0;
+    global.fetch = (async () => {
+      attempts++;
+      return new Response('', { status: 429, statusText: 'Too Many Requests' });
+    }) as typeof fetch;
+
+    try {
+      const { searchTavily } = await import('../lib/tavily.js');
+      const result = await searchTavily('Acme funding news');
+      assert.equal(result, null);
+      assert.equal(attempts, 4);
+    } finally {
+      global.fetch = originalFetch;
+      delete process.env.TAVILY_API_KEY;
+    }
   });
 });
 

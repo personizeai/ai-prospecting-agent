@@ -803,9 +803,12 @@ Which Personize method to use at each step of the strategizer:
 
 | Need | Method | Why |
 |---|---|---|
-| Write account strategy | `memorize({ website_url, content: strategy, tags: ['workspace:account-strategy'] })` | Freeform memory on company key. Searchable via smartRecall. |
-| Write account update | `memorize({ website_url, content: update, tags: ['workspace:account-updates'] })` | Append-only timeline. |
-| Write account task | `memorize({ website_url, content: task, tags: ['workspace:account-tasks'] })` | Account-level actions. |
+| Write account strategy | `accountWorkspace.setStrategy(domain, strategy)` | Code-managed replace. Searchable via smartRecall. |
+| Write account update | `accountWorkspace.addUpdate(domain, update)` | Append-only timeline. |
+| Create account task | `accountWorkspace.addTask(domain, task)` → returns `taskId` | Code-managed pending_tasks (read-modify-write). |
+| Complete account task | `accountWorkspace.completeTask(domain, taskId, outcome)` | Removes from pending, appends to task_history. |
+| Raise account issue | `accountWorkspace.raiseIssue(domain, issue)` → returns `issueId` | Code-managed open_issues. |
+| Resolve account issue | `accountWorkspace.resolveIssue(domain, issueId, resolution)` | Removes from open, appends to issue_history. |
 | Write contact task | `workspace.addTask(email, task)` | Existing pattern. Unchanged. |
 | Update company properties | `memorize({ website_url, collectionName: 'companies', properties: { account_status: ... } })` | Structured property update. |
 
@@ -813,25 +816,50 @@ Which Personize method to use at each step of the strategizer:
 
 ## Account Workspace Module
 
-New helper module — mirrors `workspace.ts` but keyed on `website_url`:
+Helper module — mirrors `workspace.ts` but keyed on `website_url`. Uses the same **dual-semantics** pattern as the contact workspace:
+
+- **Code-managed (replace mode):** `pending_tasks`, `open_issues`, `strategy` — active state only, rewritten on every state change
+- **AI-managed (append-only):** `updates`, `notes`, `task_history`, `issue_history` — chronological records, never edited
 
 ```
 src/lib/account-workspace.ts
 ```
 
-### Functions
+### Write Functions (append-only)
 
 | Function | Purpose |
 |---|---|
-| `setStrategy(domain, strategy)` | Write/overwrite account strategy document |
 | `addUpdate(domain, update)` | Append to account timeline |
-| `addTask(domain, task)` | Create account-level task |
 | `addNote(domain, note)` | Store account-level observation |
-| `raiseIssue(domain, issue)` | Flag account-level problem |
-| `getStrategy(domain)` | Recall current strategy |
-| `getDigest(domain)` | Company smartDigest |
-| `getIssues(domain)` | Active account issues |
-| `getContactRollup(domain)` | search + per-contact smartRecall (parallel) |
+
+### Write Functions (code-managed)
+
+| Function | Returns | Purpose |
+|---|---|---|
+| `addTask(domain, task)` | `taskId` | Create account-level task (added to code-managed pending_tasks) |
+| `raiseIssue(domain, issue)` | `issueId` | Flag account-level problem (added to code-managed open_issues) |
+| `setStrategy(domain, strategy)` | — | Write/overwrite account strategy document |
+
+### Task Lifecycle Functions
+
+| Function | Purpose |
+|---|---|
+| `completeTask(domain, taskId, outcome)` | Remove from pending_tasks, append to task_history |
+| `declineTask(domain, taskId, reason, declinedBy)` | Remove from pending_tasks, append to task_history, escalate to human |
+| `rescheduleTask(domain, taskId, newDueDate, reason, rescheduledBy)` | Update dueDate in pending_tasks, append to task_history |
+| `resolveIssue(domain, issueId, resolution)` | Remove from open_issues, append to issue_history |
+
+### Read Functions
+
+| Function | Returns | Purpose |
+|---|---|---|
+| `getDigest(domain)` | smartDigest response | Company smartDigest (compiled context) |
+| `getStrategy(domain)` | smartRecall response | Recall current strategy |
+| `getOpenTasks(domain)` | `Task[]` | Active account tasks (from code-managed state) |
+| `getIssues(domain)` | `Issue[]` | Active account issues (from code-managed state) |
+| `getUpdates(domain)` | smartRecall response | Account timeline |
+| `getContacts(domain)` | search response | All contacts at company |
+| `getContactRollup(domain)` | rollup object | search + per-contact smartRecall (parallel) |
 
 ---
 

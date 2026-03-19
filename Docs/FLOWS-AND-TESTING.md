@@ -608,7 +608,6 @@ Any task failure
 |------|------------|
 | `create-schemas.ts` | `npm run setup:schemas` |
 | `create-governance.ts` | `npm run setup:governance` |
-| `create-workspace-schema.ts` | `npm run setup:workspace` |
 | `gmail-auth.ts` | `npm run gmail:auth` |
 
 ---
@@ -616,12 +615,11 @@ Any task failure
 ## NPM Scripts
 
 ```bash
-npm run setup           # Run all setup scripts (schemas + governance + workspace)
-npm run setup:schemas   # Create Personize collections
+npm run setup           # Run all setup scripts (schemas + governance)
+npm run setup:schemas   # Create Personize collections (includes workspace properties)
 npm run setup:governance # Create governance variables
-npm run setup:workspace  # Create workspace collection
 npm run gmail:auth      # Gmail OAuth2 setup (run per sender)
-npm run test            # Run all 195 tests
+npm run test            # Run all 280 tests
 npm run typecheck       # TypeScript type checking
 npm run dev             # Start Trigger.dev local dev
 npm run deploy          # Deploy to Trigger.dev production

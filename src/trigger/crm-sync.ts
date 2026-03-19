@@ -40,7 +40,7 @@ export const crmSyncTask = schedules.task({
 
       // Chain: enrich new contacts + companies after sync
       if (SIGNAL_CONFIG.autoEnrichAfterSync) {
-        await enrichContactsTask.trigger({});
+        await enrichContactsTask.trigger();
         logger.info('Triggered enrich-contacts task');
       }
 

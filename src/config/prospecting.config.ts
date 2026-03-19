@@ -399,6 +399,9 @@ export const TAVILY_CONFIG = {
 
   /** Pause between Tavily API calls (ms). */
   rateLimitPauseMs: 500,
+
+  /** Max retries for Tavily 429s before failing the search. */
+  maxRetries: Number(process.env.TAVILY_MAX_RETRIES) || 3,
 };
 
 // ─── Task Executor ────────────────────────────────────────────────

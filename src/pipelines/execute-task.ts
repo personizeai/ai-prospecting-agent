@@ -46,10 +46,9 @@ async function preflight(contactEmail: string): Promise<{ ok: boolean; reason: s
   if (state.hasOptedOut) return { ok: false, reason: 'Lead has opted out — do not contact.' };
   if (state.lastEngagement === 'bounced') return { ok: false, reason: 'Email bounced — address invalid.' };
 
-  for (const item of issues.data || []) {
-    const content = (item.content || '').toUpperCase();
-    if (content.includes('"STATUS":"OPEN"') && content.includes('"SEVERITY":"CRITICAL"')) {
-      return { ok: false, reason: 'Critical issue open — see workspace issues.' };
+  for (const issue of issues) {
+    if (issue.status === 'open' && issue.severity === 'critical') {
+      return { ok: false, reason: `Critical issue open: ${issue.title}` };
     }
   }
 
@@ -266,6 +265,7 @@ export async function executeTask(
   contactEmail: string,
   task: WorkspaceTask,
   dryRun: boolean,
+  taskId?: string,
 ): Promise<TaskResult> {
   let result: TaskResult;
 
@@ -280,9 +280,12 @@ export async function executeTask(
   }
 
   // Act on the decision
+  // taskId is required for lifecycle operations; if not provided, fall back to title for logging
+  const id = taskId || task.title;
+
   switch (result.decision) {
     case 'execute':
-      await workspace.completeTask(contactEmail, task.title, result.outcome);
+      await workspace.completeTask(contactEmail, id, result.outcome);
       await workspace.addUpdate(contactEmail, {
         author: 'task-executor',
         type: 'system',
@@ -291,29 +294,27 @@ export async function executeTask(
       break;
 
     case 'decline':
-      await workspace.declineTask(contactEmail, task.title, result.outcome, task.owner);
+      await workspace.declineTask(contactEmail, id, result.outcome, task.owner);
       await notifySlack(
         `*Task Declined*\nContact: ${contactEmail}\nTask: ${task.title}\nReason: ${result.outcome}\nEscalated to sales rep.`
       );
       break;
 
-    case 'reschedule':
+    case 'reschedule': {
+      const newDate = result.newDueDate || new Date(Date.now() + 7 * 86400_000).toISOString();
       await workspace.rescheduleTask(
         contactEmail,
-        task.title,
-        result.newDueDate || new Date(Date.now() + 7 * 86400_000).toISOString(),
+        id,
+        newDate,
         result.outcome,
         task.owner,
       );
-      // Re-create the task with the new due date
-      await workspace.addTask(contactEmail, {
-        ...task,
-        dueDate: result.newDueDate || new Date(Date.now() + 7 * 86400_000).toISOString(),
-      });
+      // No need to re-create task — rescheduleTask updates dueDate in pending_tasks
       break;
+    }
 
     case 'skip':
-      await workspace.completeTask(contactEmail, task.title, `Skipped: ${result.outcome}`);
+      await workspace.completeTask(contactEmail, id, `Skipped: ${result.outcome}`);
       await workspace.addUpdate(contactEmail, {
         author: 'task-executor',
         type: 'system',

@@ -238,7 +238,7 @@ describe('Sequence Stop Logic', () => {
 
 describe('Context Rewrite Formatting', () => {
   it('formats sequence active context', () => {
-    const step = 2;
+    const step: number = 2;
     const subject = 'Quick question about your sales process';
     const angle = 'Recent funding';
     const context = [

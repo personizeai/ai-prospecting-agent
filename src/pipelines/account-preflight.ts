@@ -60,19 +60,18 @@ export async function accountPreflight(
     return { decision: 'proceed', reason: 'No company domain available — skipping account check' };
   }
 
-  // Recall previous account strategy (fast mode — ~500ms)
-  let strategyResults: any[];
+  // Read previous account strategy (direct property read — deterministic)
+  let latestStrategy: any;
   try {
-    const recall = await accountWorkspace.getStrategy(domain);
-    strategyResults = (recall.data as any)?.results ?? [];
+    latestStrategy = await accountWorkspace.getStrategy(domain);
   } catch {
-    log.warn('Account strategy recall failed, proceeding', { domain });
-    return { decision: 'proceed', reason: 'Account strategy recall failed — proceeding with default behavior' };
+    log.warn('Account strategy read failed, proceeding', { domain });
+    return { decision: 'proceed', reason: 'Account strategy read failed — proceeding with default behavior' };
   }
 
   // No strategy exists yet — check if there are multiple contacts at this company
   // to prevent carpet bombing on first batch outreach
-  if (strategyResults.length === 0) {
+  if (!latestStrategy) {
     if (ACCOUNT_STRATEGY_CONFIG.enableAccountStrategy) {
       try {
         const contacts = await accountWorkspace.getContacts(domain);
@@ -94,12 +93,6 @@ export async function accountPreflight(
     }
 
     return { decision: 'proceed', reason: 'No account strategy found — first-time outreach' };
-  }
-
-  // Parse the most recent strategy
-  const latestStrategy = parseStrategy(strategyResults);
-  if (!latestStrategy) {
-    return { decision: 'proceed', reason: 'Could not parse account strategy — proceeding with default behavior' };
   }
 
   // ── Check hard blocks first ─────────────────────────────────────

@@ -20,9 +20,8 @@ async function shouldStopSequence(contactEmail: string): Promise<{ stop: boolean
 
   // Also check for critical issues raised by any agent
   const issues = await workspace.getIssues(contactEmail);
-  for (const item of issues.data || []) {
-    const content = (item.content || '').toUpperCase();
-    if (content.includes('"STATUS":"OPEN"') && content.includes('"SEVERITY":"CRITICAL"')) {
+  for (const issue of issues) {
+    if (issue.status === 'open' && issue.severity === 'critical') {
       return { stop: true, reason: 'critical_issue' };
     }
   }

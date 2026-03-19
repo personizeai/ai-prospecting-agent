@@ -21,7 +21,7 @@ function resolveCSV(filename: string): string | null {
 }
 
 /** Read and parse a CSV file into typed row objects. */
-function parseCSVFile<T extends Record<string, string>>(filePath: string): T[] {
+function parseCSVFile<T extends object>(filePath: string): T[] {
   const content = readFileSync(filePath, 'utf-8');
   return parse(content, {
     columns: true,

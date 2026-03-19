@@ -19,10 +19,28 @@ export function createMockClient() {
       recall: async () => ({ data: [] }),
       memorize: async () => ({ data: {} }),
       smartDigest: async () => ({
-        data: { compiledContext: 'Mock contact profile...' },
+        data: {
+          compiledContext: 'Mock contact profile...',
+          properties: {
+            pending_tasks: { value: [] },
+            open_issues: { value: [] },
+            emails_sent: { value: 0 },
+            last_sent_at: { value: '' },
+            sequence_status: { value: 'Active' },
+            messages_sent: { value: [] },
+            context: { value: '' },
+          },
+        },
       }),
       search: async () => ({ data: [] }),
       memorizeBatch: async () => ({ data: {} }),
+      // Memory CRUD methods (used by workspace layer)
+      update: async () => ({ data: { success: true, previousValue: null, newValue: null, version: 1, stores: { snapshot: 'updated', lancedb: 'updated', freeform: 'skipped' } } }),
+      bulkUpdate: async () => ({ data: { success: true, results: [], version: 1 } }),
+      filterByProperty: async () => ({ data: { records: [], totalMatched: 0 } }),
+      propertyHistory: async () => ({ data: { entries: [] } }),
+      deleteRecord: async () => ({ data: { success: true, deletedCount: 0 } }),
+      cancelDeletion: async () => ({ data: { success: true, restoredCounts: { snapshot: 'restored', freeform: 'restored', lancedb: 'restored' } } }),
     },
     guidelines: {
       list: async () => ({ data: [] }),

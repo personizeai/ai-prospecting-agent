@@ -4,26 +4,43 @@ The Lead Workspace is a shared, per-contact collaboration surface built on a Per
 
 ## Setup
 
-Run once to create the collection schema:
+Run once to create all collections (with workspace properties) and governance:
 
 ```bash
-npm run setup:workspace
+npm run setup
 ```
 
-Source: `src/setup/create-workspace-schema.ts`
+Source: `src/setup/create-schemas.ts` + `src/setup/create-governance.ts`. Workspace properties are embedded directly in the Contacts and Companies collections — there are no separate workspace schema scripts.
 
 ---
 
-## Schema: 6 Properties
+## Schema: Memory CRUD Properties (History Is Automatic)
+
+### Code-Managed (replace mode)
 
 | Property | Type | Mutability | Purpose |
 |---|---|---|---|
-| `context` | `text` | **Rewritten** by any agent | "Start here" summary. Current lead state, sequence status, recommended next action. Any agent rewrites this when it has a materially updated understanding. |
+| `context` | `text` | **Rewritten** by any agent | "Start here" summary. Current lead state, sequence status, recommended next action. |
+| `pending_tasks` | `array` | **Code-managed replace** | Active tasks only. JSON array rewritten on every state change. Each entry: `{ taskId, title, description, owner, priority, createdBy, createdAt, dueDate }`. Use `workspace.addTask()` / `completeTask()` / `declineTask()` — do not edit manually. |
+| `open_issues` | `array` | **Code-managed replace** | Active blockers only. JSON array rewritten on resolution. Each entry: `{ issueId, title, description, severity, status, raisedBy, raisedAt }`. Use `workspace.raiseIssue()` / `resolveIssue()` — do not edit manually. |
+
+### AI-Managed (append-only)
+
+| Property | Type | Mutability | Purpose |
+|---|---|---|---|
 | `updates` | `array` | **Append-only** | Chronological timeline of everything that happened. Each entry: `{ author, type, summary, details, timestamp }`. Types: `enrichment`, `signal`, `outreach`, `engagement`, `system`, `human`. |
-| `tasks` | `array` | **Append + update** | Action items with ownership. Each entry: `{ title, description, status, owner, createdBy, priority, dueDate, outcome }`. A task assigned to an agent **is a handoff**. |
 | `notes` | `array` | **Append-only** | Knowledge and observations. Each entry: `{ author, content, category, timestamp }`. Categories: `observation`, `analysis`, `enrichment`, `signal`, `reply-analysis`. |
-| `issues` | `array` | **Append + update** | Problems, risks, blockers. Each entry: `{ title, description, severity, status, raisedBy, resolution, timestamp }`. Bounces, opt-outs, spam reports go here. |
 | `messages_sent` | `array` | **Append-only** | Every outreach message. Each entry: `{ channel, subject, bodyPreview, step, angle, sentBy, sentAt, status }`. The definitive record of what was communicated. |
+
+### Scalar Properties
+
+| Property | Type | Purpose |
+|---|---|---|
+| `emails_sent` | `number` | Total emails sent to this contact. |
+| `last_sent_at` | `date` | Timestamp of the most recent email sent. |
+| `sequence_status` | `options` | Current sequence state. Options: `Active`, `Replied`, `Bounced`, `Opted Out`, `Complete`, `Paused`. |
+
+> **Note:** Task and issue history is tracked automatically by the Personize `propertyHistory()` API — every change to `pending_tasks` and `open_issues` is logged with previousValue, newValue, updatedBy, and timestamp. No manual history entries needed.
 
 ---
 
@@ -31,7 +48,7 @@ Source: `src/setup/create-workspace-schema.ts`
 
 **Source:** `src/lib/workspace.ts`
 
-All workspace operations go through this module. Agents never call `client.memory.memorize()` with raw workspace tags directly — they use these typed helpers.
+All workspace operations use the Personize Memory CRUD API via `src/lib/personize-crud.ts`. Write operations use `arrayPush` (no read needed, race-free), `arrayRemove` (with retry on VERSION_CONFLICT), and `arrayPatch` (in-place updates). Reads use `smartDigest` for single-record property access and `filterByProperty` for cross-record queries.
 
 ### Write Functions
 
@@ -95,18 +112,65 @@ await workspace.rewriteContext(email, [
 ### Task Lifecycle Functions
 
 ```typescript
+// Create a task — returns a taskId for future lifecycle operations
+const taskId = await workspace.addTask(email, {
+  title: 'Lead interested — schedule call',
+  description: 'Reply summary: ...',
+  status: 'pending',
+  owner: 'sales-rep',
+  createdBy: 'reply-analyzer',
+  priority: 'urgent',
+});
+
 // Search for pending tasks across all leads (used by task executor)
 const pending = await workspace.getAllPendingTasks(50);
 
-// Mark a task as completed
-await workspace.completeTask(email, 'Task title', 'Outcome description');
+// Get pending tasks for a specific lead
+const tasks = await workspace.getOpenTasks(email);
+
+// Mark a task as completed (by taskId)
+await workspace.completeTask(email, taskId, 'Meeting scheduled for Thursday');
 
 // Decline a task — records reason + escalates to human as a new [Escalated] task
-await workspace.declineTask(email, 'Task title', 'Not enough data to personalize', 'outreach-agent');
+await workspace.declineTask(email, taskId, 'Not enough data to personalize', 'outreach-agent');
 
-// Reschedule a task — records new due date + reason
-await workspace.rescheduleTask(email, 'Task title', '2026-01-15', 'Lead is OOO until Jan 15', 'outreach-agent');
+// Reschedule a task — updates dueDate + records reason
+await workspace.rescheduleTask(email, taskId, '2026-01-15', 'Lead is OOO until Jan 15', 'outreach-agent');
+
+// Raise an issue — returns issueId
+const issueId = await workspace.raiseIssue(email, {
+  title: 'Email bounced',
+  description: 'Email delivery failed.',
+  severity: 'high',
+  status: 'open',
+  raisedBy: 'engagement-webhook',
+});
+
+// Resolve an issue
+await workspace.resolveIssue(email, issueId, 'Email address updated');
 ```
+
+### Soft-Delete (Opt-Out Enforcement)
+
+```typescript
+// Soft-delete a record — excluded from all read paths automatically
+await workspace.softDelete(email, 'unsubscribe', 'engagement-webhook');
+
+// Cancel deletion within 30-day recovery window
+await workspace.cancelDeletion(email, 'sales-rep');
+```
+
+Soft-deleted records are invisible to all queries (`recall`, `smartDigest`, `filterByProperty`). This replaces the old pattern of raising critical issues and hoping agents check them — once a record is soft-deleted, no agent can accidentally read or act on it.
+
+### Cross-Record Queries
+
+```typescript
+// Find all contacts with pending tasks (deterministic, no LLM cost)
+const result = await workspace.getAllPendingTasks(50);
+// Returns: { records: [{ recordId, matchedProperties }], totalMatched }
+```
+
+This uses `filterByProperty` instead of semantic search — results are deterministic and incur no LLM cost. Use this for any cross-record lookup where you know the exact property and condition.
 
 ### Read Functions
 
@@ -117,7 +181,7 @@ const digest = await workspace.getDigest(email, 3000);
 
 // Current sequence progress
 const state = await workspace.getSequenceState(email);
-// Returns: { emailsSent: number, lastSentAt: string, lastEngagement: string, hasReplied: boolean, hasOptedOut: boolean }
+// Returns: { emailsSent, lastSentAt, lastEngagement, hasReplied, hasOptedOut, hasDraftAtStep }
 
 // Open action items
 const tasks = await workspace.getOpenTasks(email);
@@ -401,9 +465,71 @@ declined             rescheduled
 
 ---
 
+## Dual-Semantics Pattern
+
+Both the contact workspace (`workspace.ts`) and account workspace (`account-workspace.ts`) use the same dual-semantics pattern:
+
+### Code-Managed State (replace mode, `enhanced: false`)
+
+Active state that must be atomically updated — agents cannot safely manage this via append-only memories.
+
+| Property | What It Holds | How It's Updated |
+|---|---|---|
+| `pending_tasks` | Active tasks only | Read → modify in-memory → write entire array back |
+| `open_issues` | Active issues only | Read → modify in-memory → write entire array back |
+
+**Why code-managed:** Concurrent agents could race-condition each other with append-only updates. Task completion must atomically remove from pending AND create a history entry. Escalation on decline must be guaranteed, not optional.
+
+### AI-Managed State (append-only, `enhanced: true`)
+
+Historical records that accumulate over time — never edited, never deleted.
+
+| Property | What It Holds | Mutability |
+|---|---|---|
+| `updates` | Timeline events | Append only |
+| `notes` | Observations and analysis | Append only |
+| `messages_sent` | Outreach messages (contact workspace only) | Append only |
+
+### The Pattern in Code
+
+```typescript
+// CODE-MANAGED: addTask uses arrayPush — no read needed, race-free
+async function addTask(email, task) {
+  const newTask = { taskId: generateId('t'), ...task };
+  await crud.arrayPush(email, 'pending_tasks', newTask); // Append without reading
+  return newTask.taskId;
+}
+
+// CODE-MANAGED: completeTask uses arrayRemove with VERSION_CONFLICT retry
+async function completeTask(email, taskId, outcome) {
+  await crud.arrayRemove(email, 'pending_tasks', { taskId }); // Retry on conflict
+  // History is tracked automatically by propertyHistory() API
+}
+
+// AI-MANAGED: addUpdate uses arrayPush
+async function addUpdate(email, update) {
+  await crud.arrayPush(email, 'updates', update);       // Append only
+}
+```
+
+---
+
+## Account Workspace
+
+The account workspace (`src/lib/account-workspace.ts`) mirrors the contact workspace but is keyed on `website_url` (company domain). It uses the same dual-semantics pattern:
+
+- **Code-managed:** `pending_tasks`, `open_issues`, `strategy`
+- **AI-managed:** `updates`, `notes`
+
+See [ACCOUNT-STRATEGY.md](ACCOUNT-STRATEGY.md) for the full account workspace API reference and the 10 edge cases it handles.
+
+---
+
 ## Implementation Notes
 
-- **Storage:** All workspace writes use `client.memory.memorize()` with `enhanced: true` and structured tags. The workspace helpers serialize data as JSON strings.
-- **Retrieval:** Read functions use `client.memory.recall()` (semantic search) and `client.memory.smartDigest()` (compiled summary). There is no direct collection query — everything goes through Personize's AI-powered retrieval.
+- **Storage:** Workspace writes use the Personize Memory CRUD API via `src/lib/personize-crud.ts`. Array properties use `arrayPush` (append, no read needed) and `arrayRemove` (with retry on VERSION_CONFLICT). Scalar properties use direct property updates.
+- **Retrieval:** Read functions use `smartDigest` for single-record property access and `filterByProperty` for cross-record queries. No semantic search needed for workspace reads.
+- **History:** Task and issue history is tracked automatically by the Personize `propertyHistory()` API. Every change to `pending_tasks` and `open_issues` is logged with previousValue, newValue, updatedBy, and timestamp.
 - **Sequence state parsing:** `getSequenceState()` parses both structured JSON messages and legacy `[OUTREACH SENT]` format for backward compatibility.
 - **Durable waits:** The outreach sequence uses Trigger.dev's `wait.for()` for 3-day and 5-day waits between emails. These are checkpointed — no compute cost during the wait.
+- **Atomicity:** Write operations use `arrayPush` (race-free, no read needed) and `arrayRemove` with retry on VERSION_CONFLICT. `arrayPatch` handles in-place updates. This eliminates the old read-modify-write race conditions.

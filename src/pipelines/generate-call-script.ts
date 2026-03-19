@@ -20,6 +20,7 @@ import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { CALL_SCRIPT_SCHEMA, CALL_SCRIPT_DEFAULTS } from '../lib/llm-schemas.js';
 import { logger } from '../lib/logger.js';
 import type { GeneratedCallScript } from '../types.js';
+import { workspace } from '../lib/workspace.js';
 
 const log = logger.child({ pipeline: 'generate-call-script' });
 
@@ -39,20 +40,10 @@ async function getCallState(email: string): Promise<{ callScriptsGenerated: numb
   return { callScriptsGenerated };
 }
 
-/** Check if Email 1 or 2 has been sent. */
+/** Check how many emails have been sent via structured workspace state. */
 async function getEmailProgress(email: string): Promise<number> {
-  const history = await client.memory.recall({
-    message: `outreach sent email to ${email}`,
-    limit: 5,
-  });
-
-  let maxStep = 0;
-  for (const item of history.data || []) {
-    const match = (item.content || '').match(/\[OUTREACH SENT\s*[-\u2014\u2013]+\s*Email (\d+)\]/);
-    if (match) maxStep = Math.max(maxStep, parseInt(match[1], 10));
-  }
-
-  return maxStep;
+  const state = await workspace.getSequenceState(email);
+  return state.emailsSent;
 }
 
 /** Get contact details (name, title, phone) from Personize memory. */

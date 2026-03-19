@@ -7,11 +7,20 @@
 <!-- Badges -->
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/tests-275%20passing-brightgreen.svg" alt="Tests: 275 passing" />
+  <img src="https://img.shields.io/badge/tests-280%20passing-brightgreen.svg" alt="Tests: 280 passing" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
   <img src="https://img.shields.io/badge/cost-%2450–%24200%2Fmo-success.svg" alt="Cost: $50–$200/mo" />
 </p>
+
+<!-- Early Access Banner -->
+<p align="center">
+  <img src="https://img.shields.io/badge/status-early%20access-orange.svg" alt="Early Access" />
+</p>
+<blockquote align="center">
+  <strong>Early Access</strong> — This project is under active development. APIs and configuration may change.<br/>
+  Want to collaborate closely? <a href="CONTRIBUTING.md#collaborate-closely">Let us know</a> · <a href="CONTRIBUTING.md#sponsors">Become a sponsor</a>
+</blockquote>
 
 <!-- Cost hook -->
 <p align="center">
@@ -26,6 +35,7 @@
   <a href="#csv-import--no-crm-required">CSV Import</a> &middot;
   <a href="#why-open-source">Why Open Source</a> &middot;
   <a href="#extend-it">Extend It</a> &middot;
+  <a href="ROADMAP.md">Roadmap</a> &middot;
   <a href="#community">Community</a>
 </p>
 
@@ -776,15 +786,25 @@ npm run test:all
 
 ## Contributing
 
-We welcome contributions! Whether it's a new data connector, outreach channel, pipeline improvement, or bug fix:
+We welcome contributions! Whether it's a new data connector, outreach channel, pipeline improvement, or bug fix — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
 
 1. Fork the repo
 2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Open a PR
+3. Make your changes + add tests
+4. Open a PR
 
-See our contribution guidelines for details.
+Want to collaborate more closely or sponsor the project? See [how to get involved](CONTRIBUTING.md#collaborate-closely).
+
+---
+
+## Sponsors
+
+This project is supported by companies who believe outbound should be open. [Become a sponsor](CONTRIBUTING.md#sponsors).
+
+<!-- Gold Sponsors -->
+<!-- <a href="https://example.com"><img src="logo.png" width="200" alt="Sponsor" /></a> -->
+
+*Your logo here — [sponsor this project](mailto:sponsors@personize.ai)*
 
 ---
 

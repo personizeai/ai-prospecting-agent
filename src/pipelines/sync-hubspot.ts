@@ -2,6 +2,8 @@ import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
 import { HUBSPOT_CONFIG } from '../config/prospecting.config.js';
 import { Client as HubSpotClient } from '@hubspot/api-client';
 import type { FilterGroup } from '@hubspot/api-client/lib/codegen/crm/contacts/index.js';
+import { FilterOperatorEnum as ContactFilterOperatorEnum } from '@hubspot/api-client/lib/codegen/crm/contacts/models/Filter.js';
+import { FilterOperatorEnum as CompanyFilterOperatorEnum } from '@hubspot/api-client/lib/codegen/crm/companies/models/Filter.js';
 import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'sync-hubspot' });
@@ -25,7 +27,7 @@ function buildLeadFilter(): FilterGroup[] {
       filters: [
         {
           propertyName: prop,
-          operator: 'EQ',
+          operator: ContactFilterOperatorEnum.Eq,
           value: HUBSPOT_CONFIG.leadFilterValue,
         },
       ],
@@ -48,6 +50,25 @@ function extractCompanyDomain(email: string): string | undefined {
   const domain = email.split('@')[1]?.toLowerCase();
   if (!domain || PERSONAL_EMAIL_DOMAINS.has(domain)) return undefined;
   return domain;
+}
+
+async function getAssociatedObjectIds(
+  fromObjectType: 'contacts',
+  fromObjectId: string,
+  toObjectType: string,
+  limit = 100,
+): Promise<string[]> {
+  const response = await hubspot.apiRequest({
+    method: 'GET',
+    path: `/crm/v4/objects/${fromObjectType}/${fromObjectId}/associations/${toObjectType}`,
+    qs: { limit },
+  });
+
+  const data = await response.json() as { results?: Array<{ toObjectId?: number | string; id?: number | string }> };
+  return (data.results || [])
+    .map((item) => item.toObjectId ?? item.id)
+    .filter((value): value is number | string => value !== undefined && value !== null)
+    .map(String);
 }
 
 // ─── Contacts ──────────────────────────────────────────────────────
@@ -73,8 +94,8 @@ async function syncHubSpotContacts() {
         filterGroups,
         properties: HUBSPOT_CONFIG.contactProperties,
         limit: 100,
-        after: after ? Number(after) : 0,
-        sorts: [{ propertyName: 'createdate', direction: 'ASCENDING' }],
+        after,
+        sorts: ['createdate'],
       });
       results = response.results;
       nextAfter = response.paging?.next?.after;
@@ -156,11 +177,17 @@ async function syncHubSpotCompanies() {
 
     if (useSearch) {
       const response = await hubspot.crm.companies.searchApi.doSearch({
-        filterGroups,
+        filterGroups: filterGroups.map((group) => ({
+          ...group,
+          filters: group.filters.map((filter) => ({
+            ...filter,
+            operator: CompanyFilterOperatorEnum.Eq,
+          })),
+        })),
         properties: HUBSPOT_CONFIG.companyProperties,
         limit: 100,
-        after: after ? Number(after) : 0,
-        sorts: [{ propertyName: 'createdate', direction: 'ASCENDING' }],
+        after,
+        sorts: ['createdate'],
       });
       results = response.results;
       nextAfter = response.paging?.next?.after;
@@ -367,13 +394,7 @@ async function syncContactEngagements(contactId: string, contactEmail: string): 
 
     try {
       // Get associated engagement IDs for this contact
-      const associations = await hubspot.crm.contacts.associationsApi.getAll(
-        Number(contactId),
-        type,
-      );
-
-      const ids = (associations.results || [])
-        .map((a: any) => String(a.id))
+      const ids = (await getAssociatedObjectIds('contacts', String(contactId), type, HUBSPOT_CONFIG.maxEngagementsPerType))
         .slice(0, HUBSPOT_CONFIG.maxEngagementsPerType);
 
       if (!ids.length) continue;
@@ -418,13 +439,7 @@ async function syncContactEngagements(contactId: string, contactEmail: string): 
   // Sync associated deals — each deal is its own record in memorizeBatch
   if (HUBSPOT_CONFIG.syncDeals) {
     try {
-      const dealAssociations = await hubspot.crm.contacts.associationsApi.getAll(
-        Number(contactId),
-        'deals',
-      );
-
-      const dealIds = (dealAssociations.results || [])
-        .map((a: any) => String(a.id))
+      const dealIds = (await getAssociatedObjectIds('contacts', String(contactId), 'deals', 10))
         .slice(0, 10);
 
       if (dealIds.length) {

@@ -1,16 +1,22 @@
-import sgMail from '@sendgrid/mail';
+import { createRequire } from 'module';
 import type { GeneratedEmail } from '../types.js';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error('Missing required environment variable: SENDGRID_API_KEY');
-}
-if (!process.env.SENDER_EMAIL) {
-  throw new Error('Missing required environment variable: SENDER_EMAIL');
-}
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 export async function sendViaSendGrid(generated: GeneratedEmail) {
+  if (!process.env.SENDGRID_API_KEY) {
+    throw new Error('Missing required environment variable: SENDGRID_API_KEY');
+  }
+  if (!process.env.SENDER_EMAIL) {
+    throw new Error('Missing required environment variable: SENDER_EMAIL');
+  }
+
+  const require = createRequire(import.meta.url);
+  const sgMail = require('@sendgrid/mail') as {
+    setApiKey: (key: string) => void;
+    send: (message: unknown) => Promise<unknown>;
+  };
+
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
   const response = await sgMail.send({
     to: generated.email,
     from: {
@@ -26,5 +32,5 @@ export async function sendViaSendGrid(generated: GeneratedEmail) {
     },
   });
 
-  return response;
+  return response as Array<{ headers?: Record<string, string> }>;
 }

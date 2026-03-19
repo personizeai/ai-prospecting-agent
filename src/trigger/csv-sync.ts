@@ -18,7 +18,7 @@ export const csvSyncTask = task({
 
       // Chain: enrich new contacts after CSV sync
       if (SIGNAL_CONFIG.autoEnrichAfterSync) {
-        await enrichContactsTask.trigger({});
+        await enrichContactsTask.trigger();
         logger.info('Triggered enrich-contacts task after CSV sync');
       }
 

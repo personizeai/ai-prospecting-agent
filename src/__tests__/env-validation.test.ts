@@ -105,10 +105,12 @@ describe('Funding Display', () => {
   });
 
   it('shows N/A for zero/undefined funding', () => {
-    const display1 = 0 ? `$${(0).toLocaleString()}` : 'N/A';
+    const zeroAmount: number = 0;
+    const display1 = zeroAmount ? `$${zeroAmount.toLocaleString()}` : 'N/A';
     assert.equal(display1, 'N/A');
 
-    const display2 = undefined ? `$${undefined}` : 'N/A';
+    const maybeAmount: number | undefined = undefined;
+    const display2 = maybeAmount ? `$${maybeAmount}` : 'N/A';
     assert.equal(display2, 'N/A');
   });
 });
