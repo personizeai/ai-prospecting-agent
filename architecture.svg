@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1750" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1950" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
   <defs>
-    <!-- Gradients -->
     <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#1e1b4b"/>
       <stop offset="100%" stop-color="#312e81"/>
@@ -13,6 +12,14 @@
       <stop offset="0%" stop-color="#059669"/>
       <stop offset="100%" stop-color="#047857"/>
     </linearGradient>
+    <linearGradient id="pipelineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="deliveryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
     <linearGradient id="extendGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#7c3aed"/>
       <stop offset="50%" stop-color="#6d28d9"/>
@@ -24,7 +31,6 @@
     <filter id="shadowDeep" x="-2%" y="-2%" width="104%" height="108%">
       <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.15"/>
     </filter>
-    <!-- Arrow marker -->
     <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
       <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
     </marker>
@@ -37,540 +43,614 @@
   </defs>
 
   <!-- Background -->
-  <rect width="1280" height="1750" rx="16" fill="#f8fafc"/>
+  <rect width="1400" height="1950" rx="16" fill="#f8fafc"/>
 
   <!-- ═══════════════════════════════════════ -->
   <!-- HEADER -->
   <!-- ═══════════════════════════════════════ -->
-  <rect x="0" y="0" width="1280" height="100" rx="16" fill="url(#headerGrad)"/>
-  <rect x="0" y="50" width="1280" height="50" fill="url(#headerGrad)"/>
-  <text x="640" y="42" text-anchor="middle" fill="white" font-size="28" font-weight="700" letter-spacing="0.5">AI Prospecting Agent</text>
-  <text x="640" y="72" text-anchor="middle" fill="#c7d2fe" font-size="14" letter-spacing="0.3">Open Source &#xB7; Built by Personize &#xB7; Powered by Personize + Apollo + Trigger.dev + Tavily</text>
+  <rect x="0" y="0" width="1400" height="100" rx="16" fill="url(#headerGrad)"/>
+  <rect x="0" y="50" width="1400" height="50" fill="url(#headerGrad)"/>
+  <text x="700" y="42" text-anchor="middle" fill="white" font-size="28" font-weight="700" letter-spacing="0.5">AI Prospecting Agent</text>
+  <text x="700" y="72" text-anchor="middle" fill="#c7d2fe" font-size="14" letter-spacing="0.3">Open Source &#xB7; Multichannel &#xB7; Powered by Personize + Trigger.dev + Apollo + Tavily + HeyReach + AI Voice</text>
 
   <!-- ═══════════════════════════════════════ -->
   <!-- SECTION 1: DATA SOURCES -->
   <!-- ═══════════════════════════════════════ -->
-  <text x="640" y="138" text-anchor="middle" fill="#475569" font-size="13" font-weight="600" letter-spacing="1.5">DATA SOURCES &amp; INPUTS</text>
-  <line x1="520" y1="146" x2="760" y2="146" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="700" y="138" text-anchor="middle" fill="#475569" font-size="13" font-weight="600" letter-spacing="1.5">DATA SOURCES &amp; INPUTS</text>
+  <line x1="560" y1="146" x2="840" y2="146" stroke="#cbd5e1" stroke-width="1"/>
 
   <!-- HubSpot CRM -->
   <g filter="url(#shadow)">
-    <rect x="40" y="162" width="220" height="120" rx="12" fill="white" stroke="#ff7a59" stroke-width="2"/>
-    <rect x="40" y="162" width="220" height="36" rx="12" fill="#ff7a59"/>
-    <rect x="40" y="186" width="220" height="12" fill="#ff7a59"/>
-    <text x="150" y="185" text-anchor="middle" fill="white" font-size="13" font-weight="700">HubSpot CRM</text>
-    <text x="150" y="216" text-anchor="middle" fill="#64748b" font-size="11">Contacts &amp; Companies</text>
-    <text x="150" y="233" text-anchor="middle" fill="#64748b" font-size="11">Emails, Calls, Meetings</text>
-    <text x="150" y="250" text-anchor="middle" fill="#64748b" font-size="11">Notes, Tasks, Deals</text>
-    <text x="150" y="270" text-anchor="middle" fill="#94a3b8" font-size="10" font-style="italic">Hourly sync (Mon-Fri)</text>
+    <rect x="40" y="162" width="195" height="115" rx="12" fill="white" stroke="#ff7a59" stroke-width="2"/>
+    <rect x="40" y="162" width="195" height="34" rx="12" fill="#ff7a59"/>
+    <rect x="40" y="184" width="195" height="12" fill="#ff7a59"/>
+    <text x="137" y="184" text-anchor="middle" fill="white" font-size="12" font-weight="700">HubSpot CRM</text>
+    <text x="137" y="212" text-anchor="middle" fill="#64748b" font-size="10">Contacts &amp; Companies</text>
+    <text x="137" y="227" text-anchor="middle" fill="#64748b" font-size="10">Emails, Calls, Meetings</text>
+    <text x="137" y="242" text-anchor="middle" fill="#64748b" font-size="10">Notes, Tasks, Deals</text>
+    <text x="137" y="266" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Hourly sync (Mon-Fri)</text>
   </g>
 
   <!-- Apollo.io -->
   <g filter="url(#shadow)">
-    <rect x="290" y="162" width="220" height="120" rx="12" fill="white" stroke="#f59e0b" stroke-width="2"/>
-    <rect x="290" y="162" width="220" height="36" rx="12" fill="#f59e0b"/>
-    <rect x="290" y="186" width="220" height="12" fill="#f59e0b"/>
-    <text x="400" y="185" text-anchor="middle" fill="white" font-size="13" font-weight="700">Apollo.io</text>
-    <text x="400" y="216" text-anchor="middle" fill="#64748b" font-size="11">People Search (free)</text>
-    <text x="400" y="233" text-anchor="middle" fill="#64748b" font-size="11">Person Enrichment</text>
-    <text x="400" y="250" text-anchor="middle" fill="#64748b" font-size="11">Company Enrichment</text>
-    <text x="400" y="270" text-anchor="middle" fill="#94a3b8" font-size="10" font-style="italic">Phone, LinkedIn, Title, Tech</text>
+    <rect x="255" y="162" width="195" height="115" rx="12" fill="white" stroke="#f59e0b" stroke-width="2"/>
+    <rect x="255" y="162" width="195" height="34" rx="12" fill="#f59e0b"/>
+    <rect x="255" y="184" width="195" height="12" fill="#f59e0b"/>
+    <text x="352" y="184" text-anchor="middle" fill="white" font-size="12" font-weight="700">Apollo.io</text>
+    <text x="352" y="212" text-anchor="middle" fill="#64748b" font-size="10">People Search (free)</text>
+    <text x="352" y="227" text-anchor="middle" fill="#64748b" font-size="10">Person + Company Enrichment</text>
+    <text x="352" y="242" text-anchor="middle" fill="#64748b" font-size="10">Phone, LinkedIn, Title, Tech</text>
+    <text x="352" y="266" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">On-demand enrichment</text>
   </g>
 
   <!-- Tavily -->
   <g filter="url(#shadow)">
-    <rect x="540" y="162" width="220" height="120" rx="12" fill="white" stroke="#14b8a6" stroke-width="2"/>
-    <rect x="540" y="162" width="220" height="36" rx="12" fill="#14b8a6"/>
-    <rect x="540" y="186" width="220" height="12" fill="#14b8a6"/>
-    <text x="650" y="185" text-anchor="middle" fill="white" font-size="13" font-weight="700">Tavily Web Search</text>
-    <text x="650" y="216" text-anchor="middle" fill="#64748b" font-size="11">Company News &amp; Funding</text>
-    <text x="650" y="233" text-anchor="middle" fill="#64748b" font-size="11">Hiring Signals</text>
-    <text x="650" y="250" text-anchor="middle" fill="#64748b" font-size="11">Competitive Intel</text>
-    <text x="650" y="270" text-anchor="middle" fill="#94a3b8" font-size="10" font-style="italic">2 queries per company</text>
+    <rect x="470" y="162" width="195" height="115" rx="12" fill="white" stroke="#14b8a6" stroke-width="2"/>
+    <rect x="470" y="162" width="195" height="34" rx="12" fill="#14b8a6"/>
+    <rect x="470" y="184" width="195" height="12" fill="#14b8a6"/>
+    <text x="567" y="184" text-anchor="middle" fill="white" font-size="12" font-weight="700">Tavily Web Search</text>
+    <text x="567" y="212" text-anchor="middle" fill="#64748b" font-size="10">Company News &amp; Funding</text>
+    <text x="567" y="227" text-anchor="middle" fill="#64748b" font-size="10">Hiring Signals</text>
+    <text x="567" y="242" text-anchor="middle" fill="#64748b" font-size="10">Competitive Intel</text>
+    <text x="567" y="266" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">2 queries per company</text>
   </g>
 
-  <!-- Gmail Inbox -->
+  <!-- Clay -->
   <g filter="url(#shadow)">
-    <rect x="790" y="162" width="220" height="120" rx="12" fill="white" stroke="#7c3aed" stroke-width="2"/>
-    <rect x="790" y="162" width="220" height="36" rx="12" fill="#7c3aed"/>
-    <rect x="790" y="186" width="220" height="12" fill="#7c3aed"/>
-    <text x="900" y="185" text-anchor="middle" fill="white" font-size="13" font-weight="700">Gmail Webhooks</text>
-    <text x="900" y="216" text-anchor="middle" fill="#64748b" font-size="11">Incoming Replies</text>
-    <text x="900" y="233" text-anchor="middle" fill="#64748b" font-size="11">Bounces &amp; Complaints</text>
-    <text x="900" y="250" text-anchor="middle" fill="#64748b" font-size="11">Opens &amp; Clicks</text>
-    <text x="900" y="270" text-anchor="middle" fill="#94a3b8" font-size="10" font-style="italic">Real-time webhooks</text>
+    <rect x="685" y="162" width="195" height="115" rx="12" fill="white" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="685" y="162" width="195" height="34" rx="12" fill="#3b82f6"/>
+    <rect x="685" y="184" width="195" height="12" fill="#3b82f6"/>
+    <text x="782" y="184" text-anchor="middle" fill="white" font-size="12" font-weight="700">Clay</text>
+    <text x="782" y="212" text-anchor="middle" fill="#64748b" font-size="10">Waterfall Enrichment</text>
+    <text x="782" y="227" text-anchor="middle" fill="#64748b" font-size="10">80+ Data Providers</text>
+    <text x="782" y="242" text-anchor="middle" fill="#64748b" font-size="10">Webhook Sync</text>
+    <text x="782" y="266" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Real-time (webhook)</text>
   </g>
 
-  <!-- +Your API -->
+  <!-- Salesforce -->
   <g filter="url(#shadow)">
-    <rect x="1040" y="162" width="200" height="120" rx="12" fill="white" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6,4"/>
-    <text x="1140" y="206" text-anchor="middle" fill="#7c3aed" font-size="22" font-weight="300">+</text>
-    <text x="1140" y="228" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="600">Your Data Sources</text>
-    <text x="1140" y="248" text-anchor="middle" fill="#94a3b8" font-size="10">Salesforce, Pipedrive</text>
-    <text x="1140" y="263" text-anchor="middle" fill="#94a3b8" font-size="10">Clearbit, ZoomInfo</text>
-    <text x="1140" y="278" text-anchor="middle" fill="#94a3b8" font-size="10">CSV, Webhooks, n8n</text>
+    <rect x="900" y="162" width="195" height="115" rx="12" fill="white" stroke="#00a1e0" stroke-width="2"/>
+    <rect x="900" y="162" width="195" height="34" rx="12" fill="#00a1e0"/>
+    <rect x="900" y="184" width="195" height="12" fill="#00a1e0"/>
+    <text x="997" y="184" text-anchor="middle" fill="white" font-size="12" font-weight="700">Salesforce</text>
+    <text x="997" y="212" text-anchor="middle" fill="#64748b" font-size="10">Leads &amp; Opportunities</text>
+    <text x="997" y="227" text-anchor="middle" fill="#64748b" font-size="10">Activities &amp; Tasks</text>
+    <text x="997" y="242" text-anchor="middle" fill="#64748b" font-size="10">Contact Sync</text>
+    <text x="997" y="266" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Bidirectional sync</text>
+  </g>
+
+  <!-- Gmail + Webhooks -->
+  <g filter="url(#shadow)">
+    <rect x="1115" y="162" width="245" height="115" rx="12" fill="white" stroke="#7c3aed" stroke-width="2"/>
+    <rect x="1115" y="162" width="245" height="34" rx="12" fill="#7c3aed"/>
+    <rect x="1115" y="184" width="245" height="12" fill="#7c3aed"/>
+    <text x="1237" y="184" text-anchor="middle" fill="white" font-size="12" font-weight="700">Inbound Webhooks</text>
+    <text x="1237" y="212" text-anchor="middle" fill="#64748b" font-size="10">Gmail Replies &amp; Bounces</text>
+    <text x="1237" y="227" text-anchor="middle" fill="#64748b" font-size="10">HeyReach LinkedIn Events (11 types)</text>
+    <text x="1237" y="242" text-anchor="middle" fill="#64748b" font-size="10">AI Voice Call Transcripts</text>
+    <text x="1237" y="266" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Real-time webhooks</text>
   </g>
 
   <!-- Arrows: Sources → Orchestration -->
-  <line x1="150" y1="282" x2="150" y2="320" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="400" y1="282" x2="400" y2="320" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="650" y1="282" x2="650" y2="320" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="900" y1="282" x2="900" y2="320" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="137" y1="277" x2="137" y2="315" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="352" y1="277" x2="352" y2="315" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="567" y1="277" x2="567" y2="315" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="782" y1="277" x2="782" y2="315" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="997" y1="277" x2="997" y2="315" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1237" y1="277" x2="1237" y2="315" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <!-- ═══════════════════════════════════════ -->
   <!-- SECTION 2: ORCHESTRATION (Trigger.dev) -->
   <!-- ═══════════════════════════════════════ -->
   <g filter="url(#shadowDeep)">
-    <rect x="40" y="330" width="1200" height="250" rx="16" fill="white" stroke="#10b981" stroke-width="2"/>
-    <!-- Header bar -->
-    <rect x="40" y="330" width="1200" height="44" rx="16" fill="url(#triggerGrad)"/>
-    <rect x="40" y="358" width="1200" height="16" fill="url(#triggerGrad)"/>
-    <text x="640" y="357" text-anchor="middle" fill="white" font-size="15" font-weight="700">ORCHESTRATION &#xB7; Trigger.dev</text>
-    <!-- Subtitle -->
-    <text x="640" y="393" text-anchor="middle" fill="#64748b" font-size="11">Serverless &#xB7; Durable Workflows &#xB7; Auto-Retries &#xB7; Health Monitoring &#xB7; No Server to Manage</text>
+    <rect x="40" y="325" width="1320" height="270" rx="16" fill="white" stroke="#10b981" stroke-width="2"/>
+    <rect x="40" y="325" width="1320" height="44" rx="16" fill="url(#triggerGrad)"/>
+    <rect x="40" y="353" width="1320" height="16" fill="url(#triggerGrad)"/>
+    <text x="700" y="352" text-anchor="middle" fill="white" font-size="15" font-weight="700">ORCHESTRATION &#xB7; Trigger.dev</text>
+    <text x="700" y="388" text-anchor="middle" fill="#64748b" font-size="11">Serverless &#xB7; Durable Workflows &#xB7; Auto-Retries &#xB7; Health Monitoring &#xB7; No Server to Manage</text>
 
-    <!-- Schedule boxes — 8 tasks -->
-    <!-- CRM Sync -->
-    <rect x="60" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="124" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">CRM Sync</text>
-    <text x="124" y="443" text-anchor="middle" fill="#64748b" font-size="9">Contacts &amp; Companies</text>
-    <text x="124" y="456" text-anchor="middle" fill="#64748b" font-size="9">Engagement History</text>
-    <rect x="74" y="467" width="100" height="18" rx="4" fill="#d1fae5"/>
-    <text x="124" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Every Hour M-F</text>
+    <!-- Row 1: Scheduled Tasks -->
+    <text x="68" y="414" fill="#047857" font-size="10" font-weight="700" letter-spacing="0.5">SCHEDULED</text>
 
-    <!-- Signal Detection -->
-    <rect x="203" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="267" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Signal Detection</text>
-    <text x="267" y="443" text-anchor="middle" fill="#64748b" font-size="9">ICP Scoring</text>
-    <text x="267" y="456" text-anchor="middle" fill="#64748b" font-size="9">Buying Signals</text>
-    <rect x="217" y="467" width="100" height="18" rx="4" fill="#d1fae5"/>
-    <text x="267" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Daily 8am UTC</text>
+    <rect x="60" y="422" width="140" height="72" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+    <text x="130" y="442" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">CRM Sync</text>
+    <text x="130" y="456" text-anchor="middle" fill="#64748b" font-size="9">HubSpot + Salesforce</text>
+    <rect x="74" y="467" width="112" height="18" rx="4" fill="#d1fae5"/>
+    <text x="130" y="479" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Hourly M-F</text>
 
-    <!-- Web Research -->
-    <rect x="346" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="410" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Web Research</text>
-    <text x="410" y="443" text-anchor="middle" fill="#64748b" font-size="9">News &amp; Funding</text>
-    <text x="410" y="456" text-anchor="middle" fill="#64748b" font-size="9">Personalization Angles</text>
-    <rect x="360" y="467" width="100" height="18" rx="4" fill="#d1fae5"/>
-    <text x="410" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Auto (Hot Accts)</text>
+    <rect x="215" y="422" width="140" height="72" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+    <text x="285" y="442" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Signal Detection</text>
+    <text x="285" y="456" text-anchor="middle" fill="#64748b" font-size="9">ICP + Buying Signals</text>
+    <rect x="229" y="467" width="112" height="18" rx="4" fill="#d1fae5"/>
+    <text x="285" y="479" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Daily 8am UTC</text>
 
-    <!-- Contact Discovery -->
-    <rect x="489" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="553" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Contact Discovery</text>
-    <text x="553" y="443" text-anchor="middle" fill="#64748b" font-size="9">Find Decision-Makers</text>
-    <text x="553" y="456" text-anchor="middle" fill="#64748b" font-size="9">Enrich Profiles</text>
-    <rect x="503" y="467" width="100" height="18" rx="4" fill="#d1fae5"/>
-    <text x="553" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Auto (Hot Accts)</text>
+    <rect x="370" y="422" width="140" height="72" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+    <text x="440" y="442" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Contact Discovery</text>
+    <text x="440" y="456" text-anchor="middle" fill="#64748b" font-size="9">Find Decision-Makers</text>
+    <rect x="384" y="467" width="112" height="18" rx="4" fill="#d1fae5"/>
+    <text x="440" y="479" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Auto (Hot Accts)</text>
 
-    <!-- Outreach Engine -->
-    <rect x="632" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="696" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Outreach Engine</text>
-    <text x="696" y="443" text-anchor="middle" fill="#64748b" font-size="9">Named Cadences</text>
-    <text x="696" y="456" text-anchor="middle" fill="#64748b" font-size="9">Durable Multi-Day Waits</text>
-    <rect x="646" y="467" width="100" height="18" rx="4" fill="#d1fae5"/>
-    <text x="696" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">10am &amp; 2pm UTC</text>
+    <rect x="525" y="422" width="140" height="72" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+    <text x="595" y="442" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Enrich Contacts</text>
+    <text x="595" y="456" text-anchor="middle" fill="#64748b" font-size="9">Apollo + Clay</text>
+    <rect x="539" y="467" width="112" height="18" rx="4" fill="#d1fae5"/>
+    <text x="595" y="479" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Auto (Hot Accts)</text>
 
-    <!-- Reply Handler -->
-    <rect x="775" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="839" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Reply Handler</text>
-    <text x="839" y="443" text-anchor="middle" fill="#64748b" font-size="9">Sentiment Analysis</text>
-    <text x="839" y="456" text-anchor="middle" fill="#64748b" font-size="9">Auto-Route Actions</text>
-    <rect x="789" y="467" width="100" height="18" rx="4" fill="#d1fae5"/>
-    <text x="839" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Real-Time</text>
+    <rect x="680" y="422" width="140" height="72" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+    <text x="750" y="442" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Outreach Engine</text>
+    <text x="750" y="456" text-anchor="middle" fill="#64748b" font-size="9">Email Sequences</text>
+    <rect x="694" y="467" width="112" height="18" rx="4" fill="#d1fae5"/>
+    <text x="750" y="479" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">10am &amp; 2pm UTC</text>
 
-    <!-- Task Executor — highlighted as Human + AI -->
-    <rect x="918" y="408" width="128" height="82" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="982" y="428" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Task Executor</text>
-    <text x="982" y="443" text-anchor="middle" fill="#78350f" font-size="9">Human + AI Tasks</text>
-    <text x="982" y="456" text-anchor="middle" fill="#78350f" font-size="9">Execute / Escalate</text>
-    <rect x="932" y="467" width="100" height="18" rx="4" fill="#fde68a"/>
-    <text x="982" y="480" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Every 30 Min</text>
+    <rect x="835" y="422" width="160" height="72" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="915" y="442" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Multichannel Engine</text>
+    <text x="915" y="456" text-anchor="middle" fill="#78350f" font-size="9">LinkedIn + Voice after Email</text>
+    <rect x="855" y="467" width="120" height="18" rx="4" fill="#fde68a"/>
+    <text x="915" y="479" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Sequenced</text>
 
-    <!-- Weekly Report -->
-    <rect x="1061" y="408" width="128" height="82" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
-    <text x="1125" y="428" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Weekly Report</text>
-    <text x="1125" y="443" text-anchor="middle" fill="#64748b" font-size="9">Performance Metrics</text>
-    <text x="1125" y="456" text-anchor="middle" fill="#64748b" font-size="9">Recommendations</text>
-    <rect x="1071" y="467" width="108" height="18" rx="4" fill="#d1fae5"/>
-    <text x="1125" y="480" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Fridays 4pm UTC</text>
+    <rect x="1010" y="422" width="140" height="72" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="1080" y="442" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Task Executor</text>
+    <text x="1080" y="456" text-anchor="middle" fill="#78350f" font-size="9">Human + AI Tasks</text>
+    <rect x="1024" y="467" width="112" height="18" rx="4" fill="#fde68a"/>
+    <text x="1080" y="479" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Every 30 Min</text>
 
-    <!-- Row 2: Health Check + Daily Digest -->
-    <!-- Health Check -->
-    <rect x="60" y="498" width="128" height="68" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
-    <text x="124" y="518" text-anchor="middle" fill="#991b1b" font-size="10" font-weight="700">Health Check</text>
-    <text x="124" y="533" text-anchor="middle" fill="#64748b" font-size="9">APIs &amp; Gmail Capacity</text>
-    <rect x="74" y="545" width="100" height="16" rx="4" fill="#fee2e2"/>
-    <text x="124" y="556" text-anchor="middle" fill="#991b1b" font-size="9" font-weight="600">Every 15 Min</text>
+    <rect x="1165" y="422" width="140" height="72" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+    <text x="1235" y="442" text-anchor="middle" fill="#047857" font-size="10" font-weight="700">Weekly Report</text>
+    <text x="1235" y="456" text-anchor="middle" fill="#64748b" font-size="9">Metrics + Recs</text>
+    <rect x="1179" y="467" width="112" height="18" rx="4" fill="#d1fae5"/>
+    <text x="1235" y="479" text-anchor="middle" fill="#047857" font-size="9" font-weight="600">Fridays 4pm UTC</text>
 
-    <!-- Daily Digest -->
-    <rect x="203" y="498" width="128" height="68" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
-    <text x="267" y="518" text-anchor="middle" fill="#991b1b" font-size="10" font-weight="700">Daily Digest</text>
-    <text x="267" y="533" text-anchor="middle" fill="#64748b" font-size="9">Slack Ops Dashboard</text>
-    <rect x="217" y="545" width="100" height="16" rx="4" fill="#fee2e2"/>
-    <text x="267" y="556" text-anchor="middle" fill="#991b1b" font-size="9" font-weight="600">9am UTC M-F</text>
+    <!-- Row 2: Event-Driven + Monitoring -->
+    <text x="68" y="516" fill="#991b1b" font-size="10" font-weight="700" letter-spacing="0.5">EVENT-DRIVEN</text>
+
+    <rect x="60" y="524" width="155" height="56" rx="8" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+    <text x="137" y="544" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="700">Reply Handler</text>
+    <text x="137" y="558" text-anchor="middle" fill="#64748b" font-size="9">Email sentiment &#xB7; Real-time</text>
+
+    <rect x="230" y="524" width="175" height="56" rx="8" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+    <text x="317" y="544" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="700">HeyReach Webhook</text>
+    <text x="317" y="558" text-anchor="middle" fill="#64748b" font-size="9">11 LinkedIn event types</text>
+
+    <rect x="420" y="524" width="155" height="56" rx="8" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+    <text x="497" y="544" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="700">Call Webhooks</text>
+    <text x="497" y="558" text-anchor="middle" fill="#64748b" font-size="9">Bland &#xB7; Vapi &#xB7; ElevenLabs</text>
+
+    <rect x="590" y="524" width="155" height="56" rx="8" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+    <text x="667" y="544" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="700">Clay Webhook</text>
+    <text x="667" y="558" text-anchor="middle" fill="#64748b" font-size="9">Enrichment results</text>
+
+    <rect x="760" y="524" width="155" height="56" rx="8" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+    <text x="837" y="544" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="700">CSV Sync</text>
+    <text x="837" y="558" text-anchor="middle" fill="#64748b" font-size="9">Bulk import trigger</text>
+
+    <text x="960" y="516" fill="#991b1b" font-size="10" font-weight="700" letter-spacing="0.5">MONITORING</text>
+
+    <rect x="950" y="524" width="155" height="56" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+    <text x="1027" y="544" text-anchor="middle" fill="#991b1b" font-size="10" font-weight="700">Health Check</text>
+    <text x="1027" y="558" text-anchor="middle" fill="#64748b" font-size="9">APIs + Gmail &#xB7; Every 15 min</text>
+
+    <rect x="1120" y="524" width="185" height="56" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+    <text x="1212" y="544" text-anchor="middle" fill="#991b1b" font-size="10" font-weight="700">Daily Digest</text>
+    <text x="1212" y="558" text-anchor="middle" fill="#64748b" font-size="9">Slack ops dashboard &#xB7; 9am M-F</text>
   </g>
 
   <!-- Arrows: Orchestration → AI Engine -->
-  <line x1="400" y1="580" x2="400" y2="625" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="640" y1="580" x2="640" y2="625" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="880" y1="580" x2="880" y2="625" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="350" y1="595" x2="350" y2="635" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="700" y1="595" x2="700" y2="635" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1050" y1="595" x2="1050" y2="635" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <!-- ═══════════════════════════════════════ -->
   <!-- SECTION 3: AI ENGINE (Personize) -->
   <!-- ═══════════════════════════════════════ -->
   <g filter="url(#shadowDeep)">
-    <rect x="40" y="635" width="1200" height="280" rx="16" fill="white" stroke="#6366f1" stroke-width="2"/>
-    <!-- Header bar -->
-    <rect x="40" y="635" width="1200" height="44" rx="16" fill="url(#personizeGrad)"/>
-    <rect x="40" y="663" width="1200" height="16" fill="url(#personizeGrad)"/>
-    <text x="640" y="662" text-anchor="middle" fill="white" font-size="15" font-weight="700">AI ENGINE &#xB7; Personize</text>
-    <text x="640" y="696" text-anchor="middle" fill="#64748b" font-size="11">AI Memory &#xB7; Governance Rules &#xB7; Smart Context Assembly &#xB7; Structured JSON Output &#xB7; Workspace Collaboration</text>
+    <rect x="40" y="645" width="1320" height="280" rx="16" fill="white" stroke="#6366f1" stroke-width="2"/>
+    <rect x="40" y="645" width="1320" height="44" rx="16" fill="url(#personizeGrad)"/>
+    <rect x="40" y="673" width="1320" height="16" fill="url(#personizeGrad)"/>
+    <text x="700" y="672" text-anchor="middle" fill="white" font-size="15" font-weight="700">AI ENGINE &#xB7; Personize</text>
+    <text x="700" y="706" text-anchor="middle" fill="#64748b" font-size="11">AI Memory &#xB7; Governance Rules &#xB7; Smart Context Assembly &#xB7; Structured JSON Output &#xB7; Workspace Collaboration</text>
 
     <!-- Memory -->
     <g>
-      <rect x="68" y="715" width="260" height="180" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
-      <text x="198" y="736" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">Persistent Memory</text>
-      <text x="198" y="754" text-anchor="middle" fill="#64748b" font-size="10">Per-prospect &amp; per-company knowledge</text>
+      <rect x="60" y="722" width="300" height="185" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+      <text x="210" y="743" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">Persistent Memory</text>
+      <text x="210" y="760" text-anchor="middle" fill="#64748b" font-size="10">Per-prospect &amp; per-company knowledge</text>
 
-      <!-- Memory items -->
-      <rect x="80" y="766" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="136" y="783" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Contacts</text>
+      <rect x="72" y="772" width="132" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="138" y="788" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Contacts</text>
+      <rect x="212" y="772" width="132" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="278" y="788" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Companies</text>
+      <rect x="72" y="804" width="132" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="138" y="820" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Outreach Log</text>
+      <rect x="212" y="804" width="132" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="278" y="820" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Web Research</text>
+      <rect x="72" y="836" width="132" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="138" y="852" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Call Transcripts</text>
+      <rect x="212" y="836" width="132" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="278" y="852" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">LinkedIn Events</text>
 
-      <rect x="200" y="766" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="256" y="783" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Companies</text>
-
-      <rect x="80" y="800" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="136" y="817" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Outreach Log</text>
-
-      <rect x="200" y="800" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="256" y="817" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Web Research</text>
-
-      <rect x="80" y="834" width="232" height="26" rx="5" fill="#e0e7ff"/>
-      <text x="196" y="851" text-anchor="middle" fill="#4338ca" font-size="9">smartDigest() &#xB7; recall() &#xB7; search() &#xB7; memorize()</text>
-
-      <text x="198" y="883" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Emails, calls, meetings, deals, notes, signals</text>
+      <rect x="72" y="868" width="272" height="24" rx="5" fill="#e0e7ff"/>
+      <text x="208" y="884" text-anchor="middle" fill="#4338ca" font-size="9">smartDigest() &#xB7; recall() &#xB7; search() &#xB7; memorize()</text>
     </g>
 
     <!-- Governance -->
     <g>
-      <rect x="348" y="715" width="260" height="180" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
-      <text x="478" y="736" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">Governance Rules</text>
-      <text x="478" y="754" text-anchor="middle" fill="#64748b" font-size="10">Edit in dashboard &#x2014; no code, no redeploy</text>
+      <rect x="380" y="722" width="260" height="185" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+      <text x="510" y="743" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">Governance Rules</text>
+      <text x="510" y="760" text-anchor="middle" fill="#64748b" font-size="10">Edit in dashboard &#x2014; no code, no redeploy</text>
 
-      <rect x="360" y="766" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="416" y="783" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">ICP Definition</text>
+      <rect x="392" y="772" width="112" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="448" y="788" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">ICP Definition</text>
+      <rect x="512" y="772" width="112" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="568" y="788" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Brand Voice</text>
+      <rect x="392" y="804" width="112" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="448" y="820" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Outreach Playbook</text>
+      <rect x="512" y="804" width="112" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="568" y="820" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Signal Scoring</text>
+      <rect x="392" y="836" width="112" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="448" y="852" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Email Format</text>
+      <rect x="512" y="836" width="112" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="568" y="852" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Competitor Policy</text>
 
-      <rect x="480" y="766" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="536" y="783" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Brand Voice</text>
-
-      <rect x="360" y="800" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="416" y="817" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Outreach Playbook</text>
-
-      <rect x="480" y="800" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="536" y="817" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Signal Scoring</text>
-
-      <rect x="360" y="834" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="416" y="851" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Email Format</text>
-
-      <rect x="480" y="834" width="112" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="536" y="851" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Competitor Policy</text>
-
-      <text x="478" y="883" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">smartGuidelines() loads all rules per AI call</text>
+      <text x="510" y="890" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">smartGuidelines() loads all rules per AI call</text>
     </g>
 
     <!-- AI Generation -->
     <g>
-      <rect x="628" y="715" width="260" height="180" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
-      <text x="758" y="736" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">AI Generation</text>
-      <text x="758" y="754" text-anchor="middle" fill="#64748b" font-size="10">Enforced JSON output + HTML validation</text>
+      <rect x="660" y="722" width="290" height="185" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+      <text x="805" y="743" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">AI Generation</text>
+      <text x="805" y="760" text-anchor="middle" fill="#64748b" font-size="10">Enforced JSON output + HTML validation</text>
 
-      <rect x="640" y="766" width="236" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="758" y="783" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Cadence-Driven Email Sequences</text>
-
-      <rect x="640" y="800" width="236" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="758" y="817" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">ICP Scoring &amp; Signal Analysis</text>
-
-      <rect x="640" y="834" width="236" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="758" y="851" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Reply Sentiment Classification</text>
-
-      <text x="758" y="883" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Self-evaluates tone, accuracy &amp; CTA quality</text>
+      <rect x="672" y="772" width="266" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="805" y="788" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Cadence-Driven Email Sequences</text>
+      <rect x="672" y="804" width="266" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="805" y="820" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">LinkedIn Messages + Connection Notes</text>
+      <rect x="672" y="836" width="266" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="805" y="852" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">AI Call Scripts + Account Strategy</text>
+      <rect x="672" y="868" width="266" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="805" y="884" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Reply + Call + LinkedIn Sentiment</text>
     </g>
 
     <!-- Workspace -->
     <g>
-      <rect x="908" y="715" width="310" height="180" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
-      <text x="1063" y="736" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">Lead Workspace</text>
-      <text x="1063" y="754" text-anchor="middle" fill="#64748b" font-size="10">Per-prospect collaboration surface</text>
+      <rect x="970" y="722" width="370" height="185" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1"/>
+      <text x="1155" y="743" text-anchor="middle" fill="#4338ca" font-size="12" font-weight="700">Lead &amp; Account Workspaces</text>
+      <text x="1155" y="760" text-anchor="middle" fill="#64748b" font-size="10">Per-prospect + per-account collaboration</text>
 
-      <rect x="920" y="766" width="86" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="963" y="783" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Timeline</text>
+      <rect x="982" y="772" width="82" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="1023" y="788" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Timeline</text>
+      <rect x="1070" y="772" width="68" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="1104" y="788" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Tasks</text>
+      <rect x="1144" y="772" width="68" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="1178" y="788" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Notes</text>
+      <rect x="1218" y="772" width="108" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="1272" y="788" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Issues</text>
 
-      <rect x="1012" y="766" width="68" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="1046" y="783" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Tasks</text>
+      <rect x="982" y="804" width="168" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="1066" y="820" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Messages Sent (all channels)</text>
+      <rect x="1158" y="804" width="168" height="24" rx="5" fill="#c7d2fe"/>
+      <text x="1242" y="820" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Context Summary</text>
 
-      <rect x="1086" y="766" width="68" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="1120" y="783" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Notes</text>
+      <rect x="982" y="836" width="168" height="24" rx="5" fill="#fef3c7"/>
+      <text x="1066" y="852" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Account Strategy</text>
+      <rect x="1158" y="836" width="168" height="24" rx="5" fill="#fef3c7"/>
+      <text x="1242" y="852" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Pre-Flight Gate</text>
 
-      <rect x="1160" y="766" width="46" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="1183" y="783" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Issues</text>
-
-      <rect x="920" y="800" width="142" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="991" y="817" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Messages Sent</text>
-
-      <rect x="1068" y="800" width="138" height="26" rx="5" fill="#c7d2fe"/>
-      <text x="1137" y="817" text-anchor="middle" fill="#3730a3" font-size="9" font-weight="600">Context Summary</text>
-
-      <rect x="920" y="834" width="286" height="26" rx="5" fill="#e0e7ff"/>
-      <text x="1063" y="851" text-anchor="middle" fill="#4338ca" font-size="9">Multi-agent reads &amp; writes &#xB7; Full audit trail</text>
-
-      <text x="1063" y="883" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Agents + humans collaborate on same prospect</text>
+      <rect x="982" y="868" width="344" height="24" rx="5" fill="#e0e7ff"/>
+      <text x="1154" y="884" text-anchor="middle" fill="#4338ca" font-size="9">Multi-agent reads &amp; writes &#xB7; Full audit trail &#xB7; Human + AI collaborate</text>
     </g>
   </g>
 
   <!-- Arrows: AI Engine → Pipelines -->
-  <line x1="400" y1="915" x2="400" y2="960" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="640" y1="915" x2="640" y2="960" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="880" y1="915" x2="880" y2="960" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="350" y1="925" x2="350" y2="968" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="700" y1="925" x2="700" y2="968" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1050" y1="925" x2="1050" y2="968" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <!-- ═══════════════════════════════════════ -->
   <!-- SECTION 4: PROCESSING PIPELINES -->
   <!-- ═══════════════════════════════════════ -->
   <g filter="url(#shadowDeep)">
-    <rect x="40" y="970" width="1200" height="205" rx="16" fill="white" stroke="#64748b" stroke-width="1.5"/>
-    <!-- Header -->
-    <rect x="40" y="970" width="1200" height="40" rx="16" fill="#334155"/>
-    <rect x="40" y="994" width="1200" height="16" fill="#334155"/>
-    <text x="640" y="996" text-anchor="middle" fill="white" font-size="15" font-weight="700">PROCESSING PIPELINES</text>
-    <text x="640" y="1027" text-anchor="middle" fill="#94a3b8" font-size="11">Modular TypeScript &#xB7; Structured JSON Output &#xB7; HTML Sanitization &#xB7; Email Validation</text>
+    <rect x="40" y="978" width="1320" height="270" rx="16" fill="white" stroke="#64748b" stroke-width="1.5"/>
+    <rect x="40" y="978" width="1320" height="40" rx="16" fill="url(#pipelineGrad)"/>
+    <rect x="40" y="1002" width="1320" height="16" fill="url(#pipelineGrad)"/>
+    <text x="700" y="1004" text-anchor="middle" fill="white" font-size="15" font-weight="700">PROCESSING PIPELINES &#xB7; 22 Modular TypeScript Files</text>
+    <text x="700" y="1035" text-anchor="middle" fill="#94a3b8" font-size="11">Each pipeline is standalone &#xB7; Structured JSON Output &#xB7; HTML Sanitization &#xB7; Email Validation</text>
 
-    <!-- Pipeline Row 1 -->
-    <rect x="68" y="1042" width="145" height="52" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-    <text x="140" y="1063" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Sync HubSpot</text>
-    <text x="140" y="1078" text-anchor="middle" fill="#94a3b8" font-size="9">Contacts + Engagements</text>
+    <!-- Row 1: Data Pipeline -->
+    <text x="68" y="1060" fill="#334155" font-size="10" font-weight="700" letter-spacing="0.5">DATA &amp; ENRICHMENT</text>
 
-    <text x="226" y="1068" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="60" y="1068" width="130" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="125" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Sync HubSpot</text>
+    <text x="125" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">Contacts + History</text>
 
-    <rect x="248" y="1042" width="145" height="52" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-    <text x="320" y="1063" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Detect Signals</text>
-    <text x="320" y="1078" text-anchor="middle" fill="#94a3b8" font-size="9">ICP Score + Signals</text>
+    <text x="200" y="1092" fill="#cbd5e1" font-size="14">&#x2192;</text>
 
-    <text x="406" y="1068" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="215" y="1068" width="130" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="280" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Sync Salesforce</text>
+    <text x="280" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">Leads + Opps</text>
 
-    <rect x="428" y="1042" width="145" height="52" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-    <text x="500" y="1063" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Research Company</text>
-    <text x="500" y="1078" text-anchor="middle" fill="#94a3b8" font-size="9">Web Search + Analysis</text>
+    <text x="355" y="1092" fill="#cbd5e1" font-size="14">&#x2192;</text>
 
-    <text x="586" y="1068" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="370" y="1068" width="130" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="435" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Detect Signals</text>
+    <text x="435" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">ICP Score + Signals</text>
 
-    <rect x="608" y="1042" width="145" height="52" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-    <text x="680" y="1063" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Discover Contacts</text>
-    <text x="680" y="1078" text-anchor="middle" fill="#94a3b8" font-size="9">Apollo People Search</text>
+    <text x="510" y="1092" fill="#cbd5e1" font-size="14">&#x2192;</text>
 
-    <text x="766" y="1068" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="525" y="1068" width="140" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="595" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Research Company</text>
+    <text x="595" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">Tavily Web Search</text>
 
-    <rect x="788" y="1042" width="145" height="52" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-    <text x="860" y="1063" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Enrich Profiles</text>
-    <text x="860" y="1078" text-anchor="middle" fill="#94a3b8" font-size="9">Person + Company Data</text>
+    <text x="675" y="1092" fill="#cbd5e1" font-size="14">&#x2192;</text>
 
-    <text x="946" y="1068" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="690" y="1068" width="140" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="760" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Discover Contacts</text>
+    <text x="760" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">Apollo People Search</text>
 
-    <rect x="968" y="1042" width="145" height="52" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-    <text x="1040" y="1063" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Source Contacts</text>
-    <text x="1040" y="1078" text-anchor="middle" fill="#94a3b8" font-size="9">AI Sourcing Plan</text>
+    <text x="840" y="1092" fill="#cbd5e1" font-size="14">&#x2192;</text>
 
-    <!-- Pipeline Row 2 -->
-    <rect x="68" y="1106" width="185" height="52" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
-    <text x="160" y="1127" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Generate Outreach</text>
-    <text x="160" y="1142" text-anchor="middle" fill="#b45309" font-size="9">Cadence-Driven Sequences</text>
+    <rect x="855" y="1068" width="130" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="920" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Enrich Profiles</text>
+    <text x="920" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">Apollo + Clay</text>
 
-    <text x="268" y="1132" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <text x="995" y="1092" fill="#cbd5e1" font-size="14">&#x2192;</text>
 
-    <rect x="288" y="1106" width="185" height="52" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
-    <text x="380" y="1127" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Analyze Replies</text>
-    <text x="380" y="1142" text-anchor="middle" fill="#b45309" font-size="9">Sentiment + Next Action</text>
+    <rect x="1010" y="1068" width="140" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="1080" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Source Contacts</text>
+    <text x="1080" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">AI Sourcing Plan</text>
 
-    <text x="488" y="1132" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="1165" y="1068" width="140" height="48" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="1235" y="1087" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">Account Strategy</text>
+    <text x="1235" y="1101" text-anchor="middle" fill="#94a3b8" font-size="9">Multi-Contact Plan</text>
 
-    <rect x="508" y="1106" width="185" height="52" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="600" y="1127" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Execute Tasks</text>
-    <text x="600" y="1142" text-anchor="middle" fill="#b45309" font-size="9">Human + AI &#xB7; 4 Decision Types</text>
+    <!-- Row 2: Outreach Pipeline -->
+    <text x="68" y="1138" fill="#92400e" font-size="10" font-weight="700" letter-spacing="0.5">MULTICHANNEL OUTREACH</text>
 
-    <text x="708" y="1132" fill="#cbd5e1" font-size="16">&#x2192;</text>
+    <rect x="60" y="1146" width="165" height="48" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
+    <text x="142" y="1165" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Generate Outreach</text>
+    <text x="142" y="1179" text-anchor="middle" fill="#b45309" font-size="9">Email Sequences</text>
 
-    <rect x="728" y="1106" width="185" height="52" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
-    <text x="820" y="1127" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Weekly Report</text>
-    <text x="820" y="1142" text-anchor="middle" fill="#b45309" font-size="9">Metrics + Recommendations</text>
+    <rect x="240" y="1146" width="175" height="48" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
+    <text x="327" y="1165" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Generate LinkedIn Msg</text>
+    <text x="327" y="1179" text-anchor="middle" fill="#b45309" font-size="9">DMs + Connection Notes</text>
 
-    <!-- +Your Pipeline -->
-    <rect x="940" y="1106" width="170" height="52" rx="8" fill="white" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3"/>
-    <text x="1025" y="1127" text-anchor="middle" fill="#7c3aed" font-size="10" font-weight="600">+ Your Pipeline</text>
-    <text x="1025" y="1142" text-anchor="middle" fill="#a78bfa" font-size="9">LinkedIn, SMS, Direct Mail</text>
+    <rect x="430" y="1146" width="165" height="48" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
+    <text x="512" y="1165" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Generate Call Script</text>
+    <text x="512" y="1179" text-anchor="middle" fill="#b45309" font-size="9">Human + AI Playbook</text>
+
+    <rect x="610" y="1146" width="165" height="48" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1"/>
+    <text x="692" y="1165" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700">Account Preflight</text>
+    <text x="692" y="1179" text-anchor="middle" fill="#b45309" font-size="9">Proceed / Modify / Block</text>
+
+    <!-- Row 2b: Analysis -->
+    <text x="810" y="1138" fill="#1e40af" font-size="10" font-weight="700" letter-spacing="0.5">ANALYSIS</text>
+
+    <rect x="800" y="1146" width="155" height="48" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+    <text x="877" y="1165" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="700">Analyze Replies</text>
+    <text x="877" y="1179" text-anchor="middle" fill="#3b82f6" font-size="9">6 Intent Types</text>
+
+    <rect x="970" y="1146" width="175" height="48" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+    <text x="1057" y="1165" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="700">Analyze LinkedIn</text>
+    <text x="1057" y="1179" text-anchor="middle" fill="#3b82f6" font-size="9">Memorize &#x2192; Classify &#x2192; Act</text>
+
+    <rect x="1160" y="1146" width="145" height="48" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+    <text x="1232" y="1165" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="700">Analyze Calls</text>
+    <text x="1232" y="1179" text-anchor="middle" fill="#3b82f6" font-size="9">Transcript &#x2192; Act</text>
+
+    <!-- Row 3: Operations -->
+    <text x="68" y="1216" fill="#334155" font-size="10" font-weight="700" letter-spacing="0.5">OPERATIONS</text>
+
+    <rect x="60" y="1224" width="145" height="15" rx="5" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="132" y="1235" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">Execute Tasks</text>
+    <rect x="215" y="1224" width="145" height="15" rx="5" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="287" y="1235" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">Weekly Report</text>
+    <rect x="370" y="1224" width="145" height="15" rx="5" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="442" y="1235" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">Sync CSV</text>
+    <rect x="525" y="1224" width="155" height="15" rx="5" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="602" y="1235" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">Sync Clay</text>
+    <rect x="690" y="1224" width="165" height="15" rx="5" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="772" y="1235" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">Ingest Enrichment</text>
+    <rect x="865" y="1224" width="155" height="15" rx="5" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="942" y="1235" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">Ingest Signals</text>
   </g>
 
   <!-- Arrows: Pipelines → Delivery -->
-  <line x1="300" y1="1175" x2="300" y2="1218" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="640" y1="1175" x2="640" y2="1218" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <line x1="980" y1="1175" x2="980" y2="1218" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="350" y1="1248" x2="350" y2="1295" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="700" y1="1248" x2="700" y2="1295" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1050" y1="1248" x2="1050" y2="1295" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <!-- ═══════════════════════════════════════ -->
   <!-- SECTION 5: DELIVERY & OUTPUT -->
   <!-- ═══════════════════════════════════════ -->
-  <text x="640" y="1215" text-anchor="middle" fill="#475569" font-size="13" font-weight="600" letter-spacing="1.5">DELIVERY &amp; OUTPUT</text>
-  <line x1="520" y1="1223" x2="760" y2="1223" stroke="#cbd5e1" stroke-width="1"/>
+  <g filter="url(#shadowDeep)">
+    <rect x="40" y="1305" width="1320" height="145" rx="16" fill="white" stroke="#7c3aed" stroke-width="2"/>
+    <rect x="40" y="1305" width="1320" height="40" rx="16" fill="url(#deliveryGrad)"/>
+    <rect x="40" y="1329" width="1320" height="16" fill="url(#deliveryGrad)"/>
+    <text x="700" y="1331" text-anchor="middle" fill="white" font-size="15" font-weight="700">DELIVERY &#xB7; 7 Output Channels</text>
 
-  <!-- Gmail Send -->
-  <g filter="url(#shadow)">
-    <rect x="40" y="1238" width="220" height="110" rx="12" fill="white" stroke="#7c3aed" stroke-width="2"/>
-    <rect x="40" y="1238" width="220" height="34" rx="12" fill="#7c3aed"/>
-    <rect x="40" y="1260" width="220" height="12" fill="#7c3aed"/>
-    <text x="150" y="1260" text-anchor="middle" fill="white" font-size="12" font-weight="700">Gmail</text>
-    <text x="150" y="1288" text-anchor="middle" fill="#64748b" font-size="10">Multi-sender round-robin</text>
-    <text x="150" y="1304" text-anchor="middle" fill="#64748b" font-size="10">Email validation + limits</text>
-    <text x="150" y="1320" text-anchor="middle" fill="#64748b" font-size="10">Reply threading &amp; MIME</text>
-    <text x="150" y="1338" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Primary outreach channel</text>
+    <!-- Gmail -->
+    <rect x="60" y="1358" width="155" height="76" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="137" y="1380" text-anchor="middle" fill="#6d28d9" font-size="11" font-weight="700">Gmail</text>
+    <text x="137" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Multi-sender round-robin</text>
+    <text x="137" y="1410" text-anchor="middle" fill="#64748b" font-size="9">Reply threading + MIME</text>
+    <text x="137" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">Primary email channel</text>
+
+    <!-- SendGrid -->
+    <rect x="230" y="1358" width="155" height="76" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="307" y="1380" text-anchor="middle" fill="#6d28d9" font-size="11" font-weight="700">SendGrid</text>
+    <text x="307" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Transactional email</text>
+    <text x="307" y="1410" text-anchor="middle" fill="#64748b" font-size="9">High-volume sending</text>
+    <text x="307" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">Scale email channel</text>
+
+    <!-- Smartlead -->
+    <rect x="400" y="1358" width="155" height="76" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="477" y="1380" text-anchor="middle" fill="#6d28d9" font-size="11" font-weight="700">Smartlead</text>
+    <text x="477" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Cold email infrastructure</text>
+    <text x="477" y="1410" text-anchor="middle" fill="#64748b" font-size="9">Warmup + deliverability</text>
+    <text x="477" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">Cold outreach channel</text>
+
+    <!-- LinkedIn / HeyReach -->
+    <rect x="570" y="1358" width="170" height="76" rx="10" fill="#faf5ff" stroke="#0077b5" stroke-width="2"/>
+    <text x="655" y="1380" text-anchor="middle" fill="#0077b5" font-size="11" font-weight="700">LinkedIn / HeyReach</text>
+    <text x="655" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Connection requests</text>
+    <text x="655" y="1410" text-anchor="middle" fill="#64748b" font-size="9">DMs + InMail</text>
+    <text x="655" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">Social channel</text>
+
+    <!-- AI Voice -->
+    <rect x="755" y="1358" width="170" height="76" rx="10" fill="#faf5ff" stroke="#f59e0b" stroke-width="2"/>
+    <text x="840" y="1380" text-anchor="middle" fill="#92400e" font-size="11" font-weight="700">AI Voice Calls</text>
+    <text x="840" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Bland &#xB7; Vapi &#xB7; ElevenLabs</text>
+    <text x="840" y="1410" text-anchor="middle" fill="#64748b" font-size="9">Script-driven calling</text>
+    <text x="840" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">Voice channel</text>
+
+    <!-- HubSpot -->
+    <rect x="940" y="1358" width="155" height="76" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="1017" y="1380" text-anchor="middle" fill="#6d28d9" font-size="11" font-weight="700">HubSpot CRM</text>
+    <text x="1017" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Log emails + tasks</text>
+    <text x="1017" y="1410" text-anchor="middle" fill="#64748b" font-size="9">Update properties</text>
+    <text x="1017" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">CRM sync-back</text>
+
+    <!-- Slack -->
+    <rect x="1110" y="1358" width="155" height="76" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="1187" y="1380" text-anchor="middle" fill="#6d28d9" font-size="11" font-weight="700">Slack</text>
+    <text x="1187" y="1396" text-anchor="middle" fill="#64748b" font-size="9">Daily digest + alerts</text>
+    <text x="1187" y="1410" text-anchor="middle" fill="#64748b" font-size="9">Health + weekly reports</text>
+    <text x="1187" y="1424" text-anchor="middle" fill="#94a3b8" font-size="8" font-style="italic">Ops dashboard</text>
   </g>
 
-  <!-- HubSpot Write -->
-  <g filter="url(#shadow)">
-    <rect x="290" y="1238" width="220" height="110" rx="12" fill="white" stroke="#ff7a59" stroke-width="2"/>
-    <rect x="290" y="1238" width="220" height="34" rx="12" fill="#ff7a59"/>
-    <rect x="290" y="1260" width="220" height="12" fill="#ff7a59"/>
-    <text x="400" y="1260" text-anchor="middle" fill="white" font-size="12" font-weight="700">HubSpot CRM</text>
-    <text x="400" y="1288" text-anchor="middle" fill="#64748b" font-size="10">Log sent emails</text>
-    <text x="400" y="1304" text-anchor="middle" fill="#64748b" font-size="10">Create tasks for reps</text>
-    <text x="400" y="1320" text-anchor="middle" fill="#64748b" font-size="10">Update contact properties</text>
-    <text x="400" y="1338" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Full audit trail in CRM</text>
-  </g>
+  <!-- Feedback loops -->
+  <path d="M 1370 1380 L 1380 1380 L 1380 222 L 1368 222" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowIndigo)"/>
+  <text x="1384" y="800" fill="#6366f1" font-size="10" font-weight="600" transform="rotate(-90, 1384, 800)" text-anchor="middle">FEEDBACK LOOP &#xB7; Every action feeds back into memory</text>
 
-  <!-- Slack -->
-  <g filter="url(#shadow)">
-    <rect x="540" y="1238" width="220" height="110" rx="12" fill="white" stroke="#e2b93c" stroke-width="2"/>
-    <rect x="540" y="1238" width="220" height="34" rx="12" fill="#e2b93c"/>
-    <rect x="540" y="1260" width="220" height="12" fill="#e2b93c"/>
-    <text x="650" y="1260" text-anchor="middle" fill="white" font-size="12" font-weight="700">Slack</text>
-    <text x="650" y="1288" text-anchor="middle" fill="#64748b" font-size="10">Daily ops digest (9am)</text>
-    <text x="650" y="1304" text-anchor="middle" fill="#64748b" font-size="10">Health alerts + replies</text>
-    <text x="650" y="1320" text-anchor="middle" fill="#64748b" font-size="10">Weekly reports + errors</text>
-    <text x="650" y="1338" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Operations dashboard</text>
-  </g>
-
-  <!-- Personize Dashboard -->
-  <g filter="url(#shadow)">
-    <rect x="790" y="1238" width="220" height="110" rx="12" fill="white" stroke="#6366f1" stroke-width="2"/>
-    <rect x="790" y="1238" width="220" height="34" rx="12" fill="#6366f1"/>
-    <rect x="790" y="1260" width="220" height="12" fill="#6366f1"/>
-    <text x="900" y="1260" text-anchor="middle" fill="white" font-size="12" font-weight="700">Personize Dashboard</text>
-    <text x="900" y="1288" text-anchor="middle" fill="#64748b" font-size="10">Enriched prospect profiles</text>
-    <text x="900" y="1304" text-anchor="middle" fill="#64748b" font-size="10">Company research &amp; signals</text>
-    <text x="900" y="1320" text-anchor="middle" fill="#64748b" font-size="10">Workspace activity log</text>
-    <text x="900" y="1338" text-anchor="middle" fill="#94a3b8" font-size="9" font-style="italic">Edit governance rules here</text>
-  </g>
-
-  <!-- +Your Channel -->
-  <g filter="url(#shadow)">
-    <rect x="1040" y="1238" width="200" height="110" rx="12" fill="white" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6,4"/>
-    <text x="1140" y="1278" text-anchor="middle" fill="#7c3aed" font-size="20" font-weight="300">+</text>
-    <text x="1140" y="1298" text-anchor="middle" fill="#6d28d9" font-size="11" font-weight="600">Your Channels</text>
-    <text x="1140" y="1316" text-anchor="middle" fill="#94a3b8" font-size="9">LinkedIn, SMS, Twilio</text>
-    <text x="1140" y="1330" text-anchor="middle" fill="#94a3b8" font-size="9">SendGrid, Direct Mail</text>
-    <text x="1140" y="1344" text-anchor="middle" fill="#94a3b8" font-size="9">Custom Webhooks</text>
-  </g>
+  <path d="M 32 222 L 20 222 L 20 1380 L 32 1380" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowGreen)"/>
+  <text x="16" y="800" fill="#10b981" font-size="10" font-weight="600" transform="rotate(-90, 16, 800)" text-anchor="middle">CONTINUOUS LOOP &#xB7; Syncs, scores, researches, engages across all channels &#xB7; Mon-Fri</text>
 
   <!-- ═══════════════════════════════════════ -->
-  <!-- SECTION 6: FEEDBACK LOOP ARROW -->
-  <!-- ═══════════════════════════════════════ -->
-  <!-- Right-side feedback loop: Delivery → back up to Data Sources -->
-  <path d="M 1250 1290 L 1260 1290 L 1260 222 L 1248 222" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowIndigo)"/>
-  <text x="1264" y="750" fill="#6366f1" font-size="10" font-weight="600" transform="rotate(-90, 1264, 750)" text-anchor="middle">FEEDBACK LOOP &#xB7; Every action feeds back into memory</text>
-
-  <!-- Left-side feedback loop -->
-  <path d="M 32 222 L 20 222 L 20 1290 L 32 1290" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowGreen)"/>
-  <text x="16" y="750" fill="#10b981" font-size="10" font-weight="600" transform="rotate(-90, 16, 750)" text-anchor="middle">CONTINUOUS LOOP &#xB7; Syncs, scores, researches, engages &#xB7; Mon-Fri</text>
-
-  <!-- ═══════════════════════════════════════ -->
-  <!-- SECTION 7: EXTENSIBILITY & COMMUNITY -->
+  <!-- SECTION 6: EXTEND & CUSTOMIZE -->
   <!-- ═══════════════════════════════════════ -->
   <g filter="url(#shadowDeep)">
-    <rect x="40" y="1380" width="1200" height="160" rx="16" fill="white" stroke="#7c3aed" stroke-width="2"/>
-    <rect x="40" y="1380" width="1200" height="40" rx="16" fill="url(#extendGrad)"/>
-    <rect x="40" y="1404" width="1200" height="16" fill="url(#extendGrad)"/>
-    <text x="640" y="1406" text-anchor="middle" fill="white" font-size="15" font-weight="700">EXTEND &amp; CUSTOMIZE</text>
+    <rect x="40" y="1480" width="1320" height="150" rx="16" fill="white" stroke="#7c3aed" stroke-width="2"/>
+    <rect x="40" y="1480" width="1320" height="40" rx="16" fill="url(#extendGrad)"/>
+    <rect x="40" y="1504" width="1320" height="16" fill="url(#extendGrad)"/>
+    <text x="700" y="1506" text-anchor="middle" fill="white" font-size="15" font-weight="700">EXTEND &amp; CUSTOMIZE</text>
 
-    <!-- Add Data Sources -->
-    <rect x="68" y="1435" width="270" height="86" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
-    <text x="203" y="1456" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">Add Data Sources</text>
-    <text x="203" y="1474" text-anchor="middle" fill="#64748b" font-size="10">Salesforce, Pipedrive, Close</text>
-    <text x="203" y="1489" text-anchor="middle" fill="#64748b" font-size="10">Clearbit, ZoomInfo, Lusha</text>
-    <text x="203" y="1504" text-anchor="middle" fill="#64748b" font-size="10">CSV, Webhooks, Databases</text>
+    <rect x="60" y="1535" width="300" height="78" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="210" y="1556" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">Add Data Sources</text>
+    <text x="210" y="1574" text-anchor="middle" fill="#64748b" font-size="10">Pipedrive, Close, Attio, ZoomInfo</text>
+    <text x="210" y="1589" text-anchor="middle" fill="#64748b" font-size="10">Clearbit, Lusha, CSV, Webhooks, n8n</text>
 
-    <!-- Add Channels -->
-    <rect x="358" y="1435" width="270" height="86" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
-    <text x="493" y="1456" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">Add Delivery Channels</text>
-    <text x="493" y="1474" text-anchor="middle" fill="#64748b" font-size="10">LinkedIn Messages &amp; InMail</text>
-    <text x="493" y="1489" text-anchor="middle" fill="#64748b" font-size="10">SMS via Twilio, Direct Mail</text>
-    <text x="493" y="1504" text-anchor="middle" fill="#64748b" font-size="10">Custom Webhooks &amp; APIs</text>
+    <rect x="380" y="1535" width="300" height="78" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="530" y="1556" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">Add Delivery Channels</text>
+    <text x="530" y="1574" text-anchor="middle" fill="#64748b" font-size="10">SMS via Twilio, WhatsApp</text>
+    <text x="530" y="1589" text-anchor="middle" fill="#64748b" font-size="10">Direct Mail, Custom Webhooks</text>
 
-    <!-- n8n / Zapier -->
-    <rect x="648" y="1435" width="270" height="86" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
-    <text x="783" y="1456" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">No-Code Integrations</text>
-    <text x="783" y="1474" text-anchor="middle" fill="#64748b" font-size="10">n8n workflows (built-in)</text>
-    <text x="783" y="1489" text-anchor="middle" fill="#64748b" font-size="10">Zapier &#xB7; 8,000+ apps</text>
-    <text x="783" y="1504" text-anchor="middle" fill="#64748b" font-size="10">Sync &amp; memorize from anywhere</text>
+    <rect x="700" y="1535" width="300" height="78" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="850" y="1556" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">No-Code Integrations</text>
+    <text x="850" y="1574" text-anchor="middle" fill="#64748b" font-size="10">n8n workflows (built-in)</text>
+    <text x="850" y="1589" text-anchor="middle" fill="#64748b" font-size="10">Zapier &#xB7; 8,000+ apps</text>
 
-    <!-- Community -->
-    <rect x="938" y="1435" width="280" height="86" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
-    <text x="1078" y="1456" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">Community Contributions</text>
-    <text x="1078" y="1474" text-anchor="middle" fill="#64748b" font-size="10">Share pipelines &amp; connectors</text>
-    <text x="1078" y="1489" text-anchor="middle" fill="#64748b" font-size="10">Fork, extend, contribute back</text>
-    <text x="1078" y="1504" text-anchor="middle" fill="#64748b" font-size="10">Open source &#xB7; MIT License</text>
+    <rect x="1020" y="1535" width="320" height="78" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="1180" y="1556" text-anchor="middle" fill="#6d28d9" font-size="12" font-weight="700">Community Contributions</text>
+    <text x="1180" y="1574" text-anchor="middle" fill="#64748b" font-size="10">Share pipelines &amp; connectors</text>
+    <text x="1180" y="1589" text-anchor="middle" fill="#64748b" font-size="10">Fork, extend, contribute &#xB7; MIT License</text>
   </g>
 
   <!-- ═══════════════════════════════════════ -->
-  <!-- SECTION 8: SAFETY & CONFIG BAR -->
+  <!-- SECTION 7: SAFETY & COMPLIANCE -->
   <!-- ═══════════════════════════════════════ -->
   <g filter="url(#shadow)">
-    <rect x="40" y="1570" width="1200" height="88" rx="12" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
-    <text x="640" y="1596" text-anchor="middle" fill="#92400e" font-size="13" font-weight="700">SAFETY &amp; COMPLIANCE</text>
+    <rect x="40" y="1660" width="1320" height="80" rx="12" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+    <text x="700" y="1686" text-anchor="middle" fill="#92400e" font-size="13" font-weight="700">SAFETY &amp; COMPLIANCE</text>
 
-    <!-- Safety pills — Row 1 -->
-    <rect x="60" y="1608" width="115" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="117" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Dry-Run Default</text>
+    <rect x="60" y="1698" width="115" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="117" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Dry-Run Default</text>
 
-    <rect x="182" y="1608" width="120" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="242" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Opt-Out Enforced</text>
+    <rect x="182" y="1698" width="120" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="242" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Opt-Out Enforced</text>
 
-    <rect x="309" y="1608" width="125" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="371" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">HTML Sanitization</text>
+    <rect x="309" y="1698" width="125" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="371" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">HTML Sanitization</text>
 
-    <rect x="441" y="1608" width="120" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="501" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Email Validation</text>
+    <rect x="441" y="1698" width="120" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="501" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Email Validation</text>
 
-    <rect x="568" y="1608" width="130" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="633" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Auto Stop on Reply</text>
+    <rect x="568" y="1698" width="130" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="633" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Auto Stop on Reply</text>
 
-    <rect x="705" y="1608" width="128" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="769" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Health Monitoring</text>
+    <rect x="705" y="1698" width="128" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="769" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Health Monitoring</text>
 
-    <rect x="840" y="1608" width="115" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="897" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Rate Limiting</text>
+    <rect x="840" y="1698" width="115" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="897" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Rate Limiting</text>
 
-    <rect x="962" y="1608" width="105" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="1014" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Budget Caps</text>
+    <rect x="962" y="1698" width="105" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="1014" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Budget Caps</text>
 
-    <rect x="1074" y="1608" width="118" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
-    <text x="1133" y="1624" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Error Recovery</text>
+    <rect x="1074" y="1698" width="118" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="1133" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Error Recovery</text>
+
+    <rect x="1199" y="1698" width="140" height="24" rx="12" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+    <text x="1269" y="1714" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Disposable Blocking</text>
   </g>
 
   <!-- ═══════════════════════════════════════ -->
-  <!-- SECTION 9: CONFIG BAR -->
+  <!-- SECTION 8: CONFIG BAR -->
   <!-- ═══════════════════════════════════════ -->
   <g filter="url(#shadow)">
-    <rect x="40" y="1674" width="1200" height="56" rx="12" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
-    <text x="640" y="1700" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">
-      ALL SETTINGS IN ONE FILE: prospecting.config.ts &#xB7; GOVERNANCE IN DASHBOARD: no code, no redeploy &#xB7; 275 AUTOMATED TESTS &#xB7; npm install &amp; deploy in 30 min
+    <rect x="40" y="1760" width="1320" height="56" rx="12" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+    <text x="700" y="1786" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">
+      ALL SETTINGS IN ONE FILE: prospecting.config.ts &#xB7; GOVERNANCE IN DASHBOARD: no code, no redeploy &#xB7; 280 AUTOMATED TESTS &#xB7; 22 PIPELINES &#xB7; 7 DELIVERY CHANNELS
     </text>
-    <text x="640" y="1718" text-anchor="middle" fill="#15803d" font-size="10">
-      Free to start &#xB7; $50–$200/mo at scale &#xB7; BYO APIs &#xB7; No vendor lock-in &#xB7; MIT License
+    <text x="700" y="1804" text-anchor="middle" fill="#15803d" font-size="10">
+      Free to start &#xB7; $50&#x2013;$200/mo at scale &#xB7; BYO APIs &#xB7; No vendor lock-in &#xB7; MIT License &#xB7; Built by Personize
     </text>
+  </g>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 9: MULTICHANNEL SEQUENCE FLOW -->
+  <!-- ═══════════════════════════════════════ -->
+  <text x="700" y="1854" text-anchor="middle" fill="#475569" font-size="13" font-weight="600" letter-spacing="1.5">MULTICHANNEL SEQUENCE FLOW</text>
+  <line x1="530" y1="1862" x2="870" y2="1862" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Sequence: Email → LinkedIn → Voice → Escalate -->
+  <g filter="url(#shadow)">
+    <rect x="80" y="1878" width="200" height="50" rx="10" fill="#7c3aed" stroke="#6d28d9" stroke-width="1"/>
+    <text x="180" y="1900" text-anchor="middle" fill="white" font-size="12" font-weight="700">Email Sequence</text>
+    <text x="180" y="1916" text-anchor="middle" fill="#c4b5fd" font-size="10">3-step cadence &#xB7; Personalized</text>
+  </g>
+
+  <line x1="280" y1="1903" x2="330" y2="1903" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="305" y="1896" text-anchor="middle" fill="#94a3b8" font-size="8">no reply</text>
+
+  <g filter="url(#shadow)">
+    <rect x="340" y="1878" width="200" height="50" rx="10" fill="#0077b5" stroke="#005f8f" stroke-width="1"/>
+    <text x="440" y="1900" text-anchor="middle" fill="white" font-size="12" font-weight="700">LinkedIn Outreach</text>
+    <text x="440" y="1916" text-anchor="middle" fill="#b0d4e8" font-size="10">Connect + DM via HeyReach</text>
+  </g>
+
+  <line x1="540" y1="1903" x2="590" y2="1903" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="565" y="1896" text-anchor="middle" fill="#94a3b8" font-size="8">no reply</text>
+
+  <g filter="url(#shadow)">
+    <rect x="600" y="1878" width="200" height="50" rx="10" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="700" y="1900" text-anchor="middle" fill="white" font-size="12" font-weight="700">AI Voice Call</text>
+    <text x="700" y="1916" text-anchor="middle" fill="#fef3c7" font-size="10">Script-driven &#xB7; Auto-transcribed</text>
+  </g>
+
+  <line x1="800" y1="1903" x2="850" y2="1903" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="825" y="1896" text-anchor="middle" fill="#94a3b8" font-size="8">no reply</text>
+
+  <g filter="url(#shadow)">
+    <rect x="860" y="1878" width="200" height="50" rx="10" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+    <text x="960" y="1900" text-anchor="middle" fill="white" font-size="12" font-weight="700">Escalate to Human</text>
+    <text x="960" y="1916" text-anchor="middle" fill="#fca5a5" font-size="10">HubSpot task for rep</text>
+  </g>
+
+  <line x1="1060" y1="1903" x2="1110" y2="1903" stroke="#10b981" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="1085" y="1896" text-anchor="middle" fill="#10b981" font-size="8">replied!</text>
+
+  <g filter="url(#shadow)">
+    <rect x="1120" y="1878" width="220" height="50" rx="10" fill="#10b981" stroke="#059669" stroke-width="1"/>
+    <text x="1230" y="1900" text-anchor="middle" fill="white" font-size="12" font-weight="700">Reply Analyzed + Routed</text>
+    <text x="1230" y="1916" text-anchor="middle" fill="#a7f3d0" font-size="10">Auto-classify &#xB7; Next action</text>
   </g>
 </svg>
