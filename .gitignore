@@ -19,3 +19,6 @@ npm-debug.log*
 
 # Build artifacts
 *.tgz
+
+# Internal docs (not for public repo)
+internal-docs/

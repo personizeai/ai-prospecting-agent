@@ -33,6 +33,21 @@ export function createMockClient() {
         },
       }),
       search: async () => ({ data: [] }),
+      properties: async () => ({
+        data: {
+          recordId: 'mock',
+          type: 'Contact',
+          properties: [
+            { name: 'Pending Tasks', systemName: 'pending_tasks', value: [], type: 'json' },
+            { name: 'Open Issues', systemName: 'open_issues', value: [], type: 'json' },
+            { name: 'Emails Sent', systemName: 'emails_sent', value: 0, type: 'number' },
+            { name: 'Last Sent At', systemName: 'last_sent_at', value: '', type: 'date' },
+            { name: 'Sequence Status', systemName: 'sequence_status', value: 'Active', type: 'options' },
+            { name: 'Messages Sent', systemName: 'messages_sent', value: [], type: 'json' },
+            { name: 'Context', systemName: 'context', value: '', type: 'text' },
+          ],
+        },
+      }),
       memorizeBatch: async () => ({ data: {} }),
       // Memory CRUD methods (used by workspace layer)
       update: async () => ({ data: { success: true, previousValue: null, newValue: null, version: 1, stores: { snapshot: 'updated', lancedb: 'updated', freeform: 'skipped' } } }),

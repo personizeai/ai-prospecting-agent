@@ -4,7 +4,7 @@
  * Account-level collaboration surface, keyed on company domain (website_url).
  * Uses Personize Memory CRUD API for all state management:
  *   - arrayPush for adds (race-free)
- *   - arrayRemove for removes (with retry on VERSION_CONFLICT)
+ *   - arrayPatch for in-place status updates (race-free, no index lookup)
  *   - arrayPatch for in-place updates
  *   - Direct property updates for strategy and context
  *   - propertyHistory for automatic audit trails
@@ -90,6 +90,9 @@ interface Task {
   createdBy: string;
   createdAt: string;
   dueDate?: string;
+  completedAt?: string;
+  outcome?: string;
+  status?: 'active' | 'completed' | 'declined';
 }
 
 interface Issue {
@@ -97,9 +100,11 @@ interface Issue {
   title: string;
   description: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'investigating';
+  status: 'open' | 'investigating' | 'resolved';
   raisedBy: string;
   raisedAt: string;
+  resolvedAt?: string;
+  resolution?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -110,36 +115,46 @@ function generateId(prefix: string): string {
 
 const log = logger.child({ module: 'account-workspace' });
 
+/**
+ * Read a single property value from a company record.
+ * Uses properties() API for lightweight, targeted reads (no LLM cost, no token budget).
+ */
 async function readProperty<T>(domain: string, propertyName: string, fallback: T): Promise<T> {
   try {
-    const digest = await client.memory.smartDigest({
-      website_url: domain,
+    const result = await client.memory.properties({
+      websiteUrl: domain,
       type: 'Company',
-      token_budget: 500,
-      include_properties: true,
+      propertyNames: [propertyName],
+      nonEmpty: true,
     });
-    const props = (digest.data as any)?.properties;
-    const value = props?.[propertyName]?.value;
-    if (value != null) return value as T;
+    const prop = (result.data as any)?.properties?.find((p: any) => p.name === propertyName || p.systemName === propertyName);
+    if (prop?.value != null) return prop.value as T;
   } catch (err) {
     log.warn('Failed to read account property, using fallback', { domain, propertyName, error: (err as Error).message });
   }
   return fallback;
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      if (err?.code === 'VERSION_CONFLICT' && attempt < maxRetries - 1) {
-        log.info('VERSION_CONFLICT on account, retrying', { attempt: attempt + 1, maxRetries });
-        continue;
-      }
-      throw err;
+/**
+ * Read multiple properties from a company record in a single API call.
+ */
+async function readProperties(domain: string, propertyNames: string[]): Promise<Record<string, any>> {
+  try {
+    const result = await client.memory.properties({
+      websiteUrl: domain,
+      type: 'Company',
+      propertyNames,
+    });
+    const out: Record<string, any> = {};
+    for (const prop of (result.data as any)?.properties ?? []) {
+      const key = prop.systemName || prop.name;
+      out[key] = prop.value;
     }
+    return out;
+  } catch (err) {
+    log.warn('Failed to read account properties', { domain, propertyNames, error: (err as Error).message });
+    return {};
   }
-  throw new Error('withRetry: max retries exceeded');
 }
 
 // ─── Write Functions (arrayPush — race-free) ──────────────────────
@@ -254,11 +269,13 @@ async function getStrategy(domain: string): Promise<AccountStrategy | null> {
 }
 
 async function getOpenTasks(domain: string): Promise<Task[]> {
-  return readProperty<Task[]>(domain, 'account_pending_tasks', []);
+  const all = await readProperty<Task[]>(domain, 'account_pending_tasks', []);
+  return all.filter(t => !t.status || t.status === 'active');
 }
 
 async function getIssues(domain: string): Promise<Issue[]> {
-  return readProperty<Issue[]>(domain, 'account_open_issues', []);
+  const all = await readProperty<Issue[]>(domain, 'account_open_issues', []);
+  return all.filter(i => i.status === 'open' || i.status === 'investigating');
 }
 
 async function getUpdates(domain: string) {
@@ -294,23 +311,26 @@ async function getContactRollup(domain: string) {
     }
   }
 
-  // Read workspace properties for each contact via smartDigest (parallel)
+  // Read workspace properties for each contact via properties() (parallel, no LLM cost)
+  const workspacePropertyNames = ['sequence_status', 'emails_sent', 'pending_tasks', 'open_issues'];
   const workspaceStates = await Promise.all(
     contactInfos.map(async ({ email }) => {
       try {
-        const digest = await client.memory.smartDigest({
+        const result = await client.memory.properties({
           email,
           type: 'Contact',
-          token_budget: 500,
-          include_properties: true,
+          propertyNames: workspacePropertyNames,
         });
-        const props = (digest.data as any)?.properties || {};
+        const propsMap: Record<string, any> = {};
+        for (const prop of (result.data as any)?.properties ?? []) {
+          propsMap[prop.systemName || prop.name] = prop.value;
+        }
         return {
           email,
-          sequenceStatus: props.sequence_status?.value || 'Unknown',
-          emailsSent: props.emails_sent?.value || 0,
-          pendingTasks: props.pending_tasks?.value || [],
-          openIssues: props.open_issues?.value || [],
+          sequenceStatus: propsMap.sequence_status || 'Unknown',
+          emailsSent: propsMap.emails_sent || 0,
+          pendingTasks: propsMap.pending_tasks || [],
+          openIssues: propsMap.open_issues || [],
         };
       } catch {
         return { email, sequenceStatus: 'Unknown', emailsSent: 0, pendingTasks: [], openIssues: [] };
@@ -336,40 +356,37 @@ async function getContactRollup(domain: string) {
   };
 }
 
-// ─── Task Lifecycle (arrayRemove with retry) ─────────────────────
+// ─── Task Lifecycle (arrayPatch — race-free, no index lookup) ────
 
 async function completeTask(domain: string, taskId: string, outcome: string): Promise<void> {
-  await withRetry(async () => {
-    const current = await readProperty<Task[]>(domain, 'account_pending_tasks', []);
-    const idx = current.findIndex(t => t.taskId === taskId);
-    if (idx === -1) return;
-
-    await memoryCrud.update({
-      recordId: domain,
-      type: 'Company',
-      propertyName: 'account_pending_tasks',
-      arrayRemove: { indices: [idx] },
-      updatedBy: 'task-executor',
-    });
+  await memoryCrud.update({
+    recordId: domain,
+    type: 'Company',
+    propertyName: 'account_pending_tasks',
+    arrayPatch: {
+      match: { taskId },
+      set: { status: 'completed', outcome, completedAt: new Date().toISOString() },
+    },
+    updatedBy: 'task-executor',
   });
 }
 
 async function declineTask(domain: string, taskId: string, reason: string, declinedBy: string): Promise<void> {
-  let taskTitle = taskId;
+  // Read the task title for the escalation message
+  const current = await readProperty<Task[]>(domain, 'account_pending_tasks', []);
+  const task = current.find(t => t.taskId === taskId);
+  const taskTitle = task?.title ?? taskId;
 
-  await withRetry(async () => {
-    const current = await readProperty<Task[]>(domain, 'account_pending_tasks', []);
-    const idx = current.findIndex(t => t.taskId === taskId);
-    if (idx === -1) return;
-    taskTitle = current[idx].title;
-
-    await memoryCrud.update({
-      recordId: domain,
-      type: 'Company',
-      propertyName: 'account_pending_tasks',
-      arrayRemove: { indices: [idx] },
-      updatedBy: declinedBy,
-    });
+  // Mark declined (race-free — no index needed)
+  await memoryCrud.update({
+    recordId: domain,
+    type: 'Company',
+    propertyName: 'account_pending_tasks',
+    arrayPatch: {
+      match: { taskId },
+      set: { status: 'declined', outcome: reason, completedAt: new Date().toISOString() },
+    },
+    updatedBy: declinedBy,
   });
 
   await addTask(domain, {
@@ -405,18 +422,15 @@ async function rescheduleTask(domain: string, taskId: string, newDueDate: string
 }
 
 async function resolveIssue(domain: string, issueId: string, resolution: string): Promise<void> {
-  await withRetry(async () => {
-    const current = await readProperty<Issue[]>(domain, 'account_open_issues', []);
-    const idx = current.findIndex(i => i.issueId === issueId);
-    if (idx === -1) return;
-
-    await memoryCrud.update({
-      recordId: domain,
-      type: 'Company',
-      propertyName: 'account_open_issues',
-      arrayRemove: { indices: [idx] },
-      updatedBy: 'system',
-    });
+  await memoryCrud.update({
+    recordId: domain,
+    type: 'Company',
+    propertyName: 'account_open_issues',
+    arrayPatch: {
+      match: { issueId },
+      set: { status: 'resolved', resolution, resolvedAt: new Date().toISOString() },
+    },
+    updatedBy: 'system',
   });
 }
 

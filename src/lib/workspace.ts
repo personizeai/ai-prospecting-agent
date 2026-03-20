@@ -3,9 +3,9 @@
  *
  * Uses Personize Memory CRUD API for all state management:
  *   - arrayPush for adds (no read needed, race-free)
- *   - arrayRemove for removes (with read for index, expectedVersion for safety)
- *   - arrayPatch for in-place updates (no read needed)
+ *   - arrayPatch for in-place updates and status transitions (race-free, no index lookup)
  *   - filterByProperty for cross-record queries (deterministic, no LLM cost)
+ *   - properties() for lightweight targeted reads (no LLM cost, no token budget)
  *   - propertyHistory for audit trails (automatic, no manual tracking)
  *   - deleteRecord for opt-out enforcement (API-level exclusion)
  *
@@ -78,6 +78,9 @@ interface Task {
   createdBy: string;
   createdAt: string;
   dueDate?: string;
+  completedAt?: string;
+  outcome?: string;
+  status?: 'active' | 'completed' | 'declined';
 }
 
 interface Issue {
@@ -85,9 +88,11 @@ interface Issue {
   title: string;
   description: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'investigating';
+  status: 'open' | 'investigating' | 'resolved';
   raisedBy: string;
   raisedAt: string;
+  resolvedAt?: string;
+  resolution?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -100,20 +105,18 @@ const log = logger.child({ module: 'workspace' });
 
 /**
  * Read a single property value from a contact record.
- * Uses smartDigest with include_properties for reliable property reads.
- * Falls back to empty default if property doesn't exist yet (lazy migration).
+ * Uses properties() API for lightweight, targeted reads (no LLM cost, no token budget).
  */
 async function readProperty<T>(email: string, propertyName: string, fallback: T): Promise<T> {
   try {
-    const digest = await client.memory.smartDigest({
+    const result = await client.memory.properties({
       email,
       type: 'Contact',
-      token_budget: 500,
-      include_properties: true,
+      propertyNames: [propertyName],
+      nonEmpty: true,
     });
-    const props = (digest.data as any)?.properties;
-    const value = props?.[propertyName]?.value;
-    if (value != null) return value as T;
+    const prop = (result.data as any)?.properties?.find((p: any) => p.name === propertyName || p.systemName === propertyName);
+    if (prop?.value != null) return prop.value as T;
   } catch (err) {
     log.warn('Failed to read property, using fallback', { email, propertyName, error: (err as Error).message });
   }
@@ -121,23 +124,25 @@ async function readProperty<T>(email: string, propertyName: string, fallback: T)
 }
 
 /**
- * Retry wrapper for VERSION_CONFLICT errors.
- * When two agents modify the same array simultaneously, the second write
- * gets a 409. This retries with a fresh read.
+ * Read multiple properties from a contact record in a single API call.
  */
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      if (err?.code === 'VERSION_CONFLICT' && attempt < maxRetries - 1) {
-        log.info('VERSION_CONFLICT, retrying', { attempt: attempt + 1, maxRetries });
-        continue;
-      }
-      throw err;
+async function readProperties(email: string, propertyNames: string[]): Promise<Record<string, any>> {
+  try {
+    const result = await client.memory.properties({
+      email,
+      type: 'Contact',
+      propertyNames,
+    });
+    const out: Record<string, any> = {};
+    for (const prop of (result.data as any)?.properties ?? []) {
+      const key = prop.systemName || prop.name;
+      out[key] = prop.value;
     }
+    return out;
+  } catch (err) {
+    log.warn('Failed to read properties', { email, propertyNames, error: (err as Error).message });
+    return {};
   }
-  throw new Error('withRetry: max retries exceeded');
 }
 
 // ─── Write Functions (arrayPush — no read needed, race-free) ──────
@@ -234,20 +239,15 @@ async function addMessageSent(email: string, message: WorkspaceMessage) {
     updatedBy: message.sentBy,
   });
 
-  // Update scalar sequence state properties for fast deterministic reads
+  // Update scalar sequence state atomically via bulkUpdate (single round-trip)
   if (message.channel === 'email') {
-    await memoryCrud.update({
+    await memoryCrud.bulkUpdate({
       recordId: email,
       type: 'Contact',
-      propertyName: 'emails_sent',
-      propertyValue: message.step,
-      updatedBy: message.sentBy,
-    });
-    await memoryCrud.update({
-      recordId: email,
-      type: 'Contact',
-      propertyName: 'last_sent_at',
-      propertyValue: entry.sentAt,
+      updates: [
+        { propertyName: 'emails_sent', propertyValue: message.step },
+        { propertyName: 'last_sent_at', propertyValue: entry.sentAt },
+      ],
       updatedBy: message.sentBy,
     });
   }
@@ -276,25 +276,18 @@ async function getDigest(email: string, tokenBudget = 3000) {
 }
 
 async function getOpenTasks(email: string): Promise<Task[]> {
-  return readProperty<Task[]>(email, 'pending_tasks', []);
-}
-
-/** @deprecated Use getSequenceState() for structured reads. Kept for backward compat. */
-async function getMessageHistory(email: string) {
-  return client.memory.recall({
-    message: `outreach emails messages sent to ${email}`,
-    email,
-    limit: 10,
-  });
+  const all = await readProperty<Task[]>(email, 'pending_tasks', []);
+  return all.filter(t => !t.status || t.status === 'active');
 }
 
 async function getIssues(email: string): Promise<Issue[]> {
-  return readProperty<Issue[]>(email, 'open_issues', []);
+  const all = await readProperty<Issue[]>(email, 'open_issues', []);
+  return all.filter(i => i.status === 'open' || i.status === 'investigating');
 }
 
 /**
  * Get the current sequence state from structured properties.
- * Reads emails_sent, last_sent_at, sequence_status directly — no semantic search.
+ * Uses properties() API for lightweight, targeted reads — no LLM cost.
  * Includes hasDraftAtStep for manual-hubspot draft gating.
  */
 async function getSequenceState(email: string): Promise<{
@@ -306,17 +299,11 @@ async function getSequenceState(email: string): Promise<{
   hasDraftAtStep: number | null;
 }> {
   try {
-    const digest = await client.memory.smartDigest({
-      email,
-      type: 'Contact',
-      token_budget: 500,
-      include_properties: true,
-    });
+    const props = await readProperties(email, ['emails_sent', 'last_sent_at', 'sequence_status', 'messages_sent']);
 
-    const props = (digest.data as any)?.properties || {};
-    const emailsSent = Number(props.emails_sent?.value) || 0;
-    const lastSentAt = String(props.last_sent_at?.value || '');
-    const sequenceStatus = String(props.sequence_status?.value || 'Active');
+    const emailsSent = Number(props.emails_sent) || 0;
+    const lastSentAt = String(props.last_sent_at || '');
+    const sequenceStatus = String(props.sequence_status || 'Active');
 
     // Determine engagement state from sequence_status property
     const hasReplied = sequenceStatus === 'Replied';
@@ -328,7 +315,7 @@ async function getSequenceState(email: string): Promise<{
 
     // Check for drafts in messages_sent array
     let hasDraftAtStep: number | null = null;
-    const messagesSent = props.messages_sent?.value;
+    const messagesSent = props.messages_sent;
     if (Array.isArray(messagesSent)) {
       for (const msg of messagesSent) {
         if (msg.status === 'draft' || msg.status === 'pending_review') {
@@ -350,85 +337,8 @@ async function getSequenceState(email: string): Promise<{
     if (err?.status === 404 || err?.code === 'RECORD_NOT_FOUND') {
       return { emailsSent: 0, lastSentAt: '', lastEngagement: 'none', hasReplied: false, hasOptedOut: true, hasDraftAtStep: null };
     }
-
-    // Lazy migration fallback: if properties don't exist yet, use old recall-based parsing
-    log.warn('getSequenceState falling back to recall-based parsing', { email, error: (err as Error).message });
-    return getSequenceStateLegacy(email);
+    throw err;
   }
-}
-
-/**
- * Legacy fallback for records that predate the CRUD migration.
- * Uses recall + string parsing. Will be removed once all records are migrated.
- */
-async function getSequenceStateLegacy(email: string): Promise<{
-  emailsSent: number;
-  lastSentAt: string;
-  lastEngagement: string;
-  hasReplied: boolean;
-  hasOptedOut: boolean;
-  hasDraftAtStep: number | null;
-}> {
-  const [messages, engagements] = await Promise.all([
-    client.memory.recall({
-      message: `outreach emails sent sequence step for ${email}`,
-      email,
-      limit: 10,
-    }),
-    client.memory.recall({
-      message: `email engagement reply opt out bounce for ${email}`,
-      email,
-      limit: 10,
-    }),
-  ]);
-
-  let emailsSent = 0;
-  let lastSentAt = '';
-  let lastEngagement = 'none';
-  let hasReplied = false;
-  let hasOptedOut = false;
-  let hasDraftAtStep: number | null = null;
-
-  for (const item of messages.data || []) {
-    const content = item.content || '';
-    try {
-      const parsed = JSON.parse(content);
-      if (parsed.step && parsed.channel === 'email') {
-        emailsSent = Math.max(emailsSent, parsed.step);
-        if (parsed.sentAt > lastSentAt) lastSentAt = parsed.sentAt;
-        if (parsed.status === 'draft') hasDraftAtStep = parsed.step;
-      }
-    } catch {
-      const match = content.match(/\[OUTREACH SENT\s*[-\u2014\u2013]+\s*Email (\d+)\]/);
-      if (match) {
-        emailsSent = Math.max(emailsSent, parseInt(match[1], 10));
-        const dateMatch = content.match(/Date:\s*(.+)/);
-        if (dateMatch) {
-          const d = dateMatch[1].trim();
-          if (d > lastSentAt) lastSentAt = d;
-        }
-      }
-      const draftMatch = content.match(/\[OUTREACH DRAFT\s*[-\u2014\u2013]+\s*Email (\d+)\]/);
-      if (draftMatch) {
-        hasDraftAtStep = parseInt(draftMatch[1], 10);
-        emailsSent = Math.max(emailsSent, hasDraftAtStep);
-      }
-    }
-  }
-
-  for (const item of engagements.data || []) {
-    const content = (item.content || '').toUpperCase();
-    if (content.includes('REPLY') || content.includes('REPLIED')) { hasReplied = true; lastEngagement = 'replied'; }
-    if (content.includes('OPT') && content.includes('OUT')) hasOptedOut = true;
-    if (content.includes('UNSUBSCRIBE')) hasOptedOut = true;
-    if (content.includes('NOT INTERESTED')) hasOptedOut = true;
-    if (content.includes('REMOVE ME')) hasOptedOut = true;
-    if (content.includes('OPENED') && lastEngagement === 'none') lastEngagement = 'opened';
-    if (content.includes('CLICKED') && lastEngagement !== 'replied') lastEngagement = 'clicked';
-    if (content.includes('BOUNCED')) lastEngagement = 'bounced';
-  }
-
-  return { emailsSent, lastSentAt, lastEngagement, hasReplied, hasOptedOut, hasDraftAtStep };
 }
 
 // ─── Cross-Record Queries ─────────────────────────────────────────
@@ -445,47 +355,44 @@ async function getAllPendingTasks(limit = 50) {
   });
 }
 
-// ─── Task Lifecycle (arrayRemove with retry for safety) ──────────
+// ─── Task Lifecycle (arrayPatch — race-free, no index lookup) ────
 
 /**
- * Complete a task: remove from pending_tasks via arrayRemove.
+ * Complete a task: mark as completed via arrayPatch (race-free, no index lookup needed).
  * History is tracked automatically by propertyHistory — no manual memorize needed.
  */
 async function completeTask(email: string, taskId: string, outcome: string): Promise<void> {
-  await withRetry(async () => {
-    const current = await readProperty<Task[]>(email, 'pending_tasks', []);
-    const idx = current.findIndex(t => t.taskId === taskId);
-    if (idx === -1) return;
-
-    await memoryCrud.update({
-      recordId: email,
-      type: 'Contact',
-      propertyName: 'pending_tasks',
-      arrayRemove: { indices: [idx] },
-      updatedBy: 'task-executor',
-    });
+  await memoryCrud.update({
+    recordId: email,
+    type: 'Contact',
+    propertyName: 'pending_tasks',
+    arrayPatch: {
+      match: { taskId },
+      set: { status: 'completed', outcome, completedAt: new Date().toISOString() },
+    },
+    updatedBy: 'task-executor',
   });
 }
 
 /**
- * Decline a task: remove from pending_tasks, escalate to human.
+ * Decline a task: mark as declined via arrayPatch, then escalate to human.
  */
 async function declineTask(email: string, taskId: string, reason: string, declinedBy: string): Promise<void> {
-  let taskTitle = taskId;
+  // Read the task title for the escalation message
+  const current = await readProperty<Task[]>(email, 'pending_tasks', []);
+  const task = current.find(t => t.taskId === taskId);
+  const taskTitle = task?.title ?? taskId;
 
-  await withRetry(async () => {
-    const current = await readProperty<Task[]>(email, 'pending_tasks', []);
-    const idx = current.findIndex(t => t.taskId === taskId);
-    if (idx === -1) return;
-    taskTitle = current[idx].title;
-
-    await memoryCrud.update({
-      recordId: email,
-      type: 'Contact',
-      propertyName: 'pending_tasks',
-      arrayRemove: { indices: [idx] },
-      updatedBy: declinedBy,
-    });
+  // Mark declined (race-free — no index needed)
+  await memoryCrud.update({
+    recordId: email,
+    type: 'Contact',
+    propertyName: 'pending_tasks',
+    arrayPatch: {
+      match: { taskId },
+      set: { status: 'declined', outcome: reason, completedAt: new Date().toISOString() },
+    },
+    updatedBy: declinedBy,
   });
 
   // Escalate to human
@@ -525,22 +432,19 @@ async function rescheduleTask(email: string, taskId: string, newDueDate: string,
 }
 
 /**
- * Resolve an issue: remove from open_issues via arrayRemove.
+ * Resolve an issue: mark as resolved via arrayPatch (race-free, no index lookup needed).
  * History tracked automatically by propertyHistory.
  */
 async function resolveIssue(email: string, issueId: string, resolution: string): Promise<void> {
-  await withRetry(async () => {
-    const current = await readProperty<Issue[]>(email, 'open_issues', []);
-    const idx = current.findIndex(i => i.issueId === issueId);
-    if (idx === -1) return;
-
-    await memoryCrud.update({
-      recordId: email,
-      type: 'Contact',
-      propertyName: 'open_issues',
-      arrayRemove: { indices: [idx] },
-      updatedBy: 'system',
-    });
+  await memoryCrud.update({
+    recordId: email,
+    type: 'Contact',
+    propertyName: 'open_issues',
+    arrayPatch: {
+      match: { issueId },
+      set: { status: 'resolved', resolution, resolvedAt: new Date().toISOString() },
+    },
+    updatedBy: 'system',
   });
 }
 
@@ -583,12 +487,11 @@ export const workspace = {
   // Read
   getDigest,
   getOpenTasks,
-  getMessageHistory,
   getIssues,
   getSequenceState,
   // Cross-record queries
   getAllPendingTasks,
-  // Task lifecycle (arrayRemove + retry)
+  // Task lifecycle (arrayPatch — race-free)
   completeTask,
   declineTask,
   rescheduleTask,
