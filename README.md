@@ -51,11 +51,11 @@
 <!-- Feature grid -->
 <table>
   <tr>
-    <td align="center" width="20%"><strong>AI Email Writer</strong><br /><sub>Multi-email sequences with company-specific personalization, enforced brand voice, and self-evaluation</sub></td>
-    <td align="center" width="20%"><strong>Signal Detection</strong><br /><sub>AI scores accounts against your ICP, detects buying signals, and surfaces hot accounts daily</sub></td>
-    <td align="center" width="20%"><strong>Account Strategy</strong><br /><sub>Coordinates outreach across all contacts at a company — prevents carpet bombing, adjusts tone, blocks bad timing</sub></td>
-    <td align="center" width="20%"><strong>Multi-Channel</strong><br /><sub>Email + LinkedIn (via HeyReach) + AI voice calls (Bland.ai, Vapi, ElevenLabs) — sequenced and coordinated</sub></td>
-    <td align="center" width="20%"><strong>Reply Handling</strong><br /><sub>Classifies intent across all channels (email, LinkedIn, call transcripts), acts automatically, alerts your team</sub></td>
+    <td align="center" width="20%"><strong>Connect Any Email</strong><br /><sub>Gmail, Outlook, ZapMail, Instantly — any IMAP/SMTP account. Reads inbox, sends outreach, replies in-thread. No vendor lock-in</sub></td>
+    <td align="center" width="20%"><strong>Sender Profiles</strong><br /><sub>Stable sender identities with warmup ramp, health monitoring, lead assignment, and seamless email rotation when a sender burns out</sub></td>
+    <td align="center" width="20%"><strong>Account Strategy</strong><br /><sub>AI coordinates all contacts at a company — assigns senders, prevents carpet bombing, adjusts tone, blocks bad timing</sub></td>
+    <td align="center" width="20%"><strong>Multi-Channel</strong><br /><sub>Email + LinkedIn (HeyReach) + AI voice calls (Bland.ai, Vapi, ElevenLabs) — sequenced and coordinated</sub></td>
+    <td align="center" width="20%"><strong>Reply Handling</strong><br /><sub>IMAP monitors your inbox. Classifies intent across all channels, acts automatically, alerts your team</sub></td>
   </tr>
 </table>
 
@@ -65,7 +65,7 @@ Built with ❤️ by the <a href="https://personize.ai" target="_blank">Personiz
 
 **Powered by:** [Personize](https://personize.ai) (AI memory & governance) &middot; [Apollo.io](https://apollo.io) (contact discovery) &middot; [Trigger.dev](https://trigger.dev) (durable workflows) &middot; [Tavily](https://tavily.com) (web research)
 
-**Email delivery:** [Smartlead](https://smartlead.ai) (default — managed deliverability) &middot; SendGrid &middot; Gmail API &middot; Manual HubSpot tasks &middot; [add yours — PRs welcome]
+**Email:** Any IMAP/SMTP email account (default — connect Gmail, Outlook, [ZapMail](https://zapmail.ai), [Instantly](https://instantly.ai), or any provider). Also supports: [Smartlead](https://smartlead.ai) &middot; SendGrid &middot; Gmail API &middot; Manual HubSpot tasks
 
 **LinkedIn automation:** [HeyReach](https://heyreach.io) (API-based — connection requests, messages, InMails, follows) &middot; Manual HubSpot tasks
 
@@ -83,21 +83,25 @@ Built with ❤️ by the <a href="https://personize.ai" target="_blank">Personiz
 
 A fully autonomous prospecting agent that runs your outbound pipeline end to end:
 
-1. **Syncs your CRM** — Pulls contacts, companies, and engagement history from HubSpot, Salesforce, Clay, or CSV files
-2. **Scores accounts** — AI evaluates each company against your Ideal Customer Profile and detects buying signals
-3. **Researches hot accounts** — Searches the web for funding rounds, hiring surges, product launches, and competitive intel
-4. **Discovers contacts** — Finds decision-makers at high-scoring accounts via Apollo
-5. **Coordinates account strategy** — AI evaluates all contacts at a company together, prevents carpet bombing, adjusts tone for engaged accounts, and blocks outreach during negative events
-6. **Writes personalized emails** — Generates multi-email sequences with enforced JSON output, HTML sanitization, and email validation — referencing specific facts about each prospect
-7. **Sends LinkedIn outreach** — Adds leads to HeyReach campaigns for automated connection requests, messages, and InMails. Receives webhook events when connections are accepted or replies come in
-8. **Makes AI voice calls** — Generates call scripts and triggers outbound calls via Bland.ai, Vapi, or ElevenLabs. Receives post-call transcripts, analyzes outcomes, and takes action
-9. **Manages sequences** — Named cadences (aggressive, standard, enterprise) auto-selected by ICP score, with smart timing and durable waits. Multi-channel sequencing: Email 1 → LinkedIn → Email 2 → Call → Email 3
-10. **Handles replies across all channels** — Classifies intent from email replies, LinkedIn messages, and call transcripts. Acts automatically: creates tasks, updates CRM, alerts Slack
-11. **Executes tasks** — Humans and agents create tasks; the AI picks them up, decides what to do, and acts or escalates
-12. **Monitors itself** — Health checks every 15 minutes, daily Slack digest with outreach stats, pipeline health, and items needing attention
-13. **Reports weekly** — Posts performance summaries to Slack every Friday
+1. **Connect your email** — Any Gmail, Outlook, ZapMail, Instantly, or IMAP/SMTP account. The agent monitors your inbox and sends from your real business address. Buy pre-warmed mailboxes from [ZapMail](https://zapmail.ai) or similar, export the credentials, connect in 30 seconds
+2. **Syncs your CRM** — Pulls contacts, companies, and engagement history from HubSpot, Salesforce, Clay, or CSV files. Or skip CRM entirely — memorize contacts via Zapier, API, or CSV and the agent picks them up via webhook
+3. **Scores accounts** — AI evaluates each company against your Ideal Customer Profile and detects buying signals
+4. **Researches hot accounts** — Searches the web for funding rounds, hiring surges, product launches, and competitive intel
+5. **Discovers contacts** — Finds decision-makers at high-scoring accounts via Apollo
+6. **Assigns sender profiles** — AI assigns leads to sender profiles based on account consistency, persona match, capacity, and warmup status. Stable IDs survive email rotation — when a sender burns out, swap the email and leads continue seamlessly
+7. **Coordinates account strategy** — AI evaluates all contacts at a company together, prevents carpet bombing, adjusts tone for engaged accounts, blocks outreach during negative events, and assigns senders intelligently
+8. **Writes personalized emails** — Generates multi-email sequences with enforced JSON output, HTML sanitization, and email validation — referencing specific facts about each prospect
+9. **Sends via SMTP** — Delivers from the assigned sender's real email account. Replies land in the same inbox the agent monitors. Full thread continuity with In-Reply-To and References headers
+10. **Sends LinkedIn outreach** — Adds leads to HeyReach campaigns for automated connection requests, messages, and InMails. Receives webhook events when connections are accepted or replies come in
+11. **Makes AI voice calls** — Generates call scripts and triggers outbound calls via Bland.ai, Vapi, or ElevenLabs. Receives post-call transcripts, analyzes outcomes, and takes action
+12. **Manages sequences** — Named cadences (aggressive, standard, enterprise) auto-selected by ICP score, with smart timing and durable waits. Multi-channel sequencing: Email 1 → LinkedIn → Email 2 → Call → Email 3
+13. **Monitors replies via IMAP** — Polls connected inboxes every 3 minutes. Matches inbound emails to known contacts. Classifies intent (positive, question, negative, OOO, referral). Acts automatically: creates tasks, updates CRM, alerts Slack
+14. **Tracks sender health** — Monitors bounce rates, reply rates, and warmup progress per sender. Auto-pauses degraded senders. AI reassigns leads to healthy senders
+15. **Executes tasks** — Humans and agents create tasks; the AI picks them up, decides what to do, and acts or escalates
+16. **Monitors itself** — Health checks every 15 minutes, daily Slack digest with outreach stats, pipeline health, and items needing attention
+17. **Reports weekly** — Posts performance summaries to Slack every Friday
 
-No babysitting. No manual data entry. Your sales team gets warm, qualified conversations — not busywork.
+No babysitting. No vendor lock-in. No manual data entry. Your sales team gets warm, qualified conversations — not busywork.
 
 ---
 
@@ -671,11 +675,22 @@ See [TASK-EXECUTOR.md](Docs/TASK-EXECUTOR.md) for the full architecture, dedupli
 ### Prerequisites
 
 - Node.js 18+
-- API keys: [Personize](https://personize.ai), [Trigger.dev](https://trigger.dev), [Slack](https://slack.com)
-- Google Workspace account with Gmail API enabled
-- Optional: [HubSpot](https://hubspot.com) API key (not needed if using CSV import), [Apollo.io](https://apollo.io) API key, [Tavily](https://tavily.com) API key
+- API keys: [Personize](https://personize.ai), [Trigger.dev](https://trigger.dev)
+- Any email account — Gmail, Outlook, [ZapMail](https://zapmail.ai), [Instantly](https://instantly.ai), or any IMAP/SMTP provider
+- Optional: [HubSpot](https://hubspot.com) or Salesforce (not needed — CSV or Zapier works too), [Apollo.io](https://apollo.io), [Tavily](https://tavily.com), [Slack](https://slack.com)
 
-### Setup (~30 Minutes)
+### Email Setup Options
+
+| Option | Best for | What you need |
+|---|---|---|
+| **ZapMail / Instantly** (recommended) | Pre-warmed mailboxes, cold outreach | Buy mailboxes → export app passwords → connect in dashboard |
+| **Company Gmail / Outlook** | Outreach from your real domain | Enable 2FA → create app password → connect in dashboard |
+| **Gmail API (OAuth2)** | Google Workspace teams who prefer OAuth | Run `npm run gmail:auth` per sender |
+| **Smartlead / SendGrid** | High-volume with managed deliverability | API key in `.env` |
+
+The default path (IMAP/SMTP) requires zero vendor signup — just an email and password.
+
+### Setup (~15 Minutes)
 
 ```bash
 # 1. Clone the repo
@@ -687,22 +702,25 @@ npm install
 
 # 3. Configure environment
 cp .env.example .env
-# Fill in your API keys
-# Set CRM_SOURCE=csv if using CSV files instead of HubSpot
+# Add your Personize + Trigger.dev keys
+# Email accounts are managed via the dashboard (not .env)
 
-# 4. Authorize Gmail (opens browser for OAuth2 consent)
-npm run gmail:auth
-
-# 5. Create Personize schemas and governance rules
+# 4. Create Personize schemas and governance rules
 npm run setup
 
-# 6. Load your data
-# Option A: HubSpot — data syncs automatically on schedule
+# 5. Load your data
+# Option A: HubSpot/Salesforce — data syncs automatically on schedule
 # Option B: CSV — add your data to data/*.csv, then run:
 npm run sync:csv
+# Option C: Zapier/API — memorize contacts via Personize, agent picks them up via webhook
 
-# 7. Test locally (dry-run mode — no emails sent)
+# 6. Test locally (dry-run mode — no emails sent)
 npx trigger.dev@latest dev
+
+# 7. Connect email accounts
+# Open the dashboard (localhost:3006) → Settings → Email Accounts
+# Add your Gmail, Outlook, ZapMail, or custom IMAP/SMTP accounts
+# The agent starts monitoring inboxes and can send outreach immediately
 
 # 8. Deploy to production
 npx trigger.dev@latest deploy
@@ -732,7 +750,9 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 | LinkedIn outreach (HeyReach) | 11am UTC, Mon–Fri | Daily |
 | Call outreach (high-score contacts) | 1pm UTC, Mon–Fri | Daily |
 | Weekly performance report | 4pm UTC, Fridays | Weekly |
-| Email reply handling | Real-time (webhook) | Instant |
+| IMAP inbox monitoring | Every 3 minutes | Continuous |
+| Email reply handling | Real-time (IMAP + webhook) | Instant |
+| Personize webhook (new records) | Real-time (webhook) | Instant |
 | LinkedIn event handling (HeyReach) | Real-time (webhook) | Instant |
 | Call transcript processing | Real-time (webhook) | Instant |
 

@@ -1,9 +1,9 @@
 import { Client as HubSpotClient } from '@hubspot/api-client';
 import { AssociationSpecAssociationCategoryEnum as EmailAssociationCategoryEnum } from '@hubspot/api-client/lib/codegen/crm/objects/emails/models/AssociationSpec.js';
 import { AssociationSpecAssociationCategoryEnum as TaskAssociationCategoryEnum } from '@hubspot/api-client/lib/codegen/crm/objects/tasks/models/AssociationSpec.js';
-import { sendViaGmail } from './gmail.js';
+import { sendViaGmail, sendGmailReply, type ThreadContext } from './gmail.js';
 import { sendViaSmartlead } from './smartlead.js';
-import { EMAIL_DELIVERY_CONFIG, MANUAL_HUBSPOT_CONFIG } from '../config/prospecting.config.js';
+import { EMAIL_DELIVERY_CONFIG, MANUAL_HUBSPOT_CONFIG, GMAIL_CONFIG } from '../config/prospecting.config.js';
 import type { GeneratedEmail } from '../types.js';
 import { logger } from '../lib/logger.js';
 
@@ -153,4 +153,97 @@ export async function sendAndLog(generated: GeneratedEmail, contactId: string) {
 
   log.info('Email sent', { email: generated.email, step: generated.step, provider, senderEmail });
   return { messageId, senderEmail, isDraft: false };
+}
+
+/**
+ * Send a reply in an existing email thread and log to HubSpot.
+ *
+ * Routes to the right provider's reply method, passing thread context
+ * (In-Reply-To, References, threadId) so the reply appears in the
+ * same conversation across all email clients.
+ *
+ * Provider priority:
+ *   1. SMTP via IMAP account (if smtpAccountId provided — universal, zero vendor)
+ *   2. Gmail API (if configured — native threadId support)
+ *   3. Fallback to regular sendAndLog (loses threading for some providers)
+ */
+export async function sendReplyAndLog(
+  generated: GeneratedEmail,
+  contactId: string,
+  thread: ThreadContext & {
+    /** ID of the IMAP account to send from via SMTP. If set, SMTP is used. */
+    smtpAccountId?: string;
+  },
+) {
+  const log = logger.child({ pipeline: 'hubspot-deliver' });
+  const provider = EMAIL_DELIVERY_CONFIG.provider;
+
+  let messageId = '';
+  let senderEmail = '';
+
+  // ── Option 1: SMTP via linked IMAP account (universal) ─────────
+  if (thread.smtpAccountId) {
+    try {
+      const { imapAccounts } = await import('../lib/imap-accounts.js');
+      const { smtpDelivery } = await import('./smtp.js');
+      const account = await imapAccounts.getById(thread.smtpAccountId);
+
+      if (account && account.sendingEnabled && account.smtpHost) {
+        const result = await smtpDelivery.sendReply(
+          account,
+          { to: generated.email, subject: generated.subject, bodyHtml: generated.bodyHtml, bodyText: generated.bodyText },
+          { inReplyTo: thread.inReplyTo || '', references: thread.references || [], originalSubject: thread.originalSubject },
+        );
+        messageId = result.messageId;
+        senderEmail = result.senderEmail;
+
+        await createHubSpotEmail(generated, contactId);
+        log.info('Reply sent via SMTP', { email: generated.email, account: account.email, inReplyTo: thread.inReplyTo });
+        return { messageId, senderEmail, isDraft: false };
+      }
+    } catch (err) {
+      log.warn('SMTP reply failed, falling through to other providers', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // ── Option 2: Gmail API (native threading) ─────────────────────
+  if (provider === 'gmail' || (!provider && GMAIL_CONFIG.senders.length > 0)) {
+    const result = await sendGmailReply(generated, thread);
+    messageId = result.messageId;
+    senderEmail = result.senderEmail;
+
+    await createHubSpotEmail(generated, contactId);
+    log.info('Reply sent via Gmail API', { email: generated.email, threadId: thread.threadId });
+    return { messageId, senderEmail, isDraft: false };
+  }
+
+  // ── Option 3: Fallback to regular send ─────────────────────────
+  log.info('Reply via non-threading provider — thread context may not be preserved', { provider });
+  return sendAndLog(generated, contactId);
+}
+
+/**
+ * Send a new email via SMTP using an IMAP account.
+ * Use this when EMAIL_PROVIDER is not set but the user has IMAP accounts with SMTP enabled.
+ */
+export async function sendViaSmtp(
+  generated: GeneratedEmail,
+  smtpAccountId: string,
+) {
+  const { imapAccounts } = await import('../lib/imap-accounts.js');
+  const { smtpDelivery } = await import('./smtp.js');
+
+  const account = await imapAccounts.getById(smtpAccountId);
+  if (!account || !account.sendingEnabled || !account.smtpHost) {
+    throw new Error(`SMTP not available for account ${smtpAccountId}`);
+  }
+
+  return smtpDelivery.send(account, {
+    to: generated.email,
+    subject: generated.subject,
+    bodyHtml: generated.bodyHtml,
+    bodyText: generated.bodyText,
+  });
 }

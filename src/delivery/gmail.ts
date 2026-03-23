@@ -91,15 +91,33 @@ export function buildMimeMessage(params: {
   subject: string;
   bodyHtml: string;
   bodyText: string;
+  /** Set for reply threading — the Message-ID of the email being replied to. */
+  inReplyTo?: string;
+  /** Set for reply threading — full chain of Message-IDs in the thread. */
+  references?: string[];
 }): string {
   const boundary = `boundary_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-  const lines = [
+  const headers = [
     `From: ${params.fromName} <${params.from}>`,
     `To: ${params.to}`,
     `Subject: ${params.subject}`,
     'MIME-Version: 1.0',
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+  ];
+
+  // Thread headers — ensures replies appear in the same conversation
+  // across all email clients (Gmail, Outlook, Apple Mail, etc.)
+  if (params.inReplyTo) {
+    headers.push(`In-Reply-To: ${params.inReplyTo}`);
+  }
+  if (params.references && params.references.length > 0) {
+    headers.push(`References: ${params.references.join(' ')}`);
+  }
+
+  headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
+
+  const lines = [
+    ...headers,
     '',
     `--${boundary}`,
     'Content-Type: text/plain; charset="UTF-8"',
@@ -187,20 +205,44 @@ export async function sendViaGmail(generated: GeneratedEmail): Promise<GmailSend
   };
 }
 
+/** Thread context for replying to an existing email conversation. */
+export interface ThreadContext {
+  /** Gmail thread ID (groups emails in the same conversation). */
+  threadId: string;
+  /** Message-ID header of the email being replied to (for In-Reply-To). */
+  inReplyTo?: string;
+  /** Full chain of Message-IDs in the thread (for References header). */
+  references?: string[];
+  /** Original subject (will be prefixed with "Re: " if not already). */
+  originalSubject?: string;
+  /** Prefer this sender (e.g., the one who sent the original email). */
+  preferSenderEmail?: string;
+}
+
 /**
- * Send a reply in an existing Gmail thread (for follow-up emails in a sequence).
+ * Send a reply in an existing email thread.
  *
- * Uses a specific sender (the one who sent the original email) and the threadId
- * to keep the conversation grouped in the recipient's inbox.
+ * Sets In-Reply-To and References headers for proper threading across
+ * all email clients (Gmail, Outlook, Apple Mail, Thunderbird, etc.).
+ * Also sets Gmail's threadId to keep the conversation grouped.
+ *
+ * Use this for:
+ *   - Auto-replies to inbound emails (from replyHandlerTask)
+ *   - Follow-up emails in a sequence (same thread as email 1)
+ *   - Agent-generated responses that should appear in the original conversation
  */
 export async function sendGmailReply(
   generated: GeneratedEmail,
-  threadId: string,
-  senderEmail?: string,
+  thread: ThreadContext | string,
 ): Promise<GmailSendResult> {
+  // Backward compat: accept plain threadId string
+  const ctx: ThreadContext = typeof thread === 'string'
+    ? { threadId: thread }
+    : thread;
+
   let sender: GmailSender | null = null;
-  if (senderEmail) {
-    sender = GMAIL_CONFIG.senders.find((configuredSender) => configuredSender.email === senderEmail) || null;
+  if (ctx.preferSenderEmail) {
+    sender = GMAIL_CONFIG.senders.find((configuredSender) => configuredSender.email === ctx.preferSenderEmail) || null;
   }
   if (!sender) {
     sender = selectSender();
@@ -212,20 +254,26 @@ export async function sendGmailReply(
   const auth = getOAuth2Client(sender);
   const gmail = google.gmail({ version: 'v1', auth });
 
+  const subject = ctx.originalSubject
+    ? (ctx.originalSubject.startsWith('Re: ') ? ctx.originalSubject : `Re: ${ctx.originalSubject}`)
+    : (generated.subject.startsWith('Re: ') ? generated.subject : `Re: ${generated.subject}`);
+
   const mime = buildMimeMessage({
     to: generated.email,
     from: sender.email,
     fromName: sender.name,
-    subject: generated.subject.startsWith('Re: ') ? generated.subject : `Re: ${generated.subject}`,
+    subject,
     bodyHtml: generated.bodyHtml,
     bodyText: generated.bodyText,
+    inReplyTo: ctx.inReplyTo,
+    references: ctx.references,
   });
 
   const response = await gmail.users.messages.send({
     userId: 'me',
     requestBody: {
       raw: encodeMessage(mime),
-      threadId,
+      threadId: ctx.threadId,
     },
   });
 

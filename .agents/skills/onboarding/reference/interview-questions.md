@@ -128,22 +128,25 @@ Each question includes **why we ask** and **how the answer maps to configuration
 
 ### Q12. Email setup
 
-> "Are you using Google Workspace / Gmail for sending? How many sender accounts do you want to rotate? What email addresses will you send from?"
+> "What email accounts do you have for outreach? Gmail, Outlook, ZapMail, Instantly, or other? How many accounts? Do you have app passwords or credentials ready?"
 
-**Why:** Multi-sender setup improves deliverability. Each sender needs an OAuth token.
+**Why:** The agent connects to email accounts via IMAP (to read inbox) + SMTP (to send). Each account becomes a Sender Profile with warmup ramp and health monitoring. More accounts = higher daily volume and better domain diversity. For Gmail/Outlook: enable 2FA, create app password. For ZapMail/Instantly: export credentials from their dashboard.
 
 **Maps to:**
-- `.env` → `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `SENDER_EMAIL`, `SENDER_NAME`
-- `prospecting.config.ts` → `GMAIL_CONFIG.senders`, `GMAIL_CONFIG.strategy`
+- Dashboard → Settings → Email Accounts (IMAP/SMTP config, managed via UI not .env)
+- Personize guideline: `imap-accounts-config` (account credentials, encrypted at rest)
+- Personize guideline: `sender-profiles-config` (sender identity, warmup, health)
+- Contact property: `assigned_sender` (which sender profile owns each lead)
 
 ### Q13. API keys
 
-> "Do you have your Personize API key, and optionally Apollo, Tavily, and Slack webhook URL? If not, I'll guide you to get them."
+> "Do you have your Personize and Trigger.dev keys? Optionally: Apollo (enrichment), Tavily (web research), HubSpot (CRM sync), Slack (alerts)."
 
-**Why:** The agent can't run without at least a Personize key. Apollo and Tavily are optional but recommended.
+**Why:** Personize + Trigger.dev are required. Everything else is optional — the agent works with just email accounts and CSV/Zapier import.
 
 **Maps to:**
-- `.env` → all API key fields
+- `.env` → `PERSONIZE_SECRET_KEY`, `TRIGGER_PROJECT_ID`, `TRIGGER_SECRET_KEY` (required)
+- `.env` → `APOLLO_API_KEY`, `TAVILY_API_KEY`, `HUBSPOT_ACCESS_TOKEN`, `SLACK_WEBHOOK_URL` (optional)
 - Generates setup guidance for missing keys
 
 ---

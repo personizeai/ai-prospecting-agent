@@ -45,7 +45,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
 
   // ── STEP 1: Gather context in parallel ──────────────────────────
 
-  const [companyDigest, previousStrategy, accountIssues, contactRollup, guidelines] = await Promise.all([
+  const [companyDigest, previousStrategy, accountIssues, contactRollup, guidelines, activeSenderProfiles] = await Promise.all([
     accountWorkspace.getDigest(domain, 2500),
     accountWorkspace.getStrategy(domain),
     accountWorkspace.getIssues(domain),
@@ -54,6 +54,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
       message: 'account strategy, prospecting coordination, outreach sequencing, ICP prioritization',
       mode: 'fast',
     }),
+    import('../lib/sender-profiles.js').then((m) => m.senderProfiles.listActive()).catch(() => [] as any[]),
   ]);
 
   const contacts = contactRollup.contacts;
@@ -68,6 +69,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
   const contactSummaries = contacts.map((c) => {
     const ws = contactRollup.workspaceStates[c.email] ?? {};
     const wsContext = `Status: ${ws.sequenceStatus || 'Unknown'} | Emails: ${ws.emailsSent || 0} | Tasks: ${(ws.pendingTasks || []).length} | Issues: ${(ws.openIssues || []).length}`;
+    const assignedSender = (c as any).assignedSender || 'Not assigned';
     return [
       `- ${c.firstName} ${c.lastName} (${c.jobTitle || 'Unknown role'})`,
       `  Email: ${c.email}`,
@@ -76,6 +78,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
       `  Lead Score: ${c.leadScore || 'N/A'}`,
       `  Sentiment: ${c.sentiment || 'Unknown'}`,
       `  Last Contacted: ${c.lastContacted || 'Never'}`,
+      `  Assigned Sender: ${assignedSender}`,
       `  Workspace: ${wsContext || 'No workspace data'}`,
     ].join('\n');
   }).join('\n\n');
@@ -89,10 +92,21 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
     .join('\n')
     .substring(0, 1000);
 
+  // Format sender profiles for AI context
+  const senderProfilesSummary = Array.isArray(activeSenderProfiles) && activeSenderProfiles.length > 0
+    ? activeSenderProfiles.map((sp: any) => {
+        const remaining = sp.sentTodayDate === new Date().toISOString().split('T')[0]
+          ? Math.max(0, (sp.isWarmingUp ? (sp.warmupRamp?.[sp.warmupDay - 1] || sp.dailySendLimit) : sp.dailySendLimit) - sp.sentToday)
+          : sp.isWarmingUp ? (sp.warmupRamp?.[sp.warmupDay - 1] || sp.dailySendLimit) : sp.dailySendLimit;
+        return `- ${sp.id}: ${sp.name} (${sp.persona}) — ${sp.assignedLeadCount}/${sp.maxLeadsAssigned} leads, ${remaining} sends remaining today, health: ${sp.healthScore}/100${sp.isWarmingUp ? ` [WARMING UP day ${sp.warmupDay}]` : ''}`;
+      }).join('\n')
+    : '';
+
   const context = [
     guidelines.data?.compiledContext ? `## Governance & Guidelines\n${guidelines.data.compiledContext}` : '',
     companyDigest.data?.compiledContext ? `## Company Profile\n${companyDigest.data.compiledContext}` : '',
     `## Contacts at This Account (${contacts.length})\n${contactSummaries}`,
+    senderProfilesSummary ? `## Available Sender Profiles (${activeSenderProfiles.length})\n${senderProfilesSummary}` : '',
     previousStrategyText ? `## Previous Account Strategy\n${previousStrategyText}` : '',
     issuesSummary ? `## Active Account Issues\n${issuesSummary}` : '',
   ].filter(Boolean).join('\n\n---\n\n');
@@ -117,6 +131,13 @@ CRITICAL EDGE CASES TO CHECK:
 8. REFERRAL PENDING: If a reply analysis mentioned a referral, any new contact matching that referral should NOT get cold outreach. Flag: "pending_referral"
 9. DATA STALENESS: If contacts haven't been enriched/updated in 90+ days and show zero engagement, flag: "stale_data"
 10. NEGATIVE COMPANY EVENT: If company context mentions layoffs, crisis, leadership change, flag: "negative_company_event"
+11. SENDER ASSIGNMENT: For contacts with "Assigned Sender: Not assigned", recommend a sender profile considering:
+    - Account consistency: prefer the same sender already used for other contacts at this company
+    - Capacity: don't overload a sender near their daily/lead limit
+    - Persona match: technical sender for engineering/product, executive for C-suite/VP
+    - Health: avoid senders with low health scores or in early warmup
+    - Format: "assign_sender|contact_email|sender_profile_id|reason"
+12. SENDER HEALTH: If a sender profile has health < 50 or is warming up, do NOT assign new high-priority leads to it. Flag: "sender_health_risk"
 
 For each recommended action, specify which contact it applies to (or "account" for account-level actions).
 Prioritize actions as: urgent > high > medium > low.
@@ -177,6 +198,37 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
     const action = parts[1] || actionStr;
     const rationale = parts[2] || '';
     const priority = (parts[3] || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
+
+    // ── Handle sender assignment actions ──────────────────
+    if (action === 'assign_sender' || contactEmail === 'assign_sender') {
+      // Format: assign_sender|contact_email|sender_profile_id|reason
+      const targetEmail = action === 'assign_sender' ? parts[1] : contactEmail;
+      const senderProfileId = action === 'assign_sender' ? parts[2] : rationale;
+      const assignReason = action === 'assign_sender' ? parts[3] : priority;
+
+      if (targetEmail && senderProfileId) {
+        try {
+          const { update } = await import('../lib/personize-crud.js');
+          await update({
+            recordId: targetEmail,
+            type: 'Contact',
+            propertyName: 'assigned_sender',
+            propertyValue: senderProfileId,
+            updatedBy: 'account-strategizer',
+          });
+          await workspace.addUpdate(targetEmail, {
+            author: 'account-strategizer',
+            type: 'system',
+            summary: `Sender assigned: ${senderProfileId}. Reason: ${assignReason || 'account strategy'}`,
+          });
+          actionsCreated++;
+          log.info('Sender assigned by strategizer', { contact: targetEmail, sender: senderProfileId });
+        } catch (err) {
+          log.warn('Failed to assign sender', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+      continue;
+    }
 
     // Skip if the email doesn't look valid
     if (!contactEmail || !contactEmail.includes('@')) {

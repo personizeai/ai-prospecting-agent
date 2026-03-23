@@ -101,10 +101,10 @@ After mode selection, use the mode's `terminology` to adjust all subsequent ques
 
 ### Phase 4: Current State
 
-10. **Do you have leads already?** — In HubSpot? CSV? How many contacts and companies?
-11. **What CRM do you use?** — HubSpot, Salesforce, CSV-only, or something else?
-12. **Email setup** — Gmail workspace? How many senders? What email addresses?
-13. **Do you have API keys ready?** — Personize, Apollo, Tavily, Slack webhook
+10. **Do you have leads already?** — In HubSpot? CSV? Zapier? How many contacts and companies?
+11. **What CRM do you use?** — HubSpot, Salesforce, CSV-only, Zapier, or something else?
+12. **Email setup** — How many email accounts do you have? Gmail, Outlook, ZapMail, Instantly, or other? Do you have app passwords or credentials ready? (Email accounts are connected via the dashboard — Settings → Email Accounts — not in .env)
+13. **Do you have API keys ready?** — Personize, Trigger.dev (required). Optional: Apollo, Tavily, Slack, HubSpot
 
 ### Phase 5: Preferences
 
@@ -234,13 +234,25 @@ Review `src/setup/create-schemas.ts`. The default schemas are comprehensive. Onl
 
 Generate a filled `.env` guidance showing exactly what they need to set:
 ```
+# Required
 PERSONIZE_SECRET_KEY=sk_live_...     # From personize.ai dashboard
 TRIGGER_PROJECT_ID=proj_...          # From trigger.dev project
 TRIGGER_SECRET_KEY=tr_...            # From trigger.dev API keys
-HUBSPOT_ACCESS_TOKEN=pat-...         # From HubSpot → Settings → Private Apps
-SENDER_EMAIL=their-actual@email.com  # Their sender email
-SENDER_NAME=Their Actual Name        # Their sender name
-SLACK_WEBHOOK_URL=https://hooks...   # From Slack → Apps → Incoming Webhooks
+
+# Email accounts — managed in the dashboard (Settings → Email Accounts)
+# No email env vars needed! Connect Gmail, Outlook, ZapMail, or any IMAP/SMTP account via the UI.
+# The agent creates Sender Profiles automatically with warmup ramp and health tracking.
+
+# Optional — CRM
+# HUBSPOT_ACCESS_TOKEN=pat-...       # Only if using HubSpot (CSV/Zapier also work)
+
+# Optional — Enrichment & Research
+# APOLLO_API_KEY=...                 # For contact discovery + enrichment
+# TAVILY_API_KEY=...                 # For web research (news, funding, hiring signals)
+
+# Optional — Notifications
+# SLACK_WEBHOOK_URL=https://hooks... # For alerts and reports
+
 BUDGET_TIER=balanced                 # conservative | balanced | aggressive
 DRY_RUN=true                         # ALWAYS start with dry run
 ```
@@ -256,12 +268,12 @@ After configuration, walk through a final review:
 3. **Read back the cadence** — "Sequences will send [N] emails over [N] days. Hot leads get the aggressive cadence."
 4. **Read back competitors** — "When [Competitor A] comes up, we'll position as [advantage]. Correct?"
 5. **Next steps checklist**:
-   - [ ] Set environment variables in `.env`
-   - [ ] Run `npx tsx src/setup/create-schemas.ts` to create collections
-   - [ ] Run `npx tsx src/setup/create-governance.ts` to push governance
-   - [ ] Import leads (HubSpot sync or CSV)
+   - [ ] Set environment variables in `.env` (only Personize + Trigger.dev required)
+   - [ ] Run `npm run setup` to create schemas and governance
+   - [ ] Connect email accounts in dashboard (Settings → Email Accounts)
+   - [ ] Import leads (HubSpot sync, CSV, Zapier, or Personize API)
    - [ ] Start with `DRY_RUN=true` to test
-   - [ ] Review dry-run outputs in logs
+   - [ ] Review dry-run outputs in the Trigger.dev dashboard
    - [ ] Set `DRY_RUN=false` when ready to go live
 
 ---
