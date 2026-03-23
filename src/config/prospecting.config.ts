@@ -273,6 +273,39 @@ export const GMAIL_CONFIG = {
   strategy: (process.env.GMAIL_SENDER_STRATEGY || 'round-robin') as 'round-robin' | 'random',
 };
 
+// ─── IMAP Reply Monitoring ────────────────────────────────────────
+//
+// IMAP accounts are managed via the dashboard (Settings → Email Accounts)
+// and stored in Personize as a guideline. These are just default poll settings.
+//
+// Credentials: Encrypted with AES-256-GCM using IMAP_ENCRYPTION_KEY or
+// PERSONIZE_SECRET_KEY. For Gmail: use App Passwords (not regular password).
+// For Outlook: use App Passwords or OAuth2.
+
+export const IMAP_CONFIG = {
+  /** Default poll interval in minutes for new accounts. */
+  defaultPollIntervalMinutes: Number(process.env.IMAP_POLL_INTERVAL_MINUTES) || 3,
+
+  /** Maximum messages to fetch per folder per poll (prevents overwhelming). */
+  maxMessagesPerPoll: Number(process.env.IMAP_MAX_MESSAGES_PER_POLL) || 100,
+
+  /** Default folders to monitor for new accounts. */
+  defaultFolders: ['INBOX'],
+
+  /** How many days back to search on first poll (no lastCheckedAt). */
+  initialLookbackDays: Number(process.env.IMAP_INITIAL_LOOKBACK_DAYS) || 1,
+
+  /** Common IMAP presets for quick setup in the dashboard. */
+  presets: {
+    gmail: { host: 'imap.gmail.com', port: 993, secure: true },
+    outlook: { host: 'outlook.office365.com', port: 993, secure: true },
+    yahoo: { host: 'imap.mail.yahoo.com', port: 993, secure: true },
+    zoho: { host: 'imap.zoho.com', port: 993, secure: true },
+    fastmail: { host: 'imap.fastmail.com', port: 993, secure: true },
+    custom: { host: '', port: 993, secure: true },
+  } as Record<string, { host: string; port: number; secure: boolean }>,
+};
+
 // ─── Apollo.io Settings ────────────────────────────────────────────
 export const APOLLO_CONFIG = {
   /** Base URL for Apollo REST API. */

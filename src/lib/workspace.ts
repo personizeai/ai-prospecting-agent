@@ -63,7 +63,12 @@ export interface WorkspaceMessage {
   bodyPreview: string;
   step: number;
   angle: string;
+  /** Agent or role that initiated the send (e.g., 'outreach-agent', 'task-executor'). */
   sentBy: string;
+  /** Sender Profile ID (sp_xxx) — stable identity across email rotations. */
+  senderProfileId?: string;
+  /** Actual email address used to send (for audit trail). */
+  senderEmail?: string;
   status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'replied' | 'bounced';
 }
 

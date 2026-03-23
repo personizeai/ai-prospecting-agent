@@ -13,7 +13,17 @@ This reference maps every configuration setting to its runtime effect, so the on
 | `src/setup/create-governance.ts` | 6 governance variables pushed to Personize | Controls ALL AI-generated content — every email, every reply analysis, every signal interpretation |
 | `src/config/prospecting.config.ts` | All tunable settings | Controls targeting, cadence timing, discovery filters, API limits, enrichment rules |
 | `src/setup/create-schemas.ts` | 4 collection schemas | Controls what data fields are stored per contact/company/outreach/research |
-| `.env` | API keys, sender identity, feature flags | Controls which integrations are active and who sends emails |
+| `.env` | API keys, feature flags | Controls which integrations are active (Personize + Trigger.dev required, everything else optional) |
+
+### Email Infrastructure (managed via dashboard, not .env)
+
+| Component | What It Does | Storage |
+|---|---|---|
+| IMAP Accounts | Connect Gmail, Outlook, ZapMail, or any IMAP/SMTP email account | Personize guideline: `imap-accounts-config` |
+| Sender Profiles | Stable sender identities with warmup, health monitoring, lead assignment | Personize guideline: `sender-profiles-config` |
+| `assigned_sender` | Contact property linking each lead to a sender profile (stable across email rotation) | Personize Contact schema |
+
+The account strategizer sees sender profiles and assigns leads based on capacity, persona match, account consistency, and health.
 
 ### Pipeline Files (what this skill does NOT modify)
 
@@ -28,9 +38,14 @@ These files read from governance + config at runtime. They don't need changes:
 | `src/pipelines/discover-contacts-apollo.ts` | Find contacts at accounts | `DISCOVERY_CONFIG` → titles, seniorities, departments |
 | `src/pipelines/enrich-apollo.ts` | Contact enrichment | `APOLLO_CONFIG` → rate limits, budgets |
 | `src/pipelines/sync-hubspot.ts` | HubSpot CRM sync | `HUBSPOT_CONFIG` → properties, engagement types |
-| `src/pipelines/account-strategy.ts` | AI account strategizer — evaluates all contacts, produces coordinated strategy | `ACCOUNT_STRATEGY_CONFIG` → thresholds, `smartGuidelines()` → governance |
+| `src/pipelines/account-strategy.ts` | AI account strategizer — evaluates all contacts, assigns senders, produces coordinated strategy | `ACCOUNT_STRATEGY_CONFIG` → thresholds, `smartGuidelines()` → governance, `sender-profiles` → sender capacity/health |
 | `src/pipelines/account-preflight.ts` | Pre-outreach gate — checks account strategy, returns proceed/modify/delay/block | `ACCOUNT_STRATEGY_CONFIG` → carpet bomb, event pause settings |
 | `src/pipelines/execute-task.ts` | Task routing + execution | `TASK_EXECUTOR_CONFIG` → owners, limits |
+| `src/lib/imap-service.ts` | IMAP connect, poll, fetch, conversation history, credential encryption | IMAP account configs from Personize |
+| `src/lib/sender-profiles.ts` | Sender profile CRUD, assignment, health tracking, warmup ramp | Sender profiles from Personize |
+| `src/delivery/smtp.ts` | SMTP send + thread reply via nodemailer | IMAP account SMTP config |
+| `src/trigger/imap-reply-monitor.ts` | Polls IMAP inboxes every 3 min, matches replies to contacts | IMAP accounts from Personize |
+| `src/trigger/personize-webhook.ts` | Receives Personize memorize webhooks, routes to pipelines | Webhook payload + pipeline config |
 
 ---
 

@@ -6,6 +6,7 @@ import { sendAndLog } from '../delivery/hubspot-deliver.js';
 import { notifySlack } from '../delivery/slack-notify.js';
 import { reportFailure } from './error-handler.js';
 import { getCadence, getCadenceName } from '../config/prospecting.config.js';
+import { senderProfiles } from '../lib/sender-profiles.js';
 
 /**
  * Check workspace for stop signals: opt-out, reply, bounce, or issue.
@@ -37,8 +38,10 @@ async function recordEmailSent(
   generated: { step: number; subject: string; bodyText: string; angle: string },
   dryRun: boolean,
   cadence: { maxEmails: number; label: string },
+  senderProfileId?: string,
+  senderEmail?: string,
 ) {
-  // Record the message
+  // Record the message with actual sender tracking
   await workspace.addMessageSent(contactEmail, {
     channel: 'email',
     subject: generated.subject,
@@ -46,6 +49,8 @@ async function recordEmailSent(
     step: generated.step,
     angle: generated.angle,
     sentBy: 'outreach-agent',
+    senderProfileId,
+    senderEmail,
     status: dryRun ? 'sent' : 'delivered',
   });
 
@@ -174,8 +179,27 @@ export const fullSequenceTask = task({
         };
       }
 
-      if (!dryRun) await sendAndLog(generated, crmId);
-      await recordEmailSent(contactEmail, generated, dryRun, cadence);
+      // Resolve sender profile for this contact (if assigned)
+      let senderProfileId: string | undefined;
+      let senderEmail: string | undefined;
+
+      if (!dryRun) {
+        const resolved = await senderProfiles.resolveForContact(contactEmail);
+        if (resolved) {
+          // Send via the assigned sender's SMTP account
+          const { sendViaSmtp } = await import('../delivery/hubspot-deliver.js');
+          await sendViaSmtp(generated, resolved.account.id);
+          senderProfileId = resolved.profile.id;
+          senderEmail = resolved.account.email;
+          await senderProfiles.recordSend(resolved.profile.id);
+        } else {
+          // Fallback to default provider (Gmail API, SendGrid, etc.)
+          const result = await sendAndLog(generated, crmId);
+          senderEmail = result.senderEmail;
+        }
+      }
+
+      await recordEmailSent(contactEmail, generated, dryRun, cadence, senderProfileId, senderEmail);
       results.push({ step, subject: generated.subject });
 
       // Durable wait between emails — Trigger.dev checkpoints, no cost during wait
