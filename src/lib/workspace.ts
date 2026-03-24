@@ -479,6 +479,72 @@ async function cancelDeletion(email: string, performedBy: string): Promise<void>
   });
 }
 
+// ─── Role Owner ───────────────────────────────────────────────────
+
+import type { SalesRoleId } from '../config/sales-roles.js';
+
+/**
+ * Set the role_owner for a contact and log the change.
+ */
+async function setRoleOwner(
+  email: string,
+  roleId: SalesRoleId | 'unassigned',
+  reason: string,
+  changedBy: string,
+): Promise<void> {
+  const previousRole = await readProperty<string>(email, 'role_owner', 'unassigned');
+
+  // Update the property
+  await memoryCrud.update({
+    recordId: email,
+    type: 'Contact',
+    propertyName: 'role_owner',
+    propertyValue: roleId,
+    updatedBy: changedBy,
+  });
+
+  // Append to role history
+  await memoryCrud.update({
+    recordId: email,
+    type: 'Contact',
+    propertyName: 'role_owner_history',
+    propertyValue: {
+      fromRole: previousRole,
+      toRole: roleId,
+      reason,
+      changedBy,
+      timestamp: new Date().toISOString(),
+    },
+    arrayPush: true,
+  } as any);
+
+  log.info('Role owner updated', { email, fromRole: previousRole, toRole: roleId, reason, changedBy });
+}
+
+/**
+ * Get the current role_owner for a contact.
+ */
+async function getRoleOwner(email: string): Promise<SalesRoleId | 'unassigned'> {
+  return readProperty<SalesRoleId | 'unassigned'>(email, 'role_owner', 'unassigned');
+}
+
+/**
+ * Get contacts owned by a specific role (for role-scoped scheduling).
+ */
+async function getContactsByRole(roleId: SalesRoleId, limit = 50): Promise<Array<{ email: string; properties: any }>> {
+  try {
+    const result = await memoryCrud.filterByProperty({
+      type: 'Contact',
+      conditions: [{ propertyName: 'role_owner', operator: 'equals', value: roleId }],
+      limit,
+    });
+    return (result as any)?.records || [];
+  } catch (err) {
+    log.warn('Failed to query contacts by role', { roleId, error: (err as Error).message });
+    return [];
+  }
+}
+
 // ─── Export ────────────────────────────────────────────────────────
 
 export const workspace = {
@@ -505,4 +571,8 @@ export const workspace = {
   // Soft-delete
   softDelete,
   cancelDeletion,
+  // Role ownership (Sales Org)
+  setRoleOwner,
+  getRoleOwner,
+  getContactsByRole,
 };

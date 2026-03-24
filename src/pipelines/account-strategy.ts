@@ -79,6 +79,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
       `  Sentiment: ${c.sentiment || 'Unknown'}`,
       `  Last Contacted: ${c.lastContacted || 'Never'}`,
       `  Assigned Sender: ${assignedSender}`,
+      `  Role Owner: ${(c as any).roleOwner || 'unassigned'}`,
       `  Workspace: ${wsContext || 'No workspace data'}`,
     ].join('\n');
   }).join('\n\n');
@@ -138,6 +139,9 @@ CRITICAL EDGE CASES TO CHECK:
     - Health: avoid senders with low health scores or in early warmup
     - Format: "assign_sender|contact_email|sender_profile_id|reason"
 12. SENDER HEALTH: If a sender profile has health < 50 or is warming up, do NOT assign new high-priority leads to it. Flag: "sender_health_risk"
+13. ROLE CONFLICT: If a contact's lead_status doesn't match their role_owner's territory (e.g., status "Engaged" but role_owner is "sdr"), recommend a handoff. Format: "handoff|contact_email|from_role|to_role|reason". Flag: "role_conflict"
+14. ORPHAN CONTACT: If a contact has no role_owner (or "unassigned") but has activity (emails sent, replies, tasks), assign a role based on their lead_status. Flag: "orphan_contact"
+15. MULTI-ROLE COORDINATION: If different roles own different contacts at the same account (e.g., SDR prospecting one person while AE works another), ensure messaging is coordinated. The AE's relationship takes priority — SDR should NOT send cold outreach that contradicts AE's warm conversation. Flag: "multi_role_account"
 
 For each recommended action, specify which contact it applies to (or "account" for account-level actions).
 Prioritize actions as: urgent > high > medium > low.
@@ -225,6 +229,27 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
           log.info('Sender assigned by strategizer', { contact: targetEmail, sender: senderProfileId });
         } catch (err) {
           log.warn('Failed to assign sender', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+      continue;
+    }
+
+    // ── Handle role handoff actions ─────────────────────────
+    if (action === 'handoff' || contactEmail === 'handoff') {
+      // Format: handoff|contact_email|from_role|to_role|reason
+      const targetEmail = action === 'handoff' ? parts[1] : contactEmail;
+      const fromRole = (action === 'handoff' ? parts[2] : rationale) as any;
+      const toRole = (action === 'handoff' ? parts[3] : priority) as any;
+      const handoffReason = action === 'handoff' ? (parts[4] || 'account strategy') : 'account strategy';
+
+      if (targetEmail && fromRole && toRole) {
+        try {
+          const { processHandoff } = await import('./process-handoff.js');
+          await processHandoff(targetEmail, fromRole, toRole, handoffReason, parsed.strategy_summary);
+          actionsCreated++;
+          log.info('Handoff triggered by strategizer', { contact: targetEmail, fromRole, toRole });
+        } catch (err) {
+          log.warn('Failed to process handoff', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
         }
       }
       continue;

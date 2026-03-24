@@ -450,5 +450,36 @@ export async function handleAnalyzedReply(
     });
   }
 
+  // ─── Sales Org: Check for role handoff ──────────────────────
+  try {
+    const { SALES_ORG_CONFIG } = await import('../config/prospecting.config.js');
+    if (SALES_ORG_CONFIG.enabled && (analysis.sentiment === 'positive' || analysis.sentiment === 'question')) {
+      const currentRole = await workspace.getRoleOwner(contactEmail);
+      if (currentRole && currentRole !== 'unassigned') {
+        const { getHandoffTarget } = await import('../config/sales-roles.js');
+        const newStatus = analysis.sentiment === 'positive' ? 'Engaged' : 'Contacted';
+        const handoff = getHandoffTarget(currentRole, newStatus);
+
+        if (handoff) {
+          const { processHandoff } = await import('./process-handoff.js');
+          await processHandoff(
+            contactEmail,
+            currentRole,
+            handoff.toRole,
+            `${analysis.sentiment} reply: ${analysis.summary}`,
+            [
+              `Sentiment: ${analysis.sentiment}`,
+              `Key points: ${analysis.keyPoints.join(', ')}`,
+              `Suggested response: ${analysis.suggestedResponse || ''}`,
+              `Next action: ${analysis.nextAction}`,
+            ].join('\n'),
+          );
+        }
+      }
+    }
+  } catch {
+    // Sales Org not enabled or handoff failed — non-fatal
+  }
+
   return analysis;
 }

@@ -131,6 +131,17 @@ async function processRecord(record: {
       });
     }
 
+    // Auto-assign role (Sales Org)
+    if (isNew) {
+      try {
+        const { assignRoleToContact } = await import('../pipelines/assign-role.js');
+        const assignedRole = await assignRoleToContact(email);
+        if (assignedRole) executed.push(`assignRole:${assignedRole}`);
+      } catch (err) {
+        log.warn('Role assignment failed', { email, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
     // Enrich (Apollo)
     if (pipeline.enrich) {
       try {
