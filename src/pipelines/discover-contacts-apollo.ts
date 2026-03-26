@@ -31,6 +31,7 @@ export async function discoverContactsForAccount(account: HotAccount): Promise<n
       query: `CONTACT DISCOVERY via Apollo ${account.domain}`,
       website_url: account.domain,
       fast_mode: true,
+      prefer_recent: true,
       min_score: 0.3,
       limit: 1,
     });

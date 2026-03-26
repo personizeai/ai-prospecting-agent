@@ -33,6 +33,7 @@ async function shouldRescoreCompany(domain: string): Promise<RescoreDecision> {
       query: 'SIGNAL ASSESSMENT icp_fit_score signal_strength recommended_action',
       website_url: domain,
       fast_mode: true,
+      prefer_recent: true,
       min_score: 0.3,
       limit: 1,
     });
