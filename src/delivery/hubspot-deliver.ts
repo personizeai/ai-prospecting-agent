@@ -7,13 +7,18 @@ import { EMAIL_DELIVERY_CONFIG, MANUAL_HUBSPOT_CONFIG, GMAIL_CONFIG } from '../c
 import type { GeneratedEmail } from '../types.js';
 import { logger } from '../lib/logger.js';
 
-if (!process.env.HUBSPOT_ACCESS_TOKEN) {
-  throw new Error('Missing required environment variable: HUBSPOT_ACCESS_TOKEN');
-}
-
-const hubspot = new HubSpotClient({ accessToken: process.env.HUBSPOT_ACCESS_TOKEN });
+const hubspotToken = (process.env.HUBSPOT_ACCESS_TOKEN || '').trim();
+const hubspot = hubspotToken ? new HubSpotClient({ accessToken: hubspotToken }) : null;
 
 export async function createHubSpotEmail(generated: GeneratedEmail, contactId: string) {
+  if (!hubspot) {
+    logger.warn('Skipping HubSpot email log: HUBSPOT_ACCESS_TOKEN is not set', {
+      email: generated.email,
+      contactId,
+    });
+    return;
+  }
+
   await hubspot.crm.objects.emails.basicApi.create({
     properties: {
       hs_timestamp: new Date().toISOString(),
@@ -33,6 +38,14 @@ export async function createHubSpotEmail(generated: GeneratedEmail, contactId: s
 }
 
 export async function createHubSpotTask(generated: GeneratedEmail, contactId: string, ownerId: string) {
+  if (!hubspot) {
+    logger.warn('Skipping HubSpot task creation: HUBSPOT_ACCESS_TOKEN is not set', {
+      email: generated.email,
+      contactId,
+    });
+    return;
+  }
+
   await hubspot.crm.objects.tasks.basicApi.create({
     properties: {
       hs_timestamp: new Date().toISOString(),
@@ -72,6 +85,14 @@ export async function createHubSpotFollowUpTask(params: {
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   taskType: 'CALL' | 'EMAIL' | 'TODO';
 }) {
+  if (!hubspot) {
+    logger.warn('Skipping HubSpot follow-up task: HUBSPOT_ACCESS_TOKEN is not set', {
+      contactId: params.contactId,
+      subject: params.subject,
+    });
+    return;
+  }
+
   try {
     await hubspot.crm.objects.tasks.basicApi.create({
       properties: {

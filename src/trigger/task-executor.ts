@@ -18,7 +18,7 @@ export const taskExecutorScheduler = schedules.task({
   id: "task-executor",
   cron: "*/30 * * * *", // every 30 minutes
   retry: { maxAttempts: 2 },
-  onFailure: async (_payload, error, { ctx }) => {
+  onFailure: async ({ error, ctx }: any) => {
     await reportFailure("task-executor", ctx.run.id, error);
   },
   run: async (_payload, { ctx }) => {
@@ -82,13 +82,13 @@ export const taskExecutorScheduler = schedules.task({
 
 // ─── Child Task: Execute a Single Workspace Task ─────────────────
 
-const executeWorkspaceTask = task<"execute-workspace-task", ExecuteWorkspaceTaskPayload>({
+const executeWorkspaceTask = task({
   id: "execute-workspace-task",
   retry: { maxAttempts: 2, minTimeoutInMs: 10_000 },
   queue: {
     concurrencyLimit: TASK_EXECUTOR_CONFIG.concurrencyLimit,
   },
-  onFailure: async (payload: ExecuteWorkspaceTaskPayload, error, { ctx }) => {
+  onFailure: async ({ payload, error, ctx }: any) => {
     // On failure, decline the task so it doesn't retry forever
     try {
       await workspace.declineTask(

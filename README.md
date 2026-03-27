@@ -780,13 +780,9 @@ npm run test:all
 | Document | What It Covers |
 |---|---|
 | [SETUP-GUIDE.md](SETUP-GUIDE.md) | Step-by-step setup instructions (8 phases) |
-| [Docs/PRODUCTION-HARDENING.md](Docs/PRODUCTION-HARDENING.md) | Structured LLM outputs, email validation, named cadences, health monitoring, daily digest, structured logging |
-| [Docs/FLOWS-AND-TESTING.md](Docs/FLOWS-AND-TESTING.md) | Pipeline flows with diagrams, trigger schedules, test coverage |
-| [Docs/ENRICHMENT-AND-RESEARCH.md](Docs/ENRICHMENT-AND-RESEARCH.md) | Apollo and Tavily API details, data flows, cost analysis |
-| [Docs/TASK-EXECUTOR.md](Docs/TASK-EXECUTOR.md) | Task executor architecture, human→AI task examples, extending the decision space |
-| [Docs/LEAD-WORKSPACE.md](Docs/LEAD-WORKSPACE.md) | Workspace collaboration model for leads |
-| [Docs/ACCOUNT-STRATEGY.md](Docs/ACCOUNT-STRATEGY.md) | Account strategizer — multi-contact coordination, 10 edge cases, pre-flight gate |
-| [Docs/ai-prospecting-agent-plan.md](Docs/ai-prospecting-agent-plan.md) | Original architecture and implementation plan |
+| [UPGRADING.md](UPGRADING.md) | How to pull latest changes into your fork without breaking your setup |
+| [ROADMAP.md](ROADMAP.md) | Planned features and integrations |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 
 ---
 

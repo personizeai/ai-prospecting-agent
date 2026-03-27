@@ -1,3 +1,7 @@
 website,company_name,industry,employee_count,annual_revenue,headquarters,funding_stage,crm_account_id
-acme.com,Acme Corp,SaaS,250,15000000,San Francisco CA,Series B,
-globex.com,Globex Inc,Manufacturing,1200,85000000,Chicago IL,Public,
+acme.com,Acme Corp,SaaS,260,18000000,San Francisco CA,Series B,crm_a_2001
+globex.com,Globex Inc,Manufacturing,1200,85000000,Chicago IL,Public,crm_a_2002
+initech.com,Initech,Software,430,42000000,Austin TX,Series C,crm_a_2003
+umbrella.com,Umbrella Health,Healthcare Technology,980,120000000,Boston MA,Series D,crm_a_2004
+soylent.com,Soylent Systems,Food Technology,320,27000000,Los Angeles CA,Series B,crm_a_2005
+hooli.com,Hooli,Enterprise Software,4200,950000000,Palo Alto CA,Public,crm_a_2006

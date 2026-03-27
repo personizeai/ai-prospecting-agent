@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@hubspot/api-client": "^12.0.0",
-    "@personize/sdk": "^0.6.6",
-    "@trigger.dev/sdk": "^3.0.0",
+    "@personize/sdk": "^0.7.2",
+    "@trigger.dev/sdk": "4.4.3",
     "csv-parse": "^5.6.0",
     "dotenv": "^16.4.0",
     "googleapis": "^144.0.0",
@@ -32,6 +32,7 @@
     "nodemailer": "^8.0.3"
   },
   "devDependencies": {
+    "@personize/cli": "^0.2.4",
     "@types/node": "^20.0.0",
     "@types/nodemailer": "^7.0.11",
     "tsx": "^4.0.0",

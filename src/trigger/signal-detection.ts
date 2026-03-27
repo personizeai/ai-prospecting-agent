@@ -1,5 +1,5 @@
 import { schedules } from "@trigger.dev/sdk/v3";
-import { detectAndScoreSignals } from '../pipelines/detect-signals.js';
+import { detectAndScoreSignalsDetailed } from '../pipelines/detect-signals.js';
 import { sourceContactsForHotAccounts } from '../pipelines/source-contacts.js';
 import { researchHotAccounts } from '../pipelines/research-company.js';
 import { evaluateAccountStrategies } from '../pipelines/account-strategy.js';
@@ -18,7 +18,8 @@ export const signalDetectionTask = schedules.task({
   },
   run: async (_payload, { ctx }) => {
     return withContext({ requestId: ctx.run.id, pipeline: "signal-detection" }, async () => {
-      const hotAccounts = await detectAndScoreSignals();
+      const summary = await detectAndScoreSignalsDetailed();
+      const hotAccounts = summary.hotAccounts;
 
       if (hotAccounts.length) {
         // 1. Web research — Tavily search for news, funding, hiring signals
@@ -54,6 +55,11 @@ export const signalDetectionTask = schedules.task({
 
       return {
         hotAccounts: hotAccounts.length,
+        totalCompanies: summary.total,
+        scoredCompanies: summary.scored,
+        skippedCompanies: summary.skipped,
+        skipReasons: summary.skipReasons,
+        companyResults: summary.companyResults,
         timestamp: new Date().toISOString(),
       };
     });
