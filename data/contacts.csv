@@ -1,3 +1,13 @@
 email,first_name,last_name,job_title,company_name,phone_number,linkedin_url,seniority_level,department,company_website,lead_status,crm_id
-jane.doe@acme.com,Jane,Doe,VP of Sales,Acme Corp,+1-555-0101,https://linkedin.com/in/janedoe,VP,Sales,acme.com,New,
-john.smith@globex.com,John,Smith,Director of Marketing,Globex Inc,+1-555-0102,https://linkedin.com/in/johnsmith,Director,Marketing,globex.com,Researching,
+maya.patel@acme.com,Maya,Patel,VP Sales,Acme Corp,+1-555-1001,https://linkedin.com/in/mayapatel,VP,Sales,acme.com,New,crm_c_1001
+liam.chen@acme.com,Liam,Chen,Director RevOps,Acme Corp,+1-555-1002,https://linkedin.com/in/liamchen,Director,Operations,acme.com,Engaged,crm_c_1002
+olivia.johnson@globex.com,Olivia,Johnson,CMO,Globex Inc,+1-555-1003,https://linkedin.com/in/oliviajohnson,CXO,Marketing,globex.com,Researching,crm_c_1003
+noah.wilson@globex.com,Noah,Wilson,Head of Demand Gen,Globex Inc,+1-555-1004,https://linkedin.com/in/noahwilson,Head,Marketing,globex.com,New,crm_c_1004
+emma.garcia@initech.com,Emma,Garcia,VP Growth,Initech,+1-555-1005,https://linkedin.com/in/emmagarcia,VP,Growth,initech.com,Qualified,crm_c_1005
+ethan.brown@initech.com,Ethan,Brown,Director Sales Ops,Initech,+1-555-1006,https://linkedin.com/in/ethanbrown,Director,Sales,initech.com,Researching,crm_c_1006
+ava.martinez@umbrella.com,Ava,Martinez,Chief Revenue Officer,Umbrella Health,+1-555-1007,https://linkedin.com/in/avamartinez,CXO,Revenue,umbrella.com,Engaged,crm_c_1007
+james.davis@umbrella.com,James,Davis,Sales Manager,Umbrella Health,+1-555-1008,https://linkedin.com/in/jamesdavis,Manager,Sales,umbrella.com,New,crm_c_1008
+sofia.rodriguez@soylent.com,Sofia,Rodriguez,VP Customer Success,Soylent Systems,+1-555-1009,https://linkedin.com/in/sofiarodriguez,VP,Customer Success,soylent.com,Researching,crm_c_1009
+benjamin.lee@soylent.com,Benjamin,Lee,Director Partnerships,Soylent Systems,+1-555-1010,https://linkedin.com/in/benjaminlee,Director,Partnerships,soylent.com,Qualified,crm_c_1010
+isabella.thomas@hooli.com,Isabella,Thomas,Chief Commercial Officer,Hooli,+1-555-1011,https://linkedin.com/in/isabellathomas,CXO,Commercial,hooli.com,Engaged,crm_c_1011
+lucas.moore@hooli.com,Lucas,Moore,VP Sales Engineering,Hooli,+1-555-1012,https://linkedin.com/in/lucasmoore,VP,Sales,hooli.com,New,crm_c_1012

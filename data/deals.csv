@@ -1,3 +1,13 @@
 email,deal_name,amount,currency,stage,pipeline,close_date,status,won_reason,lost_reason,description
-jane.doe@acme.com,Acme Enterprise License,75000,USD,Proposal,Default,2025-09-30,open,,,Enterprise license for sales team of 50
-john.smith@globex.com,Globex Pilot,15000,USD,Closed Won,Default,2025-05-15,won,Strong ROI demonstrated,,3-month pilot converted to annual contract
+maya.patel@acme.com,Acme outbound pilot,35000,USD,Proposal,Default,2026-04-15,open,,,Pilot for two sales pods and one revops owner with approved budget and active vendor review
+liam.chen@acme.com,Acme revops expansion,85000,USD,Negotiation,Default,2026-05-20,open,,,Expansion scenario tied to successful pilot metrics with legal review in progress and March launch target
+olivia.johnson@globex.com,Globex modernization initiative,120000,USD,Discovery,Enterprise,2026-06-30,open,,,Large multi team transformation project with phased rollout
+noah.wilson@globex.com,Globex demand gen accelerator,45000,USD,Closed Lost,Enterprise,2026-02-02,lost,,Timing not aligned with annual planning cycle,Deal delayed due to budget freeze
+emma.garcia@initech.com,Initech growth pod rollout,64000,USD,Closed Won,Default,2026-02-18,won,Fast onboarding and strong governance fit,,Annual agreement signed after pilot
+ethan.brown@initech.com,Initech data sync add on,18000,USD,Proposal,Default,2026-03-25,open,,,Add on for deeper CRM and data warehouse sync
+ava.martinez@umbrella.com,Umbrella outbound transformation,140000,USD,Negotiation,Enterprise,2026-05-10,open,,,Executive sponsored initiative with strict compliance controls and a stated goal to replace the current outbound platform this quarter
+james.davis@umbrella.com,Umbrella sender operations package,30000,USD,Evaluation,Default,2026-04-05,open,,,Focus on sender profile management and inbox health with procurement review underway and target rollout in 30 days
+sofia.rodriguez@soylent.com,Soylent customer expansion motion,52000,USD,Proposal,Default,2026-04-28,open,,,Use case centered on customer success led expansion campaigns
+benjamin.lee@soylent.com,Soylent partner recruitment motion,26000,USD,Closed Won,Default,2026-01-30,won,Clear partner pipeline use case,,Started with limited team license
+isabella.thomas@hooli.com,Hooli enterprise license,250000,USD,Discovery,Strategic,2026-07-15,open,,,Global rollout discussion with multi region stakeholders
+lucas.moore@hooli.com,Hooli technical validation package,40000,USD,Closed Lost,Strategic,2026-02-20,lost,,Chose internal build path,Technical team preferred to defer vendor adoption

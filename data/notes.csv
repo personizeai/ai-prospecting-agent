@@ -1,3 +1,13 @@
 email,date,type,subject,body
-jane.doe@acme.com,2025-06-15,meeting,Q3 Planning Call,Discussed Q3 expansion plans. Jane mentioned evaluating new sales tools. Budget approved for 2 new vendors.
-john.smith@globex.com,2025-06-10,note,LinkedIn Research,John recently posted about marketing automation challenges. Strong fit for our platform.
+maya.patel@acme.com,2026-02-03,meeting,Discovery call,Q1 expansion planned and active search for outbound automation platform with governance controls. Budget is approved and vendor selection is expected this month.
+liam.chen@acme.com,2026-02-05,email,Follow up from demo,Asked for security documentation and confirmed a March pilot launch target with two sales pods if legal review clears this week.
+olivia.johnson@globex.com,2026-01-28,note,Conference conversation,Interested in replacing manual prospecting workflows and reducing SDR tooling cost.
+noah.wilson@globex.com,2026-02-01,call,Intro call summary,Shared current stack limitations and requested benchmark examples for reply rate lift.
+emma.garcia@initech.com,2026-02-08,meeting,Pilot planning,Confirmed two team trial and requested integration path with CSV first then CRM.
+ethan.brown@initech.com,2026-02-09,task,Send case studies,Need two relevant customer stories focused on revops automation and governance.
+ava.martinez@umbrella.com,2026-02-11,email,Executive follow up,Asked for implementation ownership model and expected timeline to first campaign. Stated the team wants to replace their current outbound stack before the next quarter starts.
+james.davis@umbrella.com,2026-02-12,call,Operations review,Discussed sender warmup and daily limits and compliance approval workflow. Procurement review is underway and rollout is targeted within 30 days.
+sofia.rodriguez@soylent.com,2026-02-10,meeting,Growth initiative review,Looking for multi channel motion starting with email then LinkedIn in phase two.
+benjamin.lee@soylent.com,2026-02-13,note,Partner context,Mentioned strategic partnership motion where outbound needs shared account context.
+isabella.thomas@hooli.com,2026-02-14,email,Commercial review,Requested enterprise pricing model security docs and projected ROI assumptions.
+lucas.moore@hooli.com,2026-02-15,task,Technical validation,Asked for API and webhook architecture review with their sales engineering team.

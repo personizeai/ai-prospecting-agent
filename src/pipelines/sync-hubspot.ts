@@ -8,11 +8,19 @@ import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'sync-hubspot' });
 
-if (!process.env.HUBSPOT_ACCESS_TOKEN) {
-  throw new Error('Missing required environment variable: HUBSPOT_ACCESS_TOKEN');
-}
+let hubspot!: HubSpotClient;
 
-const hubspot = new HubSpotClient({ accessToken: process.env.HUBSPOT_ACCESS_TOKEN });
+function ensureHubSpotClient(): HubSpotClient {
+  if (hubspot) return hubspot;
+
+  const token = (process.env.HUBSPOT_ACCESS_TOKEN || '').trim();
+  if (!token) {
+    throw new Error('Missing required environment variable: HUBSPOT_ACCESS_TOKEN');
+  }
+
+  hubspot = new HubSpotClient({ accessToken: token });
+  return hubspot;
+}
 
 /**
  * Build HubSpot Search API filter for "Personize - Lead" = true.
@@ -531,6 +539,8 @@ async function syncEngagementHistory() {
 // ─── Main Export ───────────────────────────────────────────────────
 
 export async function syncHubSpot() {
+  ensureHubSpotClient();
+
   log.info('Syncing HubSpot Contacts');
   try {
     await syncHubSpotContacts();
