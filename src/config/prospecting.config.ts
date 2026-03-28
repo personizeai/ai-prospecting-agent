@@ -455,6 +455,34 @@ export const TASK_EXECUTOR_CONFIG = {
   maxTaskAgeDays: 30,
 };
 
+// ─── Sales Org (Multi-Role) ──────────────────────────────────────────
+//
+// When enabled, the system operates as a coordinated sales team:
+//   - SDR: cold outreach, qualification (New → Contacted)
+//   - AE: warm follow-up, deal management (Engaged → Opportunity)
+//   - CSM: post-sale retention, renewal, expansion (Customer)
+//
+// When disabled (default), the system runs as a single agent.
+
+import type { SalesRoleId } from './sales-roles.js';
+
+export const SALES_ORG_CONFIG = {
+  /** Master toggle. When false, the system behaves as a single agent (backward compatible). */
+  enabled: process.env.SALES_ORG_ENABLED === 'true',
+
+  /** Which roles are active. Only active roles get schedulers and pick up tasks. */
+  activeRoles: (process.env.ACTIVE_ROLES || 'sdr,ae,csm').split(',').filter(Boolean) as SalesRoleId[],
+
+  /** Default role for new contacts when auto-assignment can't determine from lead_status. */
+  defaultRole: (process.env.DEFAULT_ROLE || 'sdr') as SalesRoleId,
+
+  /** Automatically assign role_owner to new contacts based on lead_status. */
+  autoAssignNewContacts: true,
+
+  /** Send Slack notification on role handoffs. */
+  handoffNotifySlack: true,
+};
+
 // ─── Outreach Cadences ───────────────────────────────────────────────
 /** Named cadences define the pace and length of outreach sequences.
  *  Each cadence specifies how many emails to send and how long to wait between them.

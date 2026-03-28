@@ -2,10 +2,12 @@ import { schedules, task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
 import { generateOutreachForContact } from '../pipelines/generate-outreach.js';
 import { sendAndLog } from '../delivery/hubspot-deliver.js';
+import { SALES_ORG_CONFIG } from '../config/prospecting.config.js';
 import { reportFailure } from './error-handler.js';
 import { logger } from '../lib/logger.js';
 
 // Master outreach scheduler — runs twice daily (10am and 2pm UTC)
+// When SALES_ORG is enabled, role-scoped schedulers in role-schedulers.ts take over.
 export const outreachScheduler = schedules.task({
   id: "outreach-scheduler",
   cron: "0 10,14 * * 1-5", // 10am and 2pm UTC, Mon-Fri
@@ -14,6 +16,12 @@ export const outreachScheduler = schedules.task({
     await reportFailure("outreach-scheduler", ctx.run.id, error);
   },
   run: async () => {
+    // When Sales Org is enabled, role-scoped schedulers handle outreach instead
+    if (SALES_ORG_CONFIG.enabled) {
+      logger.info('Sales Org enabled — skipping single-mode outreach scheduler (role-schedulers active)');
+      return { skipped: true, reason: 'sales_org_enabled' };
+    }
+
     const contacts = await client.memory.search({
       type: 'Contact',
       query: 'qualified contacts ready for outreach, not opted out',

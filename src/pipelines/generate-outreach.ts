@@ -3,19 +3,29 @@ import type { GeneratedEmail } from '../types.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { OUTREACH_EMAIL_SCHEMA, OUTREACH_EMAIL_DEFAULTS } from '../lib/llm-schemas.js';
 import { validateEmailHtml } from '../lib/email-html.js';
-import { getCadence, type CadenceDefinition, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
+import { getCadence, type CadenceDefinition, ACCOUNT_STRATEGY_CONFIG, SALES_ORG_CONFIG } from '../config/prospecting.config.js';
 import { AGENT_MODE } from '../config/prospecting.config.js';
 import { accountPreflight } from './account-preflight.js';
+import { getGovernanceForRole } from '../lib/role-governance.js';
 import { logger } from '../lib/logger.js';
 import { workspace } from '../lib/workspace.js';
+import type { SalesRoleId } from '../config/sales-roles.js';
 
-/** Assemble full context: governance + contact + company + previous outreach. */
-export async function assembleContext(email: string): Promise<string> {
-  const [guidelines, contactDigest, companyContext, previousOutreach] = await Promise.all([
-    client.ai.smartGuidelines({
-      message: 'brand voice, outreach playbook, ICP definition, competitor policy',
-      mode: 'full',
-    }),
+/**
+ * Assemble full context: governance + contact + company + previous outreach.
+ *
+ * When roleId is provided and SALES_ORG is enabled, fetches role-specific
+ * governance overlays (e.g., SDR challenger tone, AE consultative tone).
+ */
+export async function assembleContext(email: string, roleId?: SalesRoleId): Promise<string> {
+  const governanceMessage = 'brand voice, outreach playbook, ICP definition, competitor policy';
+
+  const [governanceContent, contactDigest, companyContext, previousOutreach] = await Promise.all([
+    // Use role-aware governance when available
+    (roleId && SALES_ORG_CONFIG.enabled)
+      ? getGovernanceForRole(roleId, governanceMessage)
+      : client.ai.smartGuidelines({ message: governanceMessage, mode: 'full' })
+          .then((r) => r.data?.compiledContext || ''),
     client.memory.smartDigest({
       email,
       type: 'Contact',
@@ -32,7 +42,6 @@ export async function assembleContext(email: string): Promise<string> {
     }),
   ]);
 
-  const governanceContent = guidelines.data?.compiledContext || '';
   if (!governanceContent) {
     logger.warn('Governance is empty — emails will generate without brand voice, ICP, or playbook rules. Run: npm run setup:governance');
   }
@@ -51,6 +60,7 @@ export async function generateOutreachForContact(
   email: string,
   dryRun = true,
   cadenceOverride?: CadenceDefinition,
+  roleId?: SalesRoleId,
 ): Promise<GeneratedEmail | null> {
   const log = logger.child({ pipeline: 'generate-outreach' });
 
@@ -144,7 +154,7 @@ export async function generateOutreachForContact(
   const nextStep = contactState.emailsSent + 1;
   log.info('Generating email', { email, step: nextStep, maxEmails: cadence.maxEmails, cadence: cadence.label });
 
-  let context = await assembleContext(email);
+  let context = await assembleContext(email, roleId);
   if (accountContext) {
     context = `## ACCOUNT STRATEGY CONTEXT\n${accountContext}\n\n---\n\n${context}`;
   }

@@ -25,6 +25,8 @@ import { REPLY_ANALYSIS_SCHEMA, REPLY_ANALYSIS_DEFAULTS } from '../lib/llm-schem
 import { ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
 
+const log = logger.child({ pipeline: 'analyze-reply' });
+
 // ─── Types ─────────────────────────────────────────────────────────
 
 export type ReplySentiment = 'positive' | 'question' | 'negative' | 'ooo' | 'referral' | 'neutral';
@@ -448,6 +450,37 @@ export async function handleAnalyzedReply(
       },
       tags: ['reply', analysis.sentiment],
     });
+  }
+
+  // ─── Sales Org: Check for role handoff ──────────────────────
+  try {
+    const { SALES_ORG_CONFIG } = await import('../config/prospecting.config.js');
+    if (SALES_ORG_CONFIG.enabled && (analysis.sentiment === 'positive' || analysis.sentiment === 'question')) {
+      const currentRole = await workspace.getRoleOwner(contactEmail);
+      if (currentRole && currentRole !== 'unassigned') {
+        const { getHandoffTarget } = await import('../config/sales-roles.js');
+        const newStatus = analysis.sentiment === 'positive' ? 'Engaged' : 'Contacted';
+        const handoff = getHandoffTarget(currentRole, newStatus);
+
+        if (handoff) {
+          const { processHandoff } = await import('./process-handoff.js');
+          await processHandoff(
+            contactEmail,
+            currentRole,
+            handoff.toRole,
+            `${analysis.sentiment} reply: ${analysis.summary}`,
+            [
+              `Sentiment: ${analysis.sentiment}`,
+              `Key points: ${analysis.keyPoints.join(', ')}`,
+              `Suggested response: ${analysis.suggestedResponse || ''}`,
+              `Next action: ${analysis.nextAction}`,
+            ].join('\n'),
+          );
+        }
+      }
+    }
+  } catch (err) {
+    log.warn('Handoff processing failed', { error: String(err), contactEmail });
   }
 
   return analysis;
