@@ -52,6 +52,11 @@ export async function assignRoleToContact(
 
   const roleId = inferRoleFromStatus(status || 'New');
 
+  if (roleId === 'unassigned') {
+    log.info('No role inferred for status, skipping assignment', { email, leadStatus: status });
+    return null;
+  }
+
   await workspace.setRoleOwner(email, roleId, `Auto-assigned from lead_status: ${status}`, 'role-assigner');
 
   log.info('Role assigned', { email, role: roleId, leadStatus: status });

@@ -88,7 +88,7 @@ export const SALES_ROLES: Record<SalesRoleId, SalesRole> = {
     ],
     taskOwners: ['ae-outreach-agent'],
     governanceOverlays: ['brand-voice--ae', 'outreach-playbook--ae'],
-    defaultAgentMode: 'outbound-sdr',
+    defaultAgentMode: 'abm',
     schedule: {
       outreachCron: '0 9,13 * * 1-5',     // 9am + 1pm UTC, Mon-Fri (offset from SDR)
       taskExecutorCron: '15,45 * * * *',    // Every 30 min, offset from SDR
@@ -185,13 +185,14 @@ export const MODE_TO_ROLE: Record<string, SalesRoleId> = {
 /**
  * Get the role that should own a contact based on their lead_status.
  */
-export function inferRoleFromStatus(leadStatus: string): SalesRoleId {
+export function inferRoleFromStatus(leadStatus: string): SalesRoleId | 'unassigned' {
+  if (!leadStatus) return 'unassigned';
   for (const role of Object.values(SALES_ROLES)) {
     if (role.claimTriggers.includes(leadStatus) || role.ownsStatuses.includes(leadStatus)) {
       return role.id;
     }
   }
-  return 'sdr'; // Default to SDR for unknown statuses
+  return 'unassigned';
 }
 
 /**

@@ -508,15 +508,17 @@ async function setRoleOwner(
     recordId: email,
     type: 'Contact',
     propertyName: 'role_owner_history',
-    propertyValue: {
-      fromRole: previousRole,
-      toRole: roleId,
-      reason,
-      changedBy,
-      timestamp: new Date().toISOString(),
+    arrayPush: {
+      items: [{
+        fromRole: previousRole,
+        toRole: roleId,
+        reason,
+        changedBy,
+        timestamp: new Date().toISOString(),
+      }],
     },
-    arrayPush: true,
-  } as any);
+    updatedBy: changedBy,
+  });
 
   log.info('Role owner updated', { email, fromRole: previousRole, toRole: roleId, reason, changedBy });
 }
@@ -531,14 +533,14 @@ async function getRoleOwner(email: string): Promise<SalesRoleId | 'unassigned'> 
 /**
  * Get contacts owned by a specific role (for role-scoped scheduling).
  */
-async function getContactsByRole(roleId: SalesRoleId, limit = 50): Promise<Array<{ email: string; properties: any }>> {
+async function getContactsByRole(roleId: SalesRoleId, limit = 50): Promise<Array<{ email: string; properties: Record<string, unknown> }>> {
   try {
     const result = await memoryCrud.filterByProperty({
       type: 'Contact',
       conditions: [{ propertyName: 'role_owner', operator: 'equals', value: roleId }],
       limit,
     });
-    return (result as any)?.records || [];
+    return result.records.map((r) => ({ email: r.recordId, properties: r.matchedProperties }));
   } catch (err) {
     log.warn('Failed to query contacts by role', { roleId, error: (err as Error).message });
     return [];
