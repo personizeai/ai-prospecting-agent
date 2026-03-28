@@ -5,6 +5,44 @@ import { SIGNAL_ASSESSMENT_SCHEMA, SIGNAL_ASSESSMENT_DEFAULTS } from '../lib/llm
 import { SIGNAL_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
 
+// ─── Helpers ────────────────────────────────────────────────────────
+
+function pickString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function pickPropertyValue(prop: unknown): string | undefined {
+  if (typeof prop === 'string') return prop.trim() || undefined;
+  if (prop && typeof prop === 'object' && 'value' in (prop as any)) {
+    return pickString((prop as any).value);
+  }
+  return undefined;
+}
+
+function getCompanyDomain(company: any): string | undefined {
+  return (
+    pickString(company?.website_url) ||
+    pickString(company?.website) ||
+    pickPropertyValue(company?.record?.website_url) ||
+    pickPropertyValue(company?.record?.website) ||
+    pickString(company?.mainProperties?.website_url) ||
+    pickString(company?.mainProperties?.website) ||
+    pickString(company?.recordId)
+  );
+}
+
+function getCompanyName(company: any, fallback: string): string {
+  return (
+    pickString(company?.company_name) ||
+    pickString(company?.name) ||
+    pickPropertyValue(company?.record?.company_name) ||
+    pickPropertyValue(company?.record?.name) ||
+    pickString(company?.mainProperties?.company_name) ||
+    pickString(company?.mainProperties?.name) ||
+    fallback
+  );
+}
+
 // ─── Smart Re-scoring ──────────────────────────────────────────────
 
 interface RescoreDecision {
@@ -111,7 +149,7 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   const skipReasons: Record<string, number> = {};
 
   for (const company of companies.data) {
-    const domain = company.website_url || company.website;
+    const domain = getCompanyDomain(company);
     // Don't use email as a website_url — it produces bad digest results
     if (!domain || domain.includes('@')) continue;
 
@@ -156,16 +194,22 @@ ${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`,
       const buyingWindow = parsed.buying_window ? 'Yes' : 'No';
       const action = parsed.recommended_action;
 
-      await client.memory.memorize({
-        website_url: domain,
-        content: `[SIGNAL ASSESSMENT ${new Date().toISOString().split('T')[0]}]\n${output}`,
-        enhanced: true,
-        tags: ['assessment', 'signal-detection'],
-      });
+      // Only memorize assessments that carry real signal.
+      // Zero-score / no-data responses waste a memorize + AI extraction call.
+      if (score > 0 || strength !== 'None') {
+        await client.memory.memorize({
+          website_url: domain,
+          content: `[SIGNAL ASSESSMENT ${new Date().toISOString().split('T')[0]}]\n${output}`,
+          enhanced: false,
+          tags: ['assessment', 'signal-detection'],
+        });
+      } else {
+        log.info('Skipping memorize for zero-score assessment', { domain, score, strength });
+      }
 
-      if (buyingWindow === 'Yes' || score >= 70) {
+      if (buyingWindow === 'Yes' || score >= SIGNAL_CONFIG.hotAccountThreshold) {
         hotAccounts.push({
-          company: company.company_name || company.name || domain,
+          company: getCompanyName(company, domain),
           domain,
           score,
           strength,
