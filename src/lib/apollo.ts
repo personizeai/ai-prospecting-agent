@@ -140,7 +140,7 @@ export async function searchPeople(params: PeopleSearchParams): Promise<ApolloSe
     body.person_departments = params.personDepartments;
   }
 
-  return apolloFetch<ApolloSearchResponse>('/v1/mixed_people/search', body);
+  return apolloFetch<ApolloSearchResponse>('/v1/mixed_people/api_search', body);
 }
 
 // ─── People Enrichment (1 credit/person) ──────────────────────────

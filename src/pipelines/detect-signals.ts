@@ -82,6 +82,29 @@ async function shouldRescoreCompany(domain: string): Promise<RescoreDecision> {
 
 // ─── Main Pipeline ──────────────────────────────────────────────────
 
+/** Extract domain from a company search result, checking all known field locations. */
+function extractDomain(c: any): string | undefined {
+  const mp = c.mainProperties || {};
+  const props = c.properties || {};
+  return c.website_url || c.website
+    || mp['website-url'] || mp['website_url'] || mp.website || mp.domain
+    || props.website_url?.value || props.website_url
+    || props.website?.value || props.website
+    || props.domain?.value || props.domain
+    || undefined;
+}
+
+/** Extract company name from a company search result, checking all known field locations. */
+function extractName(c: any, fallback?: string): string {
+  const mp = c.mainProperties || {};
+  const props = c.properties || {};
+  return c.company_name || c.name
+    || mp['company-name'] || mp['company_name'] || mp.name
+    || props.company_name?.value || props.company_name
+    || props.name?.value || props.name
+    || fallback || 'unknown';
+}
+
 export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   const log = logger.child({ pipeline: 'detect-signals' });
 
@@ -110,19 +133,38 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   let skipped = 0;
   const skipReasons: Record<string, number> = {};
 
+  log.info('Companies found in memory', {
+    count: companies.data.length,
+    names: companies.data.map((c: any) => extractName(c, extractDomain(c))),
+  });
+
+  log.info('Governance guidelines loaded', {
+    hasContext: !!(guidelines.data?.compiledContext),
+    contextLength: (guidelines.data?.compiledContext || '').length,
+    contextPreview: (guidelines.data?.compiledContext || '').slice(0, 300),
+  });
+
   for (const company of companies.data) {
-    const domain = company.website_url || company.website;
-    // Don't use email as a website_url — it produces bad digest results
-    if (!domain || domain.includes('@')) continue;
+    const c = company as any;
+    const domain = extractDomain(c);
+    const companyName = extractName(c, domain);
+
+    if (!domain || domain.includes('@')) {
+      log.warn('Skipping company — no valid domain', { companyName, mainProperties: c.mainProperties });
+      continue;
+    }
 
     // Smart re-scoring: check if this company needs evaluation
     const rescoreCheck = await shouldRescoreCompany(domain);
     if (!rescoreCheck.rescore) {
       skipped++;
-      const bucketReason = rescoreCheck.reason.replace(/_\d+d.*/, ''); // Group by reason type
+      const bucketReason = rescoreCheck.reason.replace(/_\d+d.*/, '');
       skipReasons[bucketReason] = (skipReasons[bucketReason] || 0) + 1;
+      log.info('Skipping company (already scored)', { companyName, domain, reason: rescoreCheck.reason });
       continue;
     }
+
+    log.info('Scoring company', { companyName, domain, rescoreReason: rescoreCheck.reason });
 
     try {
       const digest = await client.memory.smartDigest({
@@ -131,30 +173,57 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
         token_budget: 2000,
       });
 
+      const digestContext = digest.data?.compiledContext || '';
+      log.info('Company digest', {
+        companyName,
+        domain,
+        digestLength: digestContext.length,
+        digestPreview: digestContext.slice(0, 500),
+      });
+
       const context = [
         guidelines.data?.compiledContext || '',
-        digest.data?.compiledContext || '',
+        digestContext,
       ].join('\n\n---\n\n');
 
-      const result = await client.ai.prompt({
-        ...aiOptions,
-        context,
-        instructions: [
-          {
-            prompt: `Assess this company as a prospecting target.
-${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`,
-            maxSteps: 3,
-          },
+      const assessmentPrompt = `Assess this company as a prospecting target.\n${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`;
+
+      const chatResult = await client.chat.completions.create({
+        ...(aiOptions.tier && { tier: aiOptions.tier }),
+        ...(aiOptions.provider && { provider: aiOptions.provider }),
+        ...(aiOptions.model && { model: aiOptions.model }),
+        ...(aiOptions.openrouterApiKey && { openrouter_api_key: aiOptions.openrouterApiKey }),
+        messages: [
+          { role: 'system', content: context },
+          { role: 'user', content: assessmentPrompt },
         ],
       });
 
-      const output = String(result.data || '');
+      const output = chatResult.choices?.[0]?.message?.content || '';
+      log.info('AI assessment response', {
+        companyName,
+        outputLength: output.length,
+        outputPreview: output.slice(0, 400),
+        model: chatResult.model,
+        creditsCharged: chatResult.metadata?.credits_charged,
+      });
       const { data: parsed } = parseLLMJson(output, SIGNAL_ASSESSMENT_SCHEMA, SIGNAL_ASSESSMENT_DEFAULTS);
 
       const score = parsed.icp_fit_score;
       const strength = parsed.signal_strength;
       const buyingWindow = parsed.buying_window ? 'Yes' : 'No';
       const action = parsed.recommended_action;
+      const isHot = buyingWindow === 'Yes' || score >= 70;
+
+      log.info('Score result', {
+        companyName,
+        domain,
+        icpScore: score,
+        signalStrength: strength,
+        buyingWindow,
+        action,
+        isHot,
+      });
 
       await client.memory.memorize({
         website_url: domain,
@@ -163,9 +232,9 @@ ${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`,
         tags: ['assessment', 'signal-detection'],
       });
 
-      if (buyingWindow === 'Yes' || score >= 70) {
+      if (isHot) {
         hotAccounts.push({
-          company: company.company_name || company.name || domain,
+          company: companyName,
           domain,
           score,
           strength,
@@ -173,8 +242,7 @@ ${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`,
         });
       }
     } catch (err) {
-      log.error('Signal detection failed', { domain, error: err instanceof Error ? err.message : String(err) });
-      // Continue with next company instead of aborting
+      log.error('Signal detection failed', { companyName, domain, error: err instanceof Error ? err.message : String(err) });
     }
 
     await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
@@ -187,10 +255,19 @@ ${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`,
     skipped,
     skipReasons,
     hotAccounts: hotAccounts.length,
+    hotThreshold: SIGNAL_CONFIG.hotAccountThreshold,
+    budgetTier: process.env.BUDGET_TIER || 'balanced',
   });
 
   for (const a of hotAccounts.sort((a, b) => b.score - a.score)) {
     log.info('Hot account', { score: a.score, strength: a.strength, company: a.company, action: a.action });
+  }
+
+  if (hotAccounts.length === 0 && scored > 0) {
+    log.warn('No hot accounts found — all companies scored below threshold', {
+      threshold: SIGNAL_CONFIG.hotAccountThreshold,
+      hint: 'Check your ICP Definition governance in the Personize dashboard. Generic ICP rules may not match your target companies.',
+    });
   }
 
   return hotAccounts;

@@ -12,6 +12,7 @@ for (const key of REQUIRED_ENV) {
 
 export const client = new Personize({
   secretKey: process.env.PERSONIZE_SECRET_KEY!,
+  timeout: 60_000,
 });
 
 /** Call once at startup to verify auth and print plan limits. */
