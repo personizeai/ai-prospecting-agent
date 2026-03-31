@@ -123,7 +123,9 @@ export interface PeopleSearchParams {
   page?: number;
 }
 
-export async function searchPeople(params: PeopleSearchParams): Promise<ApolloSearchResponse> {
+export const APOLLO_PEOPLE_SEARCH_ENDPOINT = '/v1/mixed_people/api_search';
+
+export function buildPeopleSearchBody(params: PeopleSearchParams): Record<string, unknown> {
   const body: Record<string, unknown> = {
     organization_domains: params.organizationDomains,
     per_page: params.perPage || 25,
@@ -140,7 +142,14 @@ export async function searchPeople(params: PeopleSearchParams): Promise<ApolloSe
     body.person_departments = params.personDepartments;
   }
 
-  return apolloFetch<ApolloSearchResponse>('/v1/mixed_people/api_search', body);
+  return body;
+}
+
+export async function searchPeople(params: PeopleSearchParams): Promise<ApolloSearchResponse> {
+  return apolloFetch<ApolloSearchResponse>(
+    APOLLO_PEOPLE_SEARCH_ENDPOINT,
+    buildPeopleSearchBody(params),
+  );
 }
 
 // ─── People Enrichment (1 credit/person) ──────────────────────────

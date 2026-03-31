@@ -31,7 +31,7 @@ export const RATE_LIMIT_PAUSE_MS = Number(process.env.RATE_LIMIT_PAUSE_MS) || 20
 
 /**
  * Optional BYOK (Bring Your Own Key) AI options.
- * Spread into every client.ai.prompt() call: `...aiOptions`
+ * Spread into Personize AI calls: `...aiOptions`
  * If none are set, Personize auto-selects the model via tier.
  */
 export const aiOptions = {

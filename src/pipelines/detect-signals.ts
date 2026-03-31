@@ -4,6 +4,7 @@ import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { SIGNAL_ASSESSMENT_SCHEMA, SIGNAL_ASSESSMENT_DEFAULTS } from '../lib/llm-schemas.js';
 import { SIGNAL_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
+import { extractCompanyDomain, extractCompanyName } from '../lib/company-search-result.js';
 
 // ─── Smart Re-scoring ──────────────────────────────────────────────
 
@@ -82,29 +83,6 @@ async function shouldRescoreCompany(domain: string): Promise<RescoreDecision> {
 
 // ─── Main Pipeline ──────────────────────────────────────────────────
 
-/** Extract domain from a company search result, checking all known field locations. */
-function extractDomain(c: any): string | undefined {
-  const mp = c.mainProperties || {};
-  const props = c.properties || {};
-  return c.website_url || c.website
-    || mp['website-url'] || mp['website_url'] || mp.website || mp.domain
-    || props.website_url?.value || props.website_url
-    || props.website?.value || props.website
-    || props.domain?.value || props.domain
-    || undefined;
-}
-
-/** Extract company name from a company search result, checking all known field locations. */
-function extractName(c: any, fallback?: string): string {
-  const mp = c.mainProperties || {};
-  const props = c.properties || {};
-  return c.company_name || c.name
-    || mp['company-name'] || mp['company_name'] || mp.name
-    || props.company_name?.value || props.company_name
-    || props.name?.value || props.name
-    || fallback || 'unknown';
-}
-
 export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   const log = logger.child({ pipeline: 'detect-signals' });
 
@@ -133,12 +111,12 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   let skipped = 0;
   const skipReasons: Record<string, number> = {};
 
-  log.info('Companies found in memory', {
+  log.debug('Companies found in memory', {
     count: companies.data.length,
-    names: companies.data.map((c: any) => extractName(c, extractDomain(c))),
+    names: companies.data.map((c: any) => extractCompanyName(c, extractCompanyDomain(c))),
   });
 
-  log.info('Governance guidelines loaded', {
+  log.debug('Governance guidelines loaded', {
     hasContext: !!(guidelines.data?.compiledContext),
     contextLength: (guidelines.data?.compiledContext || '').length,
     contextPreview: (guidelines.data?.compiledContext || '').slice(0, 300),
@@ -146,8 +124,8 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
 
   for (const company of companies.data) {
     const c = company as any;
-    const domain = extractDomain(c);
-    const companyName = extractName(c, domain);
+    const domain = extractCompanyDomain(c);
+    const companyName = extractCompanyName(c, domain);
 
     if (!domain || domain.includes('@')) {
       log.warn('Skipping company — no valid domain', { companyName, mainProperties: c.mainProperties });
@@ -174,7 +152,7 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
       });
 
       const digestContext = digest.data?.compiledContext || '';
-      log.info('Company digest', {
+      log.debug('Company digest', {
         companyName,
         domain,
         digestLength: digestContext.length,
@@ -200,7 +178,7 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
       });
 
       const output = chatResult.choices?.[0]?.message?.content || '';
-      log.info('AI assessment response', {
+      log.debug('AI assessment response', {
         companyName,
         outputLength: output.length,
         outputPreview: output.slice(0, 400),
