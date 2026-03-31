@@ -12,6 +12,7 @@ for (const key of REQUIRED_ENV) {
 
 export const client = new Personize({
   secretKey: process.env.PERSONIZE_SECRET_KEY!,
+  timeout: 60_000,
 });
 
 /** Call once at startup to verify auth and print plan limits. */
@@ -30,7 +31,7 @@ export const RATE_LIMIT_PAUSE_MS = Number(process.env.RATE_LIMIT_PAUSE_MS) || 20
 
 /**
  * Optional BYOK (Bring Your Own Key) AI options.
- * Spread into every client.ai.prompt() call: `...aiOptions`
+ * Spread into Personize AI calls: `...aiOptions`
  * If none are set, Personize auto-selects the model via tier.
  */
 export const aiOptions = {
