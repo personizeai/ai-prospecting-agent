@@ -13,7 +13,7 @@ You need 4 accounts. All have free tiers or trials.
 1. Go to [personize.ai](https://personize.ai) and create an account
 2. Go to **Settings → API Keys**
 3. Click **Create New Key**
-4. Copy the key — it starts with `pz_sk_...`
+4. Copy the key — it starts with `sk_...`
 5. Save it somewhere safe — you'll need it in Phase 3
 
 > **What this does:** Stores everything the agent learns about contacts and companies, enforces your brand voice and ICP rules, and generates personalized emails.
@@ -168,7 +168,7 @@ Open `.env` and replace the placeholder values:
 
 ```env
 # From Phase 1.1
-PERSONIZE_SECRET_KEY=pz_sk_your_actual_key_here
+PERSONIZE_SECRET_KEY=sk_your_actual_key_here
 
 # From Phase 1.2
 TRIGGER_PROJECT_ID=proj_your_actual_id_here

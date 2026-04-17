@@ -235,7 +235,7 @@ Review `src/setup/create-schemas.ts`. The default schemas are comprehensive. Onl
 Generate a filled `.env` guidance showing exactly what they need to set:
 ```
 # Required
-PERSONIZE_SECRET_KEY=sk_live_...     # From personize.ai dashboard
+PERSONIZE_SECRET_KEY=sk_...     # From personize.ai dashboard
 TRIGGER_PROJECT_ID=proj_...          # From trigger.dev project
 TRIGGER_SECRET_KEY=tr_...            # From trigger.dev API keys
 
