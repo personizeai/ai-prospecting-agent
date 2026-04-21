@@ -6,7 +6,7 @@ import { SALES_ORG_CONFIG } from '../config/prospecting.config.js';
 import { reportFailure } from './error-handler.js';
 import { logger } from '../lib/logger.js';
 import { campaigns } from '../lib/campaign.js';
-import { memoryCrud } from '../lib/personize-crud.js';
+import { memory } from '../lib/memory.js';
 
 // Master outreach scheduler — runs twice daily (10am and 2pm UTC)
 // When SALES_ORG is enabled, role-scoped schedulers in role-schedulers.ts take over.
@@ -39,7 +39,7 @@ export const outreachScheduler = schedules.task({
         }
 
         // Query contacts in this campaign that need outreach
-        const contacts = await memoryCrud.filterByProperty({
+        const contacts = await memory.filterByProperty({
           type: 'Contact',
           conditions: [
             { propertyName: 'campaign_id', operator: 'equals', value: campaign.campaignId },

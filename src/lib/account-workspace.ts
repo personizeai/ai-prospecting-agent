@@ -17,7 +17,6 @@
 
 import { client } from '../config.js';
 import { memory } from './memory.js';
-import { memoryCrud } from './personize-crud.js';
 import { logger } from './logger.js';
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -161,7 +160,7 @@ async function readProperties(domain: string, propertyNames: string[]): Promise<
 // ─── Write Functions (arrayPush — race-free) ──────────────────────
 
 async function addUpdate(domain: string, update: AccountUpdate) {
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_updates',
@@ -188,7 +187,7 @@ async function addTask(domain: string, task: AccountTask): Promise<string> {
     dueDate: task.dueDate,
   };
 
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_pending_tasks',
@@ -200,7 +199,7 @@ async function addTask(domain: string, task: AccountTask): Promise<string> {
 }
 
 async function addNote(domain: string, note: AccountNote) {
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_notes',
@@ -226,7 +225,7 @@ async function raiseIssue(domain: string, issue: AccountIssue): Promise<string> 
     raisedAt: new Date().toISOString(),
   };
 
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_open_issues',
@@ -238,7 +237,7 @@ async function raiseIssue(domain: string, issue: AccountIssue): Promise<string> 
 }
 
 async function setStrategy(domain: string, strategy: AccountStrategy) {
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_strategy',
@@ -357,7 +356,7 @@ async function getContactRollup(domain: string) {
 // ─── Task Lifecycle (arrayPatch — race-free, no index lookup) ────
 
 async function completeTask(domain: string, taskId: string, outcome: string): Promise<void> {
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_pending_tasks',
@@ -376,7 +375,7 @@ async function declineTask(domain: string, taskId: string, reason: string, decli
   const taskTitle = task?.title ?? taskId;
 
   // Mark declined (race-free — no index needed)
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_pending_tasks',
@@ -404,7 +403,7 @@ async function declineTask(domain: string, taskId: string, reason: string, decli
 }
 
 async function rescheduleTask(domain: string, taskId: string, newDueDate: string, reason: string, rescheduledBy: string): Promise<void> {
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_pending_tasks',
@@ -420,7 +419,7 @@ async function rescheduleTask(domain: string, taskId: string, newDueDate: string
 }
 
 async function resolveIssue(domain: string, issueId: string, resolution: string): Promise<void> {
-  await memoryCrud.update({
+  await memory.update({
     recordId: domain,
     type: 'Company',
     propertyName: 'account_open_issues',

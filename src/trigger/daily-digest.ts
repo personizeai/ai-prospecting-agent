@@ -5,7 +5,6 @@ import { runHealthCheck } from '../lib/health.js';
 import { notifySlack } from '../delivery/slack-notify.js';
 import { reportFailure } from './error-handler.js';
 import { campaigns } from '../lib/campaign.js';
-import { memoryCrud } from '../lib/personize-crud.js';
 import { logger } from '../lib/logger.js';
 
 // Runs every weekday at 9am UTC
@@ -96,7 +95,7 @@ export const dailyDigestTask = schedules.task({
 
           // Auto-pause underperforming campaigns (50+ reached, <1% reply rate)
           if (reached >= 50 && replyRate < 1) {
-            await memoryCrud.update({
+            await memory.update({
               recordId: camp.campaignId,
               type: 'Campaign',
               propertyName: 'status',

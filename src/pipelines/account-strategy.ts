@@ -18,6 +18,7 @@ import { workspace } from '../lib/workspace.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { ACCOUNT_STRATEGY_SCHEMA, ACCOUNT_STRATEGY_DEFAULTS } from '../lib/llm-schemas.js';
 import { SALES_ROLES, type SalesRoleId } from '../config/sales-roles.js';
+import { memory } from '../lib/memory.js';
 import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'account-strategy' });
@@ -220,8 +221,7 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
 
       if (targetEmail && senderProfileId) {
         try {
-          const { update } = await import('../lib/personize-crud.js');
-          await update({
+          await memory.update({
             recordId: targetEmail,
             type: 'Contact',
             propertyName: 'assigned_sender',

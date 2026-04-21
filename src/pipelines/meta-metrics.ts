@@ -16,7 +16,6 @@
 import { client } from '../config.js';
 import { memory } from '../lib/memory.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
-import { memoryCrud } from '../lib/personize-crud.js';
 import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'meta-metrics' });

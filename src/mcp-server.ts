@@ -35,7 +35,6 @@ import { searchTavily, isTavilyConfigured } from './lib/tavily.js';
 import { senderProfiles } from './lib/sender-profiles.js';
 import { campaigns } from './lib/campaign.js';
 import { collectDailyMetrics } from './lib/metrics.js';
-import { memoryCrud } from './lib/personize-crud.js';
 
 const server = new McpServer({
   name: 'revenue-os',
@@ -321,7 +320,7 @@ server.tool(
   `List all campaigns with their status and stats.`,
   {},
   async () => {
-    const allCampaigns = await memoryCrud.filterByProperty({
+    const allCampaigns = await memory.filterByProperty({
       type: 'Campaign',
       conditions: [{ propertyName: 'campaign_id', operator: 'exists' }],
       limit: 50,
@@ -457,8 +456,8 @@ server.tool(
     campaign_id: z.string().describe('Campaign ID to activate'),
   },
   async ({ campaign_id }) => {
-    await memoryCrud.update({ recordId: campaign_id, type: 'Campaign', propertyName: 'status', propertyValue: 'Active', updatedBy: 'mcp' });
-    await memoryCrud.update({ recordId: campaign_id, type: 'Campaign', propertyName: 'started_at', propertyValue: new Date().toISOString(), updatedBy: 'mcp' });
+    await memory.update({ recordId: campaign_id, type: 'Campaign', propertyName: 'status', propertyValue: 'Active', updatedBy: 'mcp' });
+    await memory.update({ recordId: campaign_id, type: 'Campaign', propertyName: 'started_at', propertyValue: new Date().toISOString(), updatedBy: 'mcp' });
 
     const dryRun = process.env.DRY_RUN !== 'false';
     return {
@@ -477,7 +476,7 @@ server.tool(
     campaign_id: z.string().describe('Campaign ID to pause'),
   },
   async ({ campaign_id }) => {
-    await memoryCrud.update({ recordId: campaign_id, type: 'Campaign', propertyName: 'status', propertyValue: 'Paused', updatedBy: 'mcp' });
+    await memory.update({ recordId: campaign_id, type: 'Campaign', propertyName: 'status', propertyValue: 'Paused', updatedBy: 'mcp' });
     return { content: [{ type: 'text' as const, text: `Campaign "${campaign_id}" paused.` }] };
   },
 );
@@ -710,7 +709,7 @@ server.tool(
     if (icp_match !== undefined) conditions.push({ propertyName: 'icp_match', operator: 'equals', value: icp_match });
 
     if (conditions.length > 0) {
-      const result = await memoryCrud.filterByProperty({
+      const result = await memory.filterByProperty({
         type: 'Contact',
         conditions: conditions as any,
         limit: limit || 20,

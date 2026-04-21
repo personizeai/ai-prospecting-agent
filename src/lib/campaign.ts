@@ -12,7 +12,7 @@
  */
 
 import { client } from '../config.js';
-import { memoryCrud } from './personize-crud.js';
+import { memory } from './memory.js';
 import { senderProfiles } from './sender-profiles.js';
 import { workspace } from './workspace.js';
 import { logger } from './logger.js';
@@ -110,7 +110,7 @@ async function getConfig(campaignId: string): Promise<CampaignConfig | null> {
 
 async function listActive(): Promise<CampaignConfig[]> {
   try {
-    const result = await memoryCrud.filterByProperty({
+    const result = await memory.filterByProperty({
       type: 'Campaign',
       conditions: [{ propertyName: 'status', operator: 'equals', value: 'Active' }],
       limit: 50,
@@ -268,7 +268,7 @@ async function enroll(
   }
 
   // 4. Set campaign_id + assigned_sender on contact
-  await memoryCrud.update({
+  await memory.update({
     recordId: contactEmail,
     type: 'Contact',
     propertyName: 'campaign_id',
@@ -277,7 +277,7 @@ async function enroll(
   });
 
   if (assignedSenderId) {
-    await memoryCrud.update({
+    await memory.update({
       recordId: contactEmail,
       type: 'Contact',
       propertyName: 'assigned_sender',
@@ -287,7 +287,7 @@ async function enroll(
   }
 
   // 5. Append to campaign_history
-  await memoryCrud.update({
+  await memory.update({
     recordId: contactEmail,
     type: 'Contact',
     propertyName: 'campaign_history',
@@ -347,7 +347,7 @@ async function incrementStat(
         )?.value
       ) || 0;
 
-      await memoryCrud.update({
+      await memory.update({
         recordId: campaignId,
         type: 'Campaign',
         propertyName: field,
@@ -395,7 +395,7 @@ async function incrementDailySend(campaignId: string): Promise<number> {
     // Reset if new day
     if (sentDate !== today) {
       sentToday = 0;
-      await memoryCrud.update({
+      await memory.update({
         recordId: campaignId,
         type: 'Campaign',
         propertyName: 'emails_sent_today_date',
@@ -406,7 +406,7 @@ async function incrementDailySend(campaignId: string): Promise<number> {
 
     sentToday += 1;
 
-    await memoryCrud.update({
+    await memory.update({
       recordId: campaignId,
       type: 'Campaign',
       propertyName: 'emails_sent_today',

@@ -22,7 +22,6 @@ import { memory } from '../lib/memory.js';
 import { campaigns, type CampaignConfig } from '../lib/campaign.js';
 import { senderProfiles } from '../lib/sender-profiles.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
-import { memoryCrud } from '../lib/personize-crud.js';
 import { logger } from '../lib/logger.js';
 
 const [,, command, ...args] = process.argv;
@@ -95,7 +94,7 @@ async function campaignCreate(args: Record<string, string>) {
 }
 
 async function campaignList() {
-  const allCampaigns = await memoryCrud.filterByProperty({
+  const allCampaigns = await memory.filterByProperty({
     type: 'Campaign',
     conditions: [{ propertyName: 'campaign_id', operator: 'exists' }],
     limit: 50,
@@ -162,14 +161,14 @@ async function campaignStats(campaignId: string) {
 async function campaignActivate(campaignId: string) {
   if (!campaignId) { console.error('Usage: ros campaign:activate <campaign-id>'); process.exit(1); }
 
-  await memoryCrud.update({
+  await memory.update({
     recordId: campaignId,
     type: 'Campaign',
     propertyName: 'status',
     propertyValue: 'Active',
     updatedBy: 'cli',
   });
-  await memoryCrud.update({
+  await memory.update({
     recordId: campaignId,
     type: 'Campaign',
     propertyName: 'started_at',
@@ -190,14 +189,14 @@ async function campaignActivate(campaignId: string) {
 async function campaignPause(campaignId: string) {
   if (!campaignId) { console.error('Usage: ros campaign:pause <campaign-id>'); process.exit(1); }
 
-  await memoryCrud.update({
+  await memory.update({
     recordId: campaignId,
     type: 'Campaign',
     propertyName: 'status',
     propertyValue: 'Paused',
     updatedBy: 'cli',
   });
-  await memoryCrud.update({
+  await memory.update({
     recordId: campaignId,
     type: 'Campaign',
     propertyName: 'paused_at',

@@ -20,7 +20,6 @@
 
 import { client } from '../config.js';
 import { memory } from './memory.js';
-import { memoryCrud } from './personize-crud.js';
 import { logger } from './logger.js';
 
 // ─── Types (unchanged — callers depend on these) ──────────────────
@@ -156,7 +155,7 @@ async function readProperties(email: string, propertyNames: string[]): Promise<R
 // ─── Write Functions (arrayPush — no read needed, race-free) ──────
 
 async function addUpdate(email: string, update: WorkspaceUpdate) {
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'updates',
@@ -183,7 +182,7 @@ async function addTask(email: string, task: WorkspaceTask): Promise<string> {
     dueDate: task.dueDate,
   };
 
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'pending_tasks',
@@ -195,7 +194,7 @@ async function addTask(email: string, task: WorkspaceTask): Promise<string> {
 }
 
 async function addNote(email: string, note: WorkspaceNote) {
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'notes',
@@ -221,7 +220,7 @@ async function raiseIssue(email: string, issue: WorkspaceIssue): Promise<string>
     raisedAt: new Date().toISOString(),
   };
 
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'open_issues',
@@ -239,7 +238,7 @@ async function addMessageSent(email: string, message: WorkspaceMessage) {
   };
 
   // Push to messages_sent array
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'messages_sent',
@@ -249,7 +248,7 @@ async function addMessageSent(email: string, message: WorkspaceMessage) {
 
   // Update scalar sequence state atomically via bulkUpdate (single round-trip)
   if (message.channel === 'email') {
-    await memoryCrud.bulkUpdate({
+    await memory.bulkUpdate({
       recordId: email,
       type: 'Contact',
       updates: [
@@ -262,7 +261,7 @@ async function addMessageSent(email: string, message: WorkspaceMessage) {
 }
 
 async function rewriteContext(email: string, context: string, author: string) {
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'context',
@@ -373,7 +372,7 @@ async function getMessagesSent(email: string): Promise<Array<WorkspaceMessage & 
  * Returns records with their pending_tasks property values.
  */
 async function getAllPendingTasks(limit = 50) {
-  return memoryCrud.filterByProperty({
+  return memory.filterByProperty({
     type: 'Contact',
     conditions: [{ propertyName: 'pending_tasks', operator: 'exists' }],
     limit,
@@ -387,7 +386,7 @@ async function getAllPendingTasks(limit = 50) {
  * History is tracked automatically by propertyHistory — no manual memorize needed.
  */
 async function completeTask(email: string, taskId: string, outcome: string): Promise<void> {
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'pending_tasks',
@@ -409,7 +408,7 @@ async function declineTask(email: string, taskId: string, reason: string, declin
   const taskTitle = task?.title ?? taskId;
 
   // Mark declined (race-free — no index needed)
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'pending_tasks',
@@ -441,7 +440,7 @@ async function declineTask(email: string, taskId: string, reason: string, declin
  * Reschedule a task: update dueDate via arrayPatch (no read needed).
  */
 async function rescheduleTask(email: string, taskId: string, newDueDate: string, reason: string, rescheduledBy: string): Promise<void> {
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'pending_tasks',
@@ -461,7 +460,7 @@ async function rescheduleTask(email: string, taskId: string, newDueDate: string,
  * History tracked automatically by propertyHistory.
  */
 async function resolveIssue(email: string, issueId: string, resolution: string): Promise<void> {
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'open_issues',
@@ -480,7 +479,7 @@ async function resolveIssue(email: string, issueId: string, resolution: string):
  * Recoverable within 30 days via cancelDeletion().
  */
 async function softDelete(email: string, reason: string, performedBy: string): Promise<void> {
-  await memoryCrud.deleteRecord({
+  await memory.deleteRecord({
     recordId: email,
     type: 'Contact',
     reason,
@@ -492,7 +491,7 @@ async function softDelete(email: string, reason: string, performedBy: string): P
  * Cancel a pending soft-delete within the 30-day recovery window.
  */
 async function cancelDeletion(email: string, performedBy: string): Promise<void> {
-  await memoryCrud.cancelDeletion({
+  await memory.cancelDeletion({
     recordId: email,
     type: 'Contact',
     performedBy,
@@ -515,7 +514,7 @@ async function setRoleOwner(
   const previousRole = await readProperty<string>(email, 'role_owner', 'unassigned');
 
   // Update the property
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'role_owner',
@@ -524,7 +523,7 @@ async function setRoleOwner(
   });
 
   // Append to role history
-  await memoryCrud.update({
+  await memory.update({
     recordId: email,
     type: 'Contact',
     propertyName: 'role_owner_history',
@@ -555,7 +554,7 @@ async function getRoleOwner(email: string): Promise<SalesRoleId | 'unassigned'> 
  */
 async function getContactsByRole(roleId: SalesRoleId, limit = 50): Promise<Array<{ email: string; properties: Record<string, unknown> }>> {
   try {
-    const result = await memoryCrud.filterByProperty({
+    const result = await memory.filterByProperty({
       type: 'Contact',
       conditions: [{ propertyName: 'role_owner', operator: 'equals', value: roleId }],
       limit,

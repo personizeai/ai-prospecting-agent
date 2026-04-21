@@ -16,7 +16,6 @@
 
 import { client } from '../config.js';
 import { memory } from './memory.js';
-import { memoryCrud } from './personize-crud.js';
 import { logger } from './logger.js';
 
 const log = logger.child({ module: 'governance-safety' });

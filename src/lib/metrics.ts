@@ -2,7 +2,6 @@ import { client } from '../config.js';
 import { memory } from './memory.js';
 import { getRemainingCapacity } from '../delivery/gmail.js';
 import { GMAIL_CONFIG } from '../config/prospecting.config.js';
-import { memoryCrud } from './personize-crud.js';
 
 export interface DailyMetrics {
   timestamp: string;
@@ -32,7 +31,7 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   const needsAttention: DailyMetrics['needsAttention'] = [];
 
   // ─── Outreach Metrics ──────────────────────────────────────────────
-  const outreachResult = await memoryCrud.filterByProperty({
+  const outreachResult = await memory.filterByProperty({
     type: 'Contact',
     conditions: [{ propertyName: 'emails_sent', operator: 'gt', value: 0 }],
     limit: 100,
@@ -68,7 +67,7 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   }
 
   // ─── Reply Metrics ─────────────────────────────────────────────────
-  const replyResult = await memoryCrud.filterByProperty({
+  const replyResult = await memory.filterByProperty({
     type: 'Contact',
     conditions: [{ propertyName: 'sequence_status', operator: 'equals', value: 'Replied' }],
     limit: 50,
