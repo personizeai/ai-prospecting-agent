@@ -2,6 +2,15 @@
 
 This repo is the open-source operating system for AI-powered revenue teams. It runs outreach campaigns autonomously — prospecting, enrichment, multi-channel sequences, reply handling, and reporting.
 
+## Agent Operating Loop
+
+Load the canonical playbook at session start:
+
+  context_retrieve(message='agent operating playbook', contextNames=['agent-playbook'])
+
+This repo extends — never replaces — the shared playbook. Repo-specific
+overrides (campaigns, senders, outreach cadences) below.
+
 ## Stack
 
 - **Runtime:** TypeScript + Node.js 18+
