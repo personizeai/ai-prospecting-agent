@@ -7,7 +7,7 @@
 <!-- Badges -->
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/tests-280%20passing-brightgreen.svg" alt="Tests: 280 passing" />
+  <img src="https://img.shields.io/badge/tests-318%20passing-brightgreen.svg" alt="Tests: 318 passing" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
   <img src="https://img.shields.io/badge/cost-%2450–%24200%2Fmo-success.svg" alt="Cost: $50–$200/mo" />
@@ -37,7 +37,7 @@
   <a href="ECOMMERCE.md">Ecommerce</a> &middot;
   <a href="#why-open-source">Why Open Source</a> &middot;
   <a href="#extend-it">Extend It</a> &middot;
-  <a href="ROADMAP.md">Roadmap</a> &middot;
+  <a href="PLAN.md">Plan</a> &middot;
   <a href="#community">Community</a>
 </p>
 
@@ -65,7 +65,7 @@ Revenue OS ships with 12 integrated modules. Each is a standalone capability tha
 | Module | What It Does |
 |--------|-------------|
 | **Campaign Management** | First-class campaigns with ICP targeting, cadence config, sender pools, governance overrides, daily caps, A/B variant schema, auto-pause, and aggregate stats |
-| **MCP Server (AI Interface)** | 19 MCP tools for Claude/Cowork/OpenClaw: Apollo search, Tavily research, campaign CRUD, contact discovery + enrollment, ecommerce sync + variables, sender health, daily status |
+| **MCP Server (AI Interface)** | 24 profile-scoped tools (`workflow` / `agent` / `admin`) for Claude Code / Cowork / OpenClaw / Goose: Apollo search, Tavily research, campaign CRUD, contact discovery + enrollment, ecommerce, sender health, daily status, pipeline dispatcher (`run_pipeline`), PLAN/STATUS readers, DRY_RUN gate |
 | **Prospecting Engine** | 18 agent modes across 8 industries. ICP scoring, signal detection, account strategy |
 | **Contact Intelligence** | Apollo discovery + enrichment, Tavily web research, company news & funding signals |
 | **Outreach Orchestration** | Campaign-aware multi-channel sequences — email, LinkedIn (HeyReach), AI voice calls (Bland.ai, Vapi, ElevenLabs) |
@@ -187,13 +187,17 @@ Revenue OS is different:
 
 This isn't a weekend prototype. It's production-grade code designed for long-term maintainability — by your team, by contributors, and by AI coding assistants.
 
-### 280 Automated Tests
+### 318 Automated Tests
 
 Every critical path is tested. LLM JSON output parsing with regex fallback, email HTML sanitization against XSS, email address validation with disposable domain detection, cadence auto-selection, reply sentiment classification across 6 intent types, sequence state machines, enrichment deduplication, web research result parsing, configuration validation, input sanitization, HubSpot engagement formatting, Gmail multi-sender rotation, daily limit enforcement, MIME construction, and reply threading. Plus integration tests covering full pipeline flows end-to-end. Run `npm test` and know everything works before you deploy.
 
 ### Modular Pipeline Architecture
 
-Every pipeline is a standalone, single-responsibility TypeScript file. `sync-hubspot.ts` does CRM sync. `sync-csv.ts` does CSV import. `detect-signals.ts` does ICP scoring. `research-company.ts` does web research. `generate-outreach.ts` writes emails. No pipeline knows about the others. Swap one out, the rest keep running. Add a new one, nothing breaks. This is the kind of separation of concerns that makes the codebase navigable for humans and AI agents alike.
+Every pipeline is a standalone, single-responsibility TypeScript file. `sync-hubspot.ts` does CRM sync. `sync-csv.ts` does CSV import. `detect-signals.ts` does ICP scoring. `research-company.ts` does web research. `generate-outreach.ts` writes emails. No pipeline knows about the others. Swap one out, the rest keep running. Add a new one, nothing breaks. Every pipeline is a pure async function — runnable from the CLI (`npm run pipeline <name> -i '<json>'`), from the MCP `run_pipeline` tool, or from a Trigger.dev task. This is the kind of separation of concerns that makes the codebase navigable for humans and AI agents alike.
+
+### Central Memory Facade
+
+All Personize SDK memory calls go through `src/lib/memory.ts` — one import, one consistent surface (`memory.save`, `memory.retrieve`, `memory.saveBatch`, `memory.filterByProperty`, `memory.update`, etc.). The facade absorbs SDK shape divergence and auto-unwraps `ApiResponse` envelopes, so callers get the inner data or a thrown `PersonizeError`. Upgrading the SDK in the future means editing one file, not 70.
 
 ### Fully Typed, End to End
 
@@ -796,7 +800,7 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 
 1. Review 20+ dry-run emails in the Trigger.dev dashboard
 2. Adjust governance rules in Personize if tone or content needs tuning
-3. Set `DRY_RUN=false` in your environment
+3. Flip the safety gate off: `npx tsx src/scripts/ros.ts dry-run off --reason "first production send"` (writes to `data/state/dry_run.txt`, auto-audits to `data/state/dry_run.log`)
 4. Redeploy: `npx trigger.dev@latest deploy`
 5. Monitor Slack for the first few days
 
@@ -824,7 +828,7 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 
 ## Testing
 
-280 automated tests covering LLM output parsing, email HTML sanitization, email validation, cadence selection, reply classification, sequence management, enrichment, Gmail multi-sender, and more — plus integration tests for full pipeline flows.
+318 automated tests covering LLM output parsing, email HTML sanitization, email validation, cadence selection, reply classification, sequence management, enrichment, Gmail multi-sender, and more — plus integration tests for full pipeline flows.
 
 ```bash
 # Unit tests
@@ -839,11 +843,46 @@ npm run test:all
 
 ---
 
+## Human ↔ Agent Interface
+
+Revenue OS runs as well with autonomous agents (Claude Code, Cowork, Goose, OpenClaw) as it does with a human operator. Three primitives make that possible:
+
+| File / Command | Owner | What it does |
+|---|---|---|
+| `PLAN.md` | **Human** | Your strategic intent — vision, active goals, campaigns, decisions, backlog. Agents read it every session. Agents **never** write to it. |
+| `STATUS.md` | **Agent** | Live system state — active campaigns, pipeline stage counts, credits, DRY_RUN status, recent activity. Regenerate with `npm run status`. |
+| `data/state/dry_run.txt` | **Safety gate** | `true` (default) = no real sends; logged as `[DRY_RUN] Would send ...`. Flip with `npx tsx src/scripts/ros.ts dry-run on\|off --reason "..."`. Every flip audits to `data/state/dry_run.log`. |
+| `governance/<slug>/SKILL.md` | **Human-editable markdown** | Brand voice, ICP, playbooks — 14 guidelines as folder-based markdown. `npm run setup:governance` syncs them declaratively to Personize (idempotent diff-and-apply). |
+| `npm run pipeline --list` | **Any agent or human** | Lists all 33 registered pipeline entry points. Run any of them via `npm run pipeline <name> -i '<json>'`. |
+
+### MCP profile model
+
+Revenue OS MCP tools are profile-scoped. Set `MCP_PROFILE` before launching the server:
+
+| Profile | Tool count | Best for |
+|---|---|---|
+| `workflow` | ~8 | Task-focused pipelines, read-only + narrow actions |
+| `agent` (default) | ~20 | Claude Code / Cowork / Goose / OpenClaw — broad capability |
+| `admin` | ~24 | Everything, including `set_dry_run` and bulk writes |
+
+The `admin` profile alone can flip the DRY_RUN safety gate — and every flip requires a reason that's audited to `data/state/dry_run.log`.
+
+### Shared agent playbook
+
+The RECALL → GOVERN → ACT → STORE operating loop is a single Personize guideline (`governance/agent-playbook/SKILL.md`) — repo-agnostic, loaded once per session via `context_retrieve(contextNames=['agent-playbook'])`. Both Revenue OS and [GTM Superagent](../GTM%20superagent) reference the same playbook; neither duplicates it.
+
+---
+
 ## Architecture Docs
 
 | Document | What It Covers |
 |---|---|
 | [SETUP-GUIDE.md](SETUP-GUIDE.md) | Step-by-step setup instructions (8 phases) |
+| [PLAN.md](PLAN.md) | Human-owned strategic intent scaffold (vision, goals, campaigns, decisions) |
+| [STATUS.md](STATUS.md) | Agent-regenerated live system state (run `npm run status`) |
+| [docs/plans/2026-04-21-agent-native-convergence.md](docs/plans/2026-04-21-agent-native-convergence.md) | 6-phase plan that converged Revenue OS toward the autonomous-agent operating model |
+| [docs/plans/pipeline-inventory.md](docs/plans/pipeline-inventory.md) | Every pipeline classified by purity, inputs, callers, refactor effort |
+| [docs/plans/trigger-keep-list.md](docs/plans/trigger-keep-list.md) | Which Trigger.dev tasks stay (cron + webhooks) vs moved to agent-invokable |
 | [Docs/PRODUCTION-HARDENING.md](Docs/PRODUCTION-HARDENING.md) | Structured LLM outputs, email validation, named cadences, health monitoring, daily digest, structured logging |
 | [Docs/FLOWS-AND-TESTING.md](Docs/FLOWS-AND-TESTING.md) | Pipeline flows with diagrams, trigger schedules, test coverage |
 | [Docs/ENRICHMENT-AND-RESEARCH.md](Docs/ENRICHMENT-AND-RESEARCH.md) | Apollo and Tavily API details, data flows, cost analysis |
