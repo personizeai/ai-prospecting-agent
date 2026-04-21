@@ -31,6 +31,7 @@ import { workspace } from '../lib/workspace.js';
 import { logger } from '../lib/logger.js';
 import { getLinkedInSendCount, incrementLinkedInSendCount } from '../lib/capacity-store.js';
 import type { GeneratedLinkedInMessage } from '../types.js';
+import { isDryRun } from '../lib/dry-run.js';
 
 const log = logger.child({ pipeline: 'linkedin-deliver' });
 
@@ -56,6 +57,11 @@ export async function sendViaLinkedIn(
   generated: GeneratedLinkedInMessage,
   contactId: string,
 ): Promise<LinkedInSendResult> {
+  if (await isDryRun()) {
+    log.info('[DRY_RUN] Would send LinkedIn message', { to: generated.email, type: generated.type, linkedinUrl: generated.linkedinUrl, campaign: generated.angle });
+    return { messageId: 'dry-run', provider: LINKEDIN_CONFIG.provider, linkedinUrl: generated.linkedinUrl, type: generated.type };
+  }
+
   if (!LINKEDIN_CONFIG.enabled) {
     throw new Error('LinkedIn channel is not enabled. Set LINKEDIN_ENABLED=true');
   }

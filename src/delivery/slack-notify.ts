@@ -1,4 +1,5 @@
 import { logger } from '../lib/logger.js';
+import { isDryRun } from '../lib/dry-run.js';
 
 /** Send a plain-text Slack notification via webhook. */
 export async function notifySlack(
@@ -7,6 +8,11 @@ export async function notifySlack(
 ) {
   if (!webhookUrl) {
     logger.warn('SLACK_WEBHOOK_URL not set, skipping Slack notification.');
+    return;
+  }
+
+  if (await isDryRun()) {
+    logger.info('[DRY_RUN] Would post to Slack', { message: message.substring(0, 120) });
     return;
   }
 
@@ -26,6 +32,11 @@ export async function notifyRepOnSlack(
   webhookUrl: string,
   message: { company: string; contact: string; reason: string; action: string }
 ) {
+  if (await isDryRun()) {
+    logger.info('[DRY_RUN] Would post Block Kit alert to Slack', { company: message.company, contact: message.contact });
+    return;
+  }
+
   const response = await fetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -17,12 +17,15 @@
  */
 
 import 'dotenv/config';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { client } from '../config.js';
 import { memory } from '../lib/memory.js';
 import { campaigns, type CampaignConfig } from '../lib/campaign.js';
 import { senderProfiles } from '../lib/sender-profiles.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
 import { logger } from '../lib/logger.js';
+import { resetDryRunCache } from '../lib/dry-run.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -301,6 +304,19 @@ async function status() {
   }
 }
 
+async function dryRunToggle(onOrOff: string | undefined) {
+  const STATE_PATH = path.join(process.cwd(), 'data', 'state', 'dry_run.txt');
+  if (onOrOff !== 'on' && onOrOff !== 'off') {
+    console.error('Usage: ros dry-run on|off');
+    process.exit(1);
+  }
+  const value = onOrOff === 'on' ? 'true' : 'false';
+  await writeFile(STATE_PATH, value, 'utf8');
+  resetDryRunCache();
+  const label = onOrOff === 'on' ? 'ON — no real sends' : 'OFF — sending for real';
+  console.log(`\n✓ DRY_RUN is now ${label}`);
+}
+
 // ─── Router ─────────────────────────────────────────────────────────
 
 const parsed = parseArgs(args);
@@ -330,6 +346,9 @@ switch (command) {
   case 'status':
     await status();
     break;
+  case 'dry-run':
+    await dryRunToggle(parsed._positional || args[0]);
+    break;
   default:
     console.log(`
 Revenue OS CLI
@@ -343,6 +362,7 @@ Commands:
   campaign:enroll    Enroll contacts in a campaign
   sender:list        Show sender profiles with health
   status             Full system status
+  dry-run on|off     Toggle DRY_RUN gate (writes data/state/dry_run.txt)
 
 Usage: npx tsx src/scripts/ros.ts <command> [args]
     `);
