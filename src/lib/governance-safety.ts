@@ -115,7 +115,7 @@ async function snapshotCurrent(
 ): Promise<GovernanceVersion | null> {
   try {
     // Fetch current value
-    const guidelines = await client.guidelines.list();
+    const guidelines = await client.context.list({ type: 'guideline' });
     const current = (guidelines.data as any[])?.find(
       (g: any) => g.id === id || g.slug === id || g.name === name
     );
@@ -227,7 +227,7 @@ async function safeUpdate(
 
   // Step 3: Apply update
   try {
-    await client.guidelines.update(id, { name, value: newValue });
+    await client.context.update(id, { name, value: newValue });
 
     log.info('Governance updated safely', {
       id, name, updatedBy, reason,
@@ -258,7 +258,7 @@ async function rollback(
   await snapshotCurrent(id, name, rolledBackBy, `rollback to version from ${targetVersion.savedAt}`);
 
   try {
-    await client.guidelines.update(id, { name, value: targetVersion.value });
+    await client.context.update(id, { name, value: targetVersion.value });
     log.info('Governance rolled back', {
       id, name, rolledBackBy,
       rolledBackTo: targetVersion.savedAt,

@@ -298,7 +298,7 @@ async function createGovernance() {
   // Fetch existing guidelines for idempotency
   let existingSlugs: string[] = [];
   try {
-    const existing = await client.guidelines.list();
+    const existing = await client.context.list({ type: 'guideline' });
     existingSlugs = existing.data?.map((g: any) => g.slug) || [];
   } catch {
     // If list fails, proceed and let create handle conflicts
@@ -310,7 +310,7 @@ async function createGovernance() {
       continue;
     }
 
-    await client.guidelines.create(variable);
+    await client.context.create({ type: 'guideline', ...variable });
     logger.info('Created governance variable', { name: variable.name });
   }
 
