@@ -22,6 +22,13 @@
  *   }
  *
  * See MCP-TOOLS.md for the full tool reference with payloads and example responses.
+ *
+ * Profile-based exposure:
+ *   Set MCP_PROFILE env var to one of: workflow | agent | admin
+ *   Default: agent
+ *   - workflow: read-only + narrow "execute a known task" tools
+ *   - agent: everything in workflow + reasonable writes (campaigns, enrichment, etc.)
+ *   - admin: everything, including destructive/state-flipping operations
  */
 
 import 'dotenv/config';
@@ -36,6 +43,31 @@ import { senderProfiles } from './lib/sender-profiles.js';
 import { campaigns } from './lib/campaign.js';
 import { collectDailyMetrics } from './lib/metrics.js';
 
+// ═══════════════════════════════════════════════════════════════════
+// PROFILE FILTERING
+// ═══════════════════════════════════════════════════════════════════
+
+type McpProfile = 'workflow' | 'agent' | 'admin';
+
+const PROFILE: McpProfile = (process.env.MCP_PROFILE as McpProfile) || 'agent';
+
+/**
+ * Profile-aware tool registration.
+ * - workflow: task-focused tools for pipelines (read-only or narrow writes)
+ * - agent: broad capability for Claude Code / Goose / OpenClaw-style agents
+ * - admin: everything, including destructive operations
+ */
+function registerTool(
+  profiles: McpProfile[],
+  name: string,
+  description: string,
+  schema: Record<string, z.ZodTypeAny>,
+  handler: (args: any) => Promise<{ content: { type: 'text'; text: string }[] }>,
+) {
+  if (!profiles.includes(PROFILE)) return;
+  server.tool(name, description, schema, handler);
+}
+
 const server = new McpServer({
   name: 'revenue-os',
   version: '1.0.0',
@@ -45,7 +77,8 @@ const server = new McpServer({
 // CONTACT DISCOVERY & ENRICHMENT
 // ═══════════════════════════════════════════════════════════════════
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'apollo_search_contacts',
   `Search Apollo for contacts at a company. FREE — 0 credits. Use this to find leads at target accounts.
 Returns: name, title, email, LinkedIn, seniority, department.`,
@@ -93,7 +126,8 @@ Returns: name, title, email, LinkedIn, seniority, department.`,
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'apollo_enrich_contact',
   `Enrich a contact with Apollo data. Costs 1 credit. Returns: full name, title, email, LinkedIn, phone, seniority, company details.`,
   {
@@ -133,7 +167,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'apollo_enrich_company',
   `Enrich a company with Apollo data. Costs 1 credit. Returns: industry, employees, funding, revenue, tech stack, keywords.`,
   {
@@ -171,7 +206,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'discover_and_memorize_contacts',
   `Search Apollo for contacts at a company, then memorize qualified ones to Personize.
 This is the "find leads and add them to the pipeline" tool.
@@ -274,7 +310,8 @@ FREE Apollo search (0 credits) + Personize memorize.`,
 // WEB RESEARCH
 // ═══════════════════════════════════════════════════════════════════
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'research_company',
   `Research a company via Tavily web search. Returns AI summary + recent news, funding, hiring signals, and personalization angles.`,
   {
@@ -315,7 +352,8 @@ server.tool(
 // CAMPAIGN MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'campaign_list',
   `List all campaigns with their status and stats.`,
   {},
@@ -353,7 +391,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'campaign_stats',
   `Get detailed stats for a specific campaign.`,
   {
@@ -394,7 +433,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'campaign_create',
   `Create a new outreach campaign.`,
   {
@@ -449,7 +489,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['admin'],
   'campaign_activate',
   `Set a campaign to Active so the outreach engine starts processing it.`,
   {
@@ -469,7 +510,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'campaign_pause',
   `Pause a campaign. Stops new outreach. In-flight sequences complete their current email.`,
   {
@@ -481,7 +523,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'campaign_enroll',
   `Enroll one or more contacts in a campaign. Assigns sender, sets campaign_id, prevents duplicates.`,
   {
@@ -508,7 +551,8 @@ server.tool(
 // SENDER & STATUS
 // ═══════════════════════════════════════════════════════════════════
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'sender_list',
   `List all sender profiles with health, capacity, and warmup status.`,
   {},
@@ -538,7 +582,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'daily_status',
   `Get today's metrics: emails sent, replies, pipeline activity, sender health, needs attention.`,
   {},
@@ -577,7 +622,8 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'daily_brief',
   `Read the latest daily brief (same as what's posted to Slack). Useful at the start of a conversation.`,
   {},
@@ -601,7 +647,8 @@ server.tool(
 // ECOMMERCE
 // ═══════════════════════════════════════════════════════════════════
 
-server.tool(
+registerTool(
+  ['admin'],
   'ecommerce_sync',
   `Import ecommerce data (products catalog + purchase history) from CSV files in data/.
 Memorizes products to the Products collection and purchases to customer Contact records.
@@ -628,7 +675,8 @@ Place your CSVs at data/products.csv and data/purchases.csv before running.`,
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'ecommerce_infer_preferences',
   `Analyze a customer's purchase history and infer style preferences, price tier, segment, and product recommendations.
 Writes inferred properties (style_preferences, price_tier, customer_segment) back to the contact.
@@ -657,7 +705,8 @@ Run this after ecommerce_sync to enrich customer profiles before campaigns.`,
   },
 );
 
-server.tool(
+registerTool(
+  ['agent', 'admin'],
   'ecommerce_generate_variables',
   `Generate personalized email variables for an ecommerce customer.
 Returns structured variables (headline, paragraphs, image prompt, CTA, product recommendations)
@@ -689,7 +738,8 @@ Uses the customer's purchase history + inferred preferences for deep personaliza
 // CONTACT SEARCH & SEGMENTATION
 // ═══════════════════════════════════════════════════════════════════
 
-server.tool(
+registerTool(
+  ['workflow', 'agent', 'admin'],
   'search_contacts',
   `Search contacts in Personize memory. Find contacts by properties, campaign, status, etc.`,
   {
@@ -769,12 +819,131 @@ server.tool(
 );
 
 // ═══════════════════════════════════════════════════════════════════
+// PIPELINE DISPATCHER
+// ═══════════════════════════════════════════════════════════════════
+
+registerTool(
+  ['workflow', 'agent', 'admin'],
+  'list_pipelines',
+  'List all available revenue-os pipelines with their descriptions. Use before run_pipeline if you need to discover what can be run.',
+  {},
+  async () => {
+    const { PIPELINES, PIPELINE_NAMES } = await import('./pipelines/registry.js');
+    const text = PIPELINE_NAMES
+      .map((name) => `- ${name}: ${PIPELINES[name].description}`)
+      .join('\n');
+    return { content: [{ type: 'text' as const, text }] };
+  },
+);
+
+registerTool(
+  ['agent', 'admin'],
+  'run_pipeline',
+  'Run a revenue-os pipeline by name. Input shape varies per pipeline — call list_pipelines first, or read the pipeline source at src/pipelines/<name>.ts.',
+  {
+    name: z.string().describe('Pipeline name, e.g. "research-company"'),
+    input: z.record(z.any()).optional().describe('Pipeline-specific input. Defaults to {}.'),
+  },
+  async ({ name, input }: { name: string; input?: Record<string, any> }) => {
+    const { PIPELINES } = await import('./pipelines/registry.js');
+    const entry = PIPELINES[name];
+    if (!entry) {
+      return { content: [{ type: 'text' as const, text: `Unknown pipeline: ${name}. Call list_pipelines to see available names.` }] };
+    }
+    const result = await entry.run(input ?? {});
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════
+// PLAN / STATUS / DRY_RUN READERS
+// ═══════════════════════════════════════════════════════════════════
+
+registerTool(
+  ['workflow', 'agent', 'admin'],
+  'read_plan',
+  'Read PLAN.md — the human-owned strategic intent file for this revenue-os instance. Returns the full markdown. Always read this before proposing campaigns or changes.',
+  {},
+  async () => {
+    const { readFile } = await import('node:fs/promises');
+    const text = await readFile('PLAN.md', 'utf8').catch(() => '# PLAN.md not found\n\nCreate it with: cp GTM-superagent-template PLAN.md');
+    return { content: [{ type: 'text' as const, text }] };
+  },
+);
+
+registerTool(
+  ['workflow', 'agent', 'admin'],
+  'read_status',
+  'Read STATUS.md — current system state (campaigns, pipeline counts, DRY_RUN, credits). Regenerates first if the file is older than 5 minutes.',
+  {
+    force_regenerate: z.boolean().optional().describe('Always regenerate before reading. Default false.'),
+  },
+  async ({ force_regenerate }: { force_regenerate?: boolean }) => {
+    const { readFile, stat } = await import('node:fs/promises');
+    const path = 'STATUS.md';
+    let needsRegenerate = Boolean(force_regenerate);
+    if (!needsRegenerate) {
+      try {
+        const s = await stat(path);
+        const ageMs = Date.now() - s.mtimeMs;
+        if (ageMs > 5 * 60 * 1000) needsRegenerate = true;
+      } catch { needsRegenerate = true; }
+    }
+    if (needsRegenerate) {
+      try {
+        const { execFile } = await import('node:child_process');
+        const { promisify } = await import('node:util');
+        await promisify(execFile)('npx', ['tsx', 'src/scripts/regenerate-status.ts']);
+      } catch (e) {
+        // fall through and read stale file
+      }
+    }
+    const text = await readFile(path, 'utf8').catch(() => '# STATUS.md not found');
+    return { content: [{ type: 'text' as const, text }] };
+  },
+);
+
+registerTool(
+  ['workflow', 'agent', 'admin'],
+  'get_dry_run',
+  'Read the current DRY_RUN state. When ON, real outbound sends are suppressed.',
+  {},
+  async () => {
+    const { isDryRun } = await import('./lib/dry-run.js');
+    const on = await isDryRun();
+    return { content: [{ type: 'text' as const, text: on ? 'DRY_RUN=on (sends suppressed)' : 'DRY_RUN=off (sends ARE real)' }] };
+  },
+);
+
+registerTool(
+  ['admin'],
+  'set_dry_run',
+  'Flip the DRY_RUN state. Admin-only. Requires a reason string that is appended to an audit log line. Flipping to off enables real sends — use with care.',
+  {
+    enabled: z.boolean().describe('true = DRY_RUN on (safe). false = real sends.'),
+    reason: z.string().min(3).describe('Why this change? Required for audit trail.'),
+  },
+  async ({ enabled, reason }: { enabled: boolean; reason: string }) => {
+    const { writeFile, mkdir, appendFile } = await import('node:fs/promises');
+    const { resetDryRunCache } = await import('./lib/dry-run.js');
+    await mkdir('data/state', { recursive: true });
+    await writeFile('data/state/dry_run.txt', String(enabled), 'utf8');
+    await appendFile('data/state/dry_run.log',
+      `${new Date().toISOString()}\t${enabled ? 'on' : 'off'}\treason="${reason.replace(/"/g, "'")}"\n`,
+      'utf8');
+    resetDryRunCache();
+    return { content: [{ type: 'text' as const, text: `DRY_RUN set to ${enabled ? 'on' : 'off'}. Reason logged to data/state/dry_run.log` }] };
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════════════════════════════
 
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  process.stderr.write(`[revenue-os-mcp] profile=${PROFILE} ready\n`);
 }
 
 main().catch(console.error);
