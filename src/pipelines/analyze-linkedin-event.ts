@@ -145,8 +145,9 @@ async function analyzeLinkedInReply(event: LinkedInEvent): Promise<LinkedInEvent
 
   const [digest, guidelines] = await Promise.all([
     workspace.getDigest(email, 3000),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'linkedin outreach, reply handling, outreach playbook, brand voice',
+      types: ['guideline'],
       mode: 'fast',
     }),
   ]);

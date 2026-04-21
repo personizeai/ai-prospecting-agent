@@ -100,8 +100,9 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   }
 
   // Fetch guidelines once outside the loop (same for every company)
-  const guidelines = await client.ai.smartGuidelines({
+  const guidelines = await client.context.retrieve({
     message: 'ICP scoring criteria and buying signal definitions',
+    types: ['guideline'],
     mode: 'fast',
   });
 

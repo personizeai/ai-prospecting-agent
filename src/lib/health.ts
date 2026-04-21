@@ -107,8 +107,9 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
   // ─── Governance ──────────────────────────────────────────────────
   const govStart = Date.now();
   try {
-    const guidelines = await client.ai.smartGuidelines({
+    const guidelines = await client.context.retrieve({
       message: 'brand voice, outreach playbook, ICP definition',
+      types: ['guideline'],
       mode: 'fast',
     });
     const content = guidelines.data?.compiledContext || '';

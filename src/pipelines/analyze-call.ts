@@ -103,8 +103,9 @@ export async function analyzeCall(result: CallResult): Promise<CallAnalysis> {
   // For completed calls with a transcript, use AI analysis
   const [digest, guidelines] = await Promise.all([
     workspace.getDigest(result.email, 3000),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'call handling, outreach playbook, brand voice, competitor policy',
+      types: ['guideline'],
       mode: 'fast',
     }),
   ]);

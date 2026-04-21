@@ -35,8 +35,9 @@ export async function getGovernanceForRole(
   baseMessage: string,
 ): Promise<string> {
   // Fetch base governance (always needed)
-  const baseResult = await client.ai.smartGuidelines({
+  const baseResult = await client.context.retrieve({
     message: baseMessage,
+    types: ['guideline'],
     mode: 'fast',
   });
   const baseContext = baseResult.data?.compiledContext || '';
@@ -51,8 +52,9 @@ export async function getGovernanceForRole(
   const overlayMessage = role.governanceOverlays.join(', ') + ', ' + baseMessage;
 
   try {
-    const overlayResult = await client.ai.smartGuidelines({
+    const overlayResult = await client.context.retrieve({
       message: overlayMessage,
+      types: ['guideline'],
       mode: 'fast',
     });
     const overlayContext = overlayResult.data?.compiledContext || '';

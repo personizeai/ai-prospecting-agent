@@ -85,8 +85,9 @@ export async function analyzeInterview(
 
   const [digest, guidelines] = await Promise.all([
     workspace.getDigest(result.email, 4000), // Larger budget for interview context
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'interview analysis, qualification criteria, competitive intelligence, brand voice',
+      types: ['guideline'],
       mode: 'fast',
     }),
   ]);

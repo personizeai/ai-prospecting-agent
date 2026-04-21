@@ -53,8 +53,9 @@ export async function analyzeReply(
   // Read full workspace context: who is this person, what did we send, what do we know
   const [digest, guidelines] = await Promise.all([
     workspace.getDigest(contactEmail, 3000),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'reply handling, outreach playbook, brand voice, competitor policy',
+      types: ['guideline'],
       mode: 'fast',
     }),
   ]);

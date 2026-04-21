@@ -25,7 +25,7 @@ export async function assembleContext(email: string, roleId?: SalesRoleId): Prom
     // Use role-aware governance when available
     (roleId && SALES_ORG_CONFIG.enabled)
       ? getGovernanceForRole(roleId, governanceMessage)
-      : client.ai.smartGuidelines({ message: governanceMessage, mode: 'full' })
+      : client.context.retrieve({ message: governanceMessage, types: ['guideline'], mode: 'full' })
           .then((r) => r.data?.compiledContext || ''),
     memory.retrieveDigest({
       email,
@@ -169,8 +169,9 @@ export async function generateOutreachForContact(
       const { campaigns: campaignLib } = await import('../lib/campaign.js');
       const config = await campaignLib.getConfig(campaignId);
       if (config?.governanceOverrides?.length) {
-        const campaignGov = await client.ai.smartGuidelines({
+        const campaignGov = await client.context.retrieve({
           message: config.governanceOverrides.join(', '),
+          types: ['guideline'],
           mode: 'full',
         });
         if (campaignGov.data?.compiledContext) {
@@ -258,7 +259,7 @@ export async function generateEcommerceVariables(
 
   // Assemble context with purchase history emphasis
   const [governanceContent, contactDigest, purchaseHistory, productCatalog] = await Promise.all([
-    client.ai.smartGuidelines({ message: 'brand voice, ecommerce playbook, customer communication style', mode: 'full' })
+    client.context.retrieve({ message: 'brand voice, ecommerce playbook, customer communication style', types: ['guideline'], mode: 'full' })
       .then((r) => r.data?.compiledContext || ''),
     memory.retrieveDigest({
       email,
@@ -295,8 +296,9 @@ export async function generateEcommerceVariables(
       const { campaigns: campaignLib } = await import('../lib/campaign.js');
       const config = await campaignLib.getConfig(campaignId);
       if (config?.governanceOverrides?.length) {
-        const campaignGov = await client.ai.smartGuidelines({
+        const campaignGov = await client.context.retrieve({
           message: config.governanceOverrides.join(', '),
+          types: ['guideline'],
           mode: 'full',
         });
         if (campaignGov.data?.compiledContext) {

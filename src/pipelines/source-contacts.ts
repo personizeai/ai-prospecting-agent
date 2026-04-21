@@ -19,8 +19,9 @@ export async function sourceContactsForAccount(account: HotAccount) {
 
   // Fallback: AI-based sourcing plan (no real search, just identifies roles to target)
   const [guidelines, companyDigest] = await Promise.all([
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'ICP contact criteria: titles, seniority, departments to target',
+      types: ['guideline'],
       mode: 'fast',
     }),
     memory.retrieveDigest({

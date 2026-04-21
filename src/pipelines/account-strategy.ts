@@ -57,8 +57,9 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
     accountWorkspace.getStrategy(domain),
     accountWorkspace.getIssues(domain),
     accountWorkspace.getContactRollup(domain),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'account strategy, prospecting coordination, outreach sequencing, ICP prioritization',
+      types: ['guideline'],
       mode: 'fast',
     }),
     import('../lib/sender-profiles.js').then((m) => m.senderProfiles.listActive()).catch(() => [] as any[]),
