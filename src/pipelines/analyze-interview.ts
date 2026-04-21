@@ -12,6 +12,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { accountWorkspace } from '../lib/account-workspace.js';
 import { evaluateAccountStrategy } from './account-strategy.js';
@@ -35,7 +36,7 @@ async function memorizeInterviewTranscript(
     ? result.turns.map((t) => `${t.role === 'agent' ? 'Interviewer' : 'Contact'}: ${t.message}`).join('\n')
     : result.transcript;
 
-  await client.memory.memorize({
+  await memory.save({
     email: result.email,
     content: [
       `[INTERVIEW TRANSCRIPT — ${guide.purpose.toUpperCase()}]`,
@@ -442,7 +443,7 @@ export async function handleAnalyzedInterview(
     qualificationProps.champion = { value: analysis.qualification.champion, extractMemories: false };
   }
 
-  await client.memory.memorize({
+  await memory.save({
     email,
     content: [
       `[INTERVIEW ANALYSIS — ${guide.purpose.toUpperCase()}]`,

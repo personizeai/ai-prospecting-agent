@@ -25,6 +25,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { accountWorkspace } from '../lib/account-workspace.js';
 import { evaluateAccountStrategy } from './account-strategy.js';
@@ -83,7 +84,7 @@ async function memorizeEvent(event: LinkedInEvent): Promise<void> {
     });
     const found = searchResult.data?.[0]?.email;
     if (found) {
-      await client.memory.memorize({
+      await memory.save({
         email: found,
         content,
         enhanced: true,
@@ -102,7 +103,7 @@ async function memorizeEvent(event: LinkedInEvent): Promise<void> {
       profileUrl: event.profileUrl,
       eventType: event.eventType,
     });
-    await client.memory.memorize({
+    await memory.save({
       content,
       enhanced: true,
       tags: ['linkedin', 'heyreach', event.eventType.toLowerCase(), 'no-email'],
@@ -110,7 +111,7 @@ async function memorizeEvent(event: LinkedInEvent): Promise<void> {
     return;
   }
 
-  await client.memory.memorize({
+  await memory.save({
     email,
     content,
     enhanced: true,
@@ -223,7 +224,7 @@ async function handleLinkedInEvent(
       'Next: Monitor for LinkedIn reply. If email sequence active, continue.',
     ].join('\n'), 'heyreach');
 
-    await client.memory.memorize({
+    await memory.save({
       email,
       content: `[LEAD STATUS UPDATE] LinkedIn connection accepted`,
       collectionName: 'contacts',
@@ -329,7 +330,7 @@ async function handleLinkedInEvent(
         'Action: Stop all sequences. Do not contact again.',
       ].join('\n'), 'linkedin-analyzer');
 
-      await client.memory.memorize({
+      await memory.save({
         email,
         content: `[LEAD STATUS UPDATE] Not interested (LinkedIn reply). Summary: ${analysis.summary}`,
         collectionName: 'contacts',
@@ -351,7 +352,7 @@ async function handleLinkedInEvent(
 
     // Update contact properties for all reply outcomes
     if (analysis.outcome !== 'not_interested') {
-      await client.memory.memorize({
+      await memory.save({
         email,
         content: `[LINKEDIN REPLY] Outcome: ${analysis.outcome}. Summary: ${analysis.summary}`,
         collectionName: 'contacts',

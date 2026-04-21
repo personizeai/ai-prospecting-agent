@@ -28,7 +28,8 @@ import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { client } from './config.js'; 
+import { client } from './config.js';
+import { memory } from './lib/memory.js';
 import { searchPeople, enrichPerson, enrichOrganization, isApolloConfigured } from './lib/apollo.js';
 import { searchTavily, isTavilyConfigured } from './lib/tavily.js';
 import { senderProfiles } from './lib/sender-profiles.js';
@@ -210,7 +211,7 @@ FREE Apollo search (0 credits) + Personize memorize.`,
         continue;
       }
 
-      await client.memory.memorize({
+      await memory.save({
         email: person.email,
         collectionName: 'contacts',
         content: `[DISCOVERED] ${person.first_name} ${person.last_name}, ${person.title} at ${domain}. Source: Apollo.`,
@@ -410,7 +411,7 @@ server.tool(
   async ({ name, market, cadence, daily_cap, sender_ids, max_emails, icp_criteria, governance_overrides }) => {
     const campaignId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-    await client.memory.memorize({
+    await memory.save({
       email: campaignId,
       collectionName: 'campaigns',
       content: `Campaign "${name}" created`,

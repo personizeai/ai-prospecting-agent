@@ -14,6 +14,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { searchTavily, isTavilyConfigured } from '../lib/tavily.js';
 import { TAVILY_CONFIG } from '../config/prospecting.config.js';
 import type { HotAccount, WebResearchResult } from '../types.js';
@@ -109,8 +110,8 @@ export async function researchCompany(
     ].filter(Boolean).join('\n')),
   ].join('\n');
 
-  await client.memory.memorize({
-    website_url: domain,
+  await memory.save({
+    websiteUrl: domain,
     content: rawContent,
     enhanced: true,
     tags: ['web-research', 'tavily', domain],
@@ -176,8 +177,8 @@ ${buildJsonInstruction(COMPANY_RESEARCH_SCHEMA)}`,
     anglesArray.map((a) => `- ${a}`).join('\n') || 'None found',
   ].join('\n');
 
-  await client.memory.memorize({
-    website_url: domain,
+  await memory.save({
+    websiteUrl: domain,
     content: analysisContent,
     enhanced: true,
     tags: ['web-research', 'analysis', 'tavily'],

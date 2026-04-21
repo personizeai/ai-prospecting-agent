@@ -1,4 +1,5 @@
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { PREFERENCE_INFERENCE_SCHEMA, PREFERENCE_INFERENCE_DEFAULTS } from '../lib/llm-schemas.js';
 import { logger } from '../lib/logger.js';
@@ -99,7 +100,7 @@ ${buildJsonInstruction(PREFERENCE_INFERENCE_SCHEMA)}`,
   }
 
   // 3. Write inferred properties back to the contact
-  await client.memory.memorize({
+  await memory.save({
     email,
     collectionName: 'contacts',
     content: `[PREFERENCE INFERENCE — ${new Date().toISOString().slice(0, 10)}]\nStyle: ${stylePreferences}\nPrice tier: ${priceTier}\nSegment: ${segment}\nCategory affinity: ${parsed.category_affinity}\nPurchase frequency: ${parsed.purchase_frequency}\nRecommended products: ${recommendations.join(', ')}`,

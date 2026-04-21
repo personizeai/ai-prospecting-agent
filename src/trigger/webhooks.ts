@@ -1,5 +1,6 @@
 import { task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { notifySlack } from '../delivery/slack-notify.js';
 import { replyHandlerTask } from './reply-handler.js';
@@ -22,7 +23,7 @@ export const hubspotWebhookTask = task({
       }
 
       if (payload.objectType === 'DEAL' && payload.propertyName === 'dealstage') {
-        await client.memory.memorize({
+        await memory.save({
           content: `[CRM EVENT] Deal ${payload.objectId} stage changed to: ${payload.propertyValue}`,
           enhanced: true,
           tags: ['crm', 'hubspot', 'deal-update'],

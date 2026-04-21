@@ -15,6 +15,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { INTERVIEW_CONFIG, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
 import { assembleContext } from './generate-outreach.js';
 import { accountPreflight } from './account-preflight.js';
@@ -244,7 +245,7 @@ ${buildJsonInstruction(INTERVIEW_GUIDE_SCHEMA)}`,
 
   if (!dryRun) {
     // Memorize the guide for context in future interactions
-    await client.memory.memorize({
+    await memory.save({
       email,
       content: [
         `[INTERVIEW GUIDE — ${purpose.toUpperCase()}]`,

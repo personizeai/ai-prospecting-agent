@@ -13,6 +13,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { logger } from './logger.js';
 
 const log = logger.child({ module: 'outreach-log' });
@@ -44,7 +45,7 @@ async function recordSend(record: OutreachSendRecord): Promise<void> {
       : record.channel === 'linkedin' ? 'LinkedIn Touch'
       : 'Call Task';
 
-    await client.memory.memorize({
+    await memory.save({
       email: record.contactEmail,
       collectionName: 'outreach-log',
       content: `[OUTREACH SENT] ${stepLabel} to ${record.contactEmail} — angle: "${record.angle}"${record.subject ? ` — subject: "${record.subject}"` : ''}`,
@@ -93,7 +94,7 @@ async function recordEngagement(
     // Update the most recent outreach-log record for this contact
     const outcome = event === 'clicked' ? 'Clicked' : 'Opened';
 
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       collectionName: 'outreach-log',
       content: `[ENGAGEMENT] ${contactEmail} ${event} the email${clickUrl ? ` — URL: ${clickUrl}` : ''}`,
@@ -126,7 +127,7 @@ async function recordReply(
       : sentiment === 'negative' ? 'Rejected'
       : 'Replied';
 
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       collectionName: 'outreach-log',
       content: `[REPLY] ${contactEmail} replied (${sentimentLabel})${attributedAngle ? ` to angle "${attributedAngle}" at step ${attributedStep}` : ''}`,
@@ -164,7 +165,7 @@ async function recordReply(
  */
 async function recordBounce(contactEmail: string): Promise<void> {
   try {
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       collectionName: 'outreach-log',
       content: `[BOUNCE] Email to ${contactEmail} bounced`,

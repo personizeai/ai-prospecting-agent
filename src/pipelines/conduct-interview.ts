@@ -15,6 +15,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { CALL_CONFIG, INTERVIEW_CONFIG } from '../config/prospecting.config.js';
 import { createHubSpotFollowUpTask } from '../delivery/hubspot-deliver.js';
 import { workspace } from '../lib/workspace.js';
@@ -82,7 +83,7 @@ export async function conductInterview(
   });
 
   // Memorize
-  await client.memory.memorize({
+  await memory.save({
     email: guide.email,
     content: [
       `[INTERVIEW INITIATED — ${guide.purpose.toUpperCase()}]`,

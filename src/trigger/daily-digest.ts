@@ -1,4 +1,5 @@
 import { schedules } from "@trigger.dev/sdk/v3";
+import { memory } from '../lib/memory.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
 import { runHealthCheck } from '../lib/health.js';
 import { notifySlack } from '../delivery/slack-notify.js';
@@ -113,7 +114,7 @@ export const dailyDigestTask = schedules.task({
 
           // Daily stats snapshot (time series)
           const today = new Date().toISOString().split('T')[0];
-          await (await import('../config.js')).client.memory.memorize({
+          await memory.save({
             email: camp.campaignId,
             collectionName: 'campaigns',
             content: `[DAILY SNAPSHOT ${today}] ${camp.name}: ${reached} reached, ${stats.emails_sent} sent, ${stats.replies} replies (${replyRate}%), ${stats.positive_replies} positive`,
@@ -144,7 +145,7 @@ export const dailyDigestTask = schedules.task({
 
     // Memorize daily brief to Personize so Claude can read it at conversation start
     try {
-      await (await import('../config.js')).client.memory.memorize({
+      await memory.save({
         content: `[DAILY BRIEF ${new Date().toISOString().split('T')[0]}]\n${message}`,
         collectionName: 'system-logs',
         tags: ['daily-brief'],

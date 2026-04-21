@@ -1,4 +1,5 @@
 import { client, RATE_LIMIT_PAUSE_MS, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import type { HotAccount } from '../types.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { SIGNAL_ASSESSMENT_SCHEMA, SIGNAL_ASSESSMENT_DEFAULTS } from '../lib/llm-schemas.js';
@@ -155,8 +156,8 @@ ${buildJsonInstruction(SIGNAL_ASSESSMENT_SCHEMA)}`,
       const buyingWindow = parsed.buying_window ? 'Yes' : 'No';
       const action = parsed.recommended_action;
 
-      await client.memory.memorize({
-        website_url: domain,
+      await memory.save({
+        websiteUrl: domain,
         content: `[SIGNAL ASSESSMENT ${new Date().toISOString().split('T')[0]}]\n${output}`,
         enhanced: true,
         tags: ['assessment', 'signal-detection'],

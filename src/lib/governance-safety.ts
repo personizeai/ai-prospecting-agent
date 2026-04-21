@@ -15,6 +15,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { memoryCrud } from './personize-crud.js';
 import { logger } from './logger.js';
 
@@ -135,7 +136,7 @@ async function snapshotCurrent(
     };
 
     // Store snapshot in Personize memory
-    await client.memory.memorize({
+    await memory.save({
       email: `governance-${id}`,
       collectionName: 'governance-history',
       content: `[GOVERNANCE SNAPSHOT] "${name}" saved by ${savedBy}. Reason: ${reason}. Size: ${current.value.length} chars.`,

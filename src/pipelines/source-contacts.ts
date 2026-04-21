@@ -1,4 +1,5 @@
 import { client, RATE_LIMIT_PAUSE_MS, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { DISCOVERY_CONFIG } from '../config/prospecting.config.js';
 import { isApolloConfigured } from '../lib/apollo.js';
 import { discoverContactsForAccount } from './discover-contacts-apollo.js';
@@ -67,8 +68,8 @@ ${buildJsonInstruction(CONTACT_SOURCING_SCHEMA)}`,
 
   const rolesToSearch = (parsed.roles as string[]).filter(Boolean);
 
-  await client.memory.memorize({
-    website_url: account.domain,
+  await memory.save({
+    websiteUrl: account.domain,
     content: `[CONTACT SOURCING] Initiated contact sourcing on ${new Date().toISOString().split('T')[0]}. Roles targeted: ${rolesToSearch.join(', ') || 'none identified'}. Note: Apollo not configured — no real search performed.`,
     enhanced: true,
     tags: ['sourcing', 'pipeline-activity'],

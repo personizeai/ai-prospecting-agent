@@ -14,6 +14,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { CALL_CONFIG, MANUAL_HUBSPOT_CONFIG } from '../config/prospecting.config.js';
 import { createHubSpotFollowUpTask } from './hubspot-deliver.js';
 import { workspace } from '../lib/workspace.js';
@@ -85,7 +86,7 @@ export async function executeCall(
   });
 
   // Memorize in Personize
-  await client.memory.memorize({
+  await memory.save({
     email: script.email,
     content: [
       `[CALL SCRIPT — Step ${script.step}]`,

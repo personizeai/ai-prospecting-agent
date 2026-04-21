@@ -18,6 +18,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { accountWorkspace } from '../lib/account-workspace.js';
 import { evaluateAccountStrategy } from './account-strategy.js';
@@ -42,7 +43,7 @@ async function memorizeTranscript(result: CallResult): Promise<void> {
     ? result.turns.map((t) => `${t.role === 'agent' ? 'AI' : 'Contact'}: ${t.message}`).join('\n')
     : result.transcript;
 
-  await client.memory.memorize({
+  await memory.save({
     email: result.email,
     content: [
       `[CALL TRANSCRIPT — ${result.provider}]`,
@@ -314,7 +315,7 @@ export async function handleAnalyzedCall(
       'Action: Stop all sequences. Do not contact again.',
     ].join('\n'), 'call-analyzer');
 
-    await client.memory.memorize({
+    await memory.save({
       email,
       content: `[LEAD STATUS UPDATE] Not interested (from call). Summary: ${analysis.summary}`,
       collectionName: 'contacts',
@@ -461,7 +462,7 @@ export async function handleAnalyzedCall(
 
   // ─── Always: update contact properties ──────────────────────────
   if (analysis.outcome !== 'not_interested') {
-    await client.memory.memorize({
+    await memory.save({
       email,
       content: `[CALL RESULT] Outcome: ${analysis.outcome}. Summary: ${analysis.summary}`,
       collectionName: 'contacts',

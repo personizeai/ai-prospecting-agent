@@ -15,6 +15,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { accountWorkspace } from '../lib/account-workspace.js';
 import { evaluateAccountStrategy } from './account-strategy.js';
@@ -268,7 +269,7 @@ export async function handleAnalyzedReply(
     ].join('\n'), 'reply-analyzer');
 
     // Update lead status in Personize memory
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       content: `[LEAD STATUS UPDATE] Opted out. Reason: ${analysis.summary}`,
       collectionName: 'contacts',
@@ -427,7 +428,7 @@ export async function handleAnalyzedReply(
 
   // ─── Always: update contact properties ───────────────────────
   if (analysis.sentiment !== 'negative') {
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       content: `[REPLY RECEIVED] Sentiment: ${analysis.sentiment}. Summary: ${analysis.summary}`,
       collectionName: 'contacts',

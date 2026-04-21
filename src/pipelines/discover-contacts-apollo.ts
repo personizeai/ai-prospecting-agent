@@ -11,6 +11,7 @@
  */
 
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { APOLLO_CONFIG, DISCOVERY_CONFIG, SIGNAL_CONFIG } from '../config/prospecting.config.js';
 import { searchPeople, enrichPerson, isApolloConfigured, getPhone } from '../lib/apollo.js';
 import { ingestEnrichment } from './ingest-enrichment.js';
@@ -138,8 +139,8 @@ export async function discoverContactsForAccount(account: HotAccount): Promise<n
   }
 
   // Memorize the discovery activity
-  await client.memory.memorize({
-    website_url: account.domain,
+  await memory.save({
+    websiteUrl: account.domain,
     content: `[CONTACT DISCOVERY via Apollo] Discovered ${discovered} new contacts on ${new Date().toISOString().split('T')[0]}. Titles searched: ${DISCOVERY_CONFIG.targetTitles.join(', ')}.`,
     enhanced: true,
     tags: ['sourcing', 'apollo', 'discovery'],

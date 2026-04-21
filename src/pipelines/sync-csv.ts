@@ -2,6 +2,7 @@ import { parse } from 'csv-parse/sync';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { CSV_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
 
@@ -38,7 +39,7 @@ async function batchMemorize(records: any[], label: string): Promise<number> {
   for (let i = 0; i < records.length; i += 50) {
     const batch = records.slice(i, i + 50);
     try {
-      await client.memory.memorizeBatch({ records: batch, enhanced: true });
+      await memory.saveBatch(batch.map((r: any) => ({ ...r, enhanced: true })));
       totalSynced += batch.length;
       log.info('Batch synced', { label, totalSynced });
     } catch (err) {

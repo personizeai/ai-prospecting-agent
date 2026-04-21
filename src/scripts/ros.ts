@@ -18,6 +18,7 @@
 
 import 'dotenv/config';
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { campaigns, type CampaignConfig } from '../lib/campaign.js';
 import { senderProfiles } from '../lib/sender-profiles.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
@@ -55,7 +56,7 @@ async function campaignCreate(args: Record<string, string>) {
 
   const campaignId = args.id || generateCampaignId(name);
 
-  await client.memory.memorize({
+  await memory.save({
     email: campaignId,
     collectionName: 'campaigns',
     content: `Campaign "${name}" created`,

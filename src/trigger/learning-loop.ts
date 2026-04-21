@@ -1,5 +1,6 @@
 import { schedules } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { notifySlack } from '../delivery/slack-notify.js';
 import { reportFailure } from './error-handler.js';
 import { logger } from '../lib/logger.js';
@@ -91,7 +92,7 @@ Keep the report under 300 words. Be direct — this goes to a busy sales leader.
     await notifySlack(slackMessage);
 
     // 4. Memorize for Claude
-    await client.memory.memorize({
+    await memory.save({
       content: `[LEARNING LOOP ${new Date().toISOString().split('T')[0]}]\n${report}`,
       collectionName: 'system-logs',
       tags: ['learning-loop', 'weekly'],

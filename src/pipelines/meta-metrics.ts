@@ -14,6 +14,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
 import { memoryCrud } from '../lib/personize-crud.js';
 import { logger } from '../lib/logger.js';
@@ -282,7 +283,7 @@ export async function collectStrategyMetrics(): Promise<StrategyMetrics> {
 
   // Store in Personize for the meta-agent to query
   try {
-    await client.memory.memorize({
+    await memory.save({
       email: `strategy-metrics-${metrics.period}`,
       content: [
         `[STRATEGY METRICS] ${metrics.period}`,

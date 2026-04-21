@@ -8,6 +8,7 @@
  */
 
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { APOLLO_CONFIG, ENRICHMENT_CONFIG } from '../config/prospecting.config.js';
 import { enrichOrganization, isApolloConfigured } from '../lib/apollo.js';
 import type { EnrichmentRunResult } from '../types.js';
@@ -81,8 +82,8 @@ export async function enrichCompanies(): Promise<EnrichmentRunResult> {
 
       const location = [org.city, org.state, org.country].filter(Boolean).join(', ');
 
-      await client.memory.memorize({
-        website_url: domain,
+      await memory.save({
+        websiteUrl: domain,
         content: [
           `[ENRICHMENT from Apollo]`,
           `Company: ${org.name}`,
@@ -103,8 +104,8 @@ export async function enrichCompanies(): Promise<EnrichmentRunResult> {
       });
 
       // Also update company properties for structured queries
-      await client.memory.memorize({
-        website_url: domain,
+      await memory.save({
+        websiteUrl: domain,
         collectionName: 'companies',
         content: `Apollo enrichment for ${org.name}`,
         properties: {

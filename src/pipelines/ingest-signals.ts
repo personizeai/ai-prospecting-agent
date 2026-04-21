@@ -1,4 +1,5 @@
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import type { Signal } from '../types.js';
 import { logger } from '../lib/logger.js';
 
@@ -16,8 +17,8 @@ export async function ingestSignal(signal: Signal) {
     return;
   }
 
-  await client.memory.memorize({
-    website_url: signal.company_domain,
+  await memory.save({
+    websiteUrl: signal.company_domain,
     content: [
       `[BUYING SIGNAL DETECTED \u2014 ${signal.signal_type.toUpperCase()}]`,
       `Company: ${signal.company_name} (${signal.company_domain})`,
