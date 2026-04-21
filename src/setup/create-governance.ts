@@ -310,7 +310,9 @@ async function createGovernance() {
       continue;
     }
 
-    await client.context.create({ type: 'guideline', ...variable });
+    // Local shape uses `content` + `triggerKeywords`; SDK expects `value` + `tags`.
+    const { content, triggerKeywords, ...rest } = variable;
+    await client.context.create({ type: 'guideline', ...rest, value: content, tags: triggerKeywords });
     logger.info('Created governance variable', { name: variable.name });
   }
 
