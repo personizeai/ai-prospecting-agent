@@ -13,6 +13,7 @@
  *   → Tavily search (2 queries) → Personize AI analysis → memorize results
  */
 
+import 'dotenv/config';
 import { client, aiOptions } from '../config.js';
 import { memory } from '../lib/memory.js';
 import { searchTavily, isTavilyConfigured } from '../lib/tavily.js';
