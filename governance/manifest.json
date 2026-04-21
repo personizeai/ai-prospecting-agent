@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "guidelines": [
+    { "slug": "icp-definition", "name": "ICP Definition" },
+    { "slug": "brand-voice", "name": "Brand Voice" },
+    { "slug": "outreach-playbook", "name": "Outreach Playbook" },
+    { "slug": "signal-definitions", "name": "Signal Definitions" },
+    { "slug": "competitor-policy", "name": "Competitor Policy" },
+    { "slug": "multichannel-rules", "name": "Multi-Channel Outreach Rules" },
+    { "slug": "meeting-booking-links", "name": "Meeting Booking Links" },
+    { "slug": "email-format-examples", "name": "Email Format & Examples" },
+    { "slug": "brand-voice-sdr", "name": "brand-voice--sdr" },
+    { "slug": "outreach-playbook-sdr", "name": "outreach-playbook--sdr" },
+    { "slug": "brand-voice-ae", "name": "brand-voice--ae" },
+    { "slug": "outreach-playbook-ae", "name": "outreach-playbook--ae" },
+    { "slug": "brand-voice-csm", "name": "brand-voice--csm" },
+    { "slug": "outreach-playbook-csm", "name": "outreach-playbook--csm" }
+  ]
+}
