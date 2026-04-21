@@ -22,7 +22,8 @@ import { task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
 import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
-import { enrichContactsTask } from './enrich-contacts.js';
+import { enrichContacts } from '../pipelines/enrich-apollo.js';
+import { enrichCompanies } from '../pipelines/enrich-companies-apollo.js';
 import { reportFailure } from './error-handler.js';
 import { logger, withContext } from '../lib/logger.js';
 
@@ -146,10 +147,11 @@ async function processRecord(record: {
     // Enrich (Apollo)
     if (pipeline.enrich) {
       try {
-        await enrichContactsTask.trigger();
+        await enrichContacts();
+        await enrichCompanies();
         executed.push('enrich');
       } catch (err) {
-        log.warn('Enrich trigger failed', { error: err instanceof Error ? err.message : String(err) });
+        log.warn('Enrich failed', { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -243,10 +245,8 @@ async function processRecord(record: {
     // Discover contacts (Apollo)
     if (pipeline.discoverContacts && isNew) {
       try {
-        const { discoverContactsTask } = await import('./discover-contacts.js');
-        await discoverContactsTask.trigger({
-          hotAccounts: [{ company: domain, domain, score: 50, strength: 'webhook', action: 'discover' }],
-        });
+        const { discoverContactsForHotAccounts } = await import('../pipelines/discover-contacts-apollo.js');
+        await discoverContactsForHotAccounts([{ company: domain, domain, score: 50, strength: 'webhook', action: 'discover' }]);
         executed.push('discoverContacts');
       } catch (err) {
         log.warn('Contact discovery failed', { domain, error: err instanceof Error ? err.message : String(err) });

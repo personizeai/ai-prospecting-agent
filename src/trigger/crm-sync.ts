@@ -1,6 +1,7 @@
 import { schedules } from "@trigger.dev/sdk/v3";
 import { SIGNAL_CONFIG, CRM_SOURCE_CONFIG } from '../config/prospecting.config.js';
-import { enrichContactsTask } from './enrich-contacts.js';
+import { enrichContacts } from '../pipelines/enrich-apollo.js';
+import { enrichCompanies } from '../pipelines/enrich-companies-apollo.js';
 import { reportFailure } from './error-handler.js';
 import { logger, withContext } from '../lib/logger.js';
 
@@ -40,8 +41,11 @@ export const crmSyncTask = schedules.task({
 
       // Chain: enrich new contacts + companies after sync
       if (SIGNAL_CONFIG.autoEnrichAfterSync) {
-        await enrichContactsTask.trigger();
-        logger.info('Triggered enrich-contacts task');
+        await enrichContacts();
+        if (SIGNAL_CONFIG.autoEnrichCompaniesAfterSync) {
+          await enrichCompanies();
+        }
+        logger.info('Enrich contacts/companies complete');
       }
 
       return { synced: true, source, timestamp: new Date().toISOString() };
