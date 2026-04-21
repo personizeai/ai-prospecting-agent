@@ -14,6 +14,7 @@
     "setup:senders": "npx tsx src/setup/sync-senders.ts",
     "gmail:auth": "npx tsx src/setup/gmail-auth.ts",
     "sync:csv": "npx tsx src/scripts/run-csv-sync.ts",
+    "pipeline": "npx tsx src/scripts/pipeline.ts",
     "ros": "npx tsx src/scripts/ros.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/__tests__/*.test.ts",
