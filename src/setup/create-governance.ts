@@ -296,16 +296,18 @@ async function createGovernance() {
   logger.info('Creating governance variables...');
 
   // Fetch existing guidelines for idempotency
-  let existingSlugs: string[] = [];
+  let existingNames: string[] = [];
   try {
     const existing = await client.context.list({ type: 'guideline' });
-    existingSlugs = existing.data?.map((g: any) => g.slug) || [];
+    // GuidelineListItem.slug is an optional compatibility alias and may be absent;
+    // name is required and canonical for idempotency checks.
+    existingNames = existing.data?.map((g: any) => g.name) || [];
   } catch {
     // If list fails, proceed and let create handle conflicts
   }
 
   for (const variable of GOVERNANCE_VARIABLES) {
-    if (existingSlugs.includes(variable.slug)) {
+    if (existingNames.includes(variable.name)) {
       logger.info('Skipped (already exists)', { name: variable.name });
       continue;
     }
