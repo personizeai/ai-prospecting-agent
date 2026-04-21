@@ -1,0 +1,11 @@
+product_id,name,description,category,price,currency,reviews_avg,reviews_count,tags,image_url
+SKU-1001,Classic White Sneakers,"Clean all-white leather sneakers with a minimalist silhouette. Cushioned insole, rubber outsole. Goes with everything.",Footwear,89.99,USD,4.6,342,sneakers;minimal;everyday;leather,
+SKU-1008,Retro Running Shoes,"Vintage-inspired running silhouette with modern cushioning. Suede and mesh upper, EVA midsole.",Footwear,129.99,USD,4.8,218,sneakers;retro;running;comfort,
+SKU-2003,Minimalist Leather Belt,"Full-grain leather belt with brushed nickel buckle. 1.25 inch width. Simple and refined.",Accessories,45.00,USD,4.5,156,belt;leather;minimal;everyday,
+SKU-3005,Organic Cotton Tee,"100% GOTS-certified organic cotton. Medium weight, relaxed fit. Pre-shrunk, enzyme-washed for softness.",Tops,34.99,USD,4.7,891,tshirt;organic;cotton;basics;sustainable,
+SKU-3008,Cropped Sweatshirt,"French terry cotton blend, cropped at natural waist. Raglan sleeves, ribbed cuffs. Relaxed oversized fit.",Tops,55.00,USD,4.4,203,sweatshirt;cropped;casual;cozy,
+SKU-3012,Heavyweight Hoodie,"400gsm heavyweight french terry. Kangaroo pocket, double-lined hood. Built to last seasons.",Outerwear,79.99,USD,4.9,467,hoodie;heavyweight;streetwear;premium,
+SKU-4001,Canvas Tote Bag,"16oz raw canvas, reinforced handles, interior zip pocket. Unisex. Gets better with age.",Accessories,29.99,USD,4.3,128,tote;canvas;sustainable;everyday,
+SKU-5002,Yoga Leggings Pro,"High-rise, 4-way stretch, squat-proof. Moisture-wicking recycled nylon blend. Hidden waistband pocket.",Activewear,68.00,USD,4.8,534,leggings;yoga;activewear;sustainable,
+SKU-5007,Sports Bra Mesh,"Medium support with mesh panel ventilation. Removable pads, racerback design. For yoga, barre, light training.",Activewear,42.00,USD,4.5,289,sportsbra;mesh;yoga;activewear,
+SKU-5010,Performance Tank,"Ultralight, anti-odor fabric with laser-cut ventilation. Dropped armhole, slightly cropped. For high-intensity training.",Activewear,38.00,USD,4.6,175,tank;performance;activewear;training,

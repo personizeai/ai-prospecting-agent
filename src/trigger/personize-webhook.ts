@@ -174,7 +174,7 @@ async function processRecord(record: {
       }
     }
 
-    // Start outreach sequence for new high-score contacts
+    // Match to campaign + start outreach for new high-score contacts
     if (pipeline.startSequence && isNew) {
       try {
         const digest = await client.memory.smartDigest({
@@ -187,11 +187,39 @@ async function processRecord(record: {
         const leadScore = Number(props.lead_score?.value) || 0;
         const icpMatch = props.icp_match?.value === true || props.icp_match?.value === 'true';
         const outreachStage = props.outreach_stage?.value || 'Not Started';
+        const existingCampaign = props.campaign_id?.value;
 
         if (icpMatch && outreachStage === 'Not Started' && leadScore >= 40) {
+          // Campaign matching: find the best active campaign for this contact
+          let campaignId = existingCampaign || '';
+
+          if (!campaignId) {
+            const { campaigns } = await import('../lib/campaign.js');
+            const contactProps: Record<string, any> = {};
+            for (const [key, val] of Object.entries(props)) {
+              contactProps[key] = (val as any)?.value ?? val;
+            }
+
+            const match = await campaigns.matchToCampaign(contactProps);
+            if (match) {
+              // Enroll in campaign (assigns sender, sets campaign_id, increments stats)
+              const enrollment = await campaigns.enroll(email, match.campaignId);
+              if (enrollment.enrolled) {
+                campaignId = match.campaignId;
+                executed.push(`campaignEnrolled:${match.campaignId}`);
+                log.info('Auto-enrolled in campaign via webhook', {
+                  email,
+                  campaignId: match.campaignId,
+                  icpScore: match.score,
+                  sender: enrollment.senderId,
+                });
+              }
+            }
+          }
+
           const { fullSequenceTask } = await import('./outreach-sequence.js');
           const crmId = props.crm_id?.value || '';
-          await fullSequenceTask.trigger({ contactEmail: email, crmId, icpScore: leadScore });
+          await fullSequenceTask.trigger({ contactEmail: email, crmId, icpScore: leadScore, campaignId });
           executed.push('startSequence');
         }
       } catch (err) {

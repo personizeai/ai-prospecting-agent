@@ -1,6 +1,6 @@
-# AI Prospecting Agent — Setup Guide
+# Revenue OS — Setup Guide
 
-Everything you need to do, in order, to go from zero to a running AI prospecting agent on autopilot.
+Everything you need to do, in order, to go from zero to a running Revenue OS instance on autopilot.
 
 ---
 
@@ -21,7 +21,7 @@ You need 4 accounts. All have free tiers or trials.
 ### 1.2 — Trigger.dev (Autopilot Scheduler)
 
 1. Go to [cloud.trigger.dev](https://cloud.trigger.dev) and create an account
-2. Click **New Project** → name it `ai-prospecting-agent`
+2. Click **New Project** → name it `revenue-os`
 3. From your project dashboard, copy two things:
    - **Project ID** — looks like `proj_xxxxxxxxxxxx` (shown in project settings)
    - **Secret Key** — looks like `tr_dev_xxxxxxxxxxxx` (Settings → API Keys)
@@ -35,7 +35,7 @@ You need 4 accounts. All have free tiers or trials.
 2. Go to **Settings** (gear icon top-right)
 3. Go to **Integrations → Private Apps**
 4. Click **Create a private app**
-5. Name it `AI Prospecting Agent`
+5. Name it `Revenue OS`
 6. Under **Scopes**, add:
    - `crm.objects.contacts.read`
    - `crm.objects.contacts.write`
@@ -59,7 +59,7 @@ Smartlead manages warmed mailboxes and deliverability for you. No mailbox warmin
 
 1. Go to [smartlead.ai](https://smartlead.ai) and create an account
 2. Go to **Settings → API Keys** and create a key
-3. Create one campaign (e.g. `AI Prospecting Agent`) — set it to **Active**
+3. Create one campaign (e.g. `Revenue OS`) — set it to **Active**
 4. Add your email accounts to that campaign (Smartlead warms them for you)
 5. Copy the campaign's numeric ID from the URL (e.g. `smartlead.ai/campaigns/12345` → `12345`)
 6. Save your `SMARTLEAD_API_KEY` and `SMARTLEAD_CAMPAIGN_ID`
@@ -104,7 +104,7 @@ No email is sent automatically. Instead, the agent creates a HubSpot task for ea
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps)
 2. Click **Create New App → From scratch**
-3. Name it `Prospecting Agent`, select your workspace
+3. Name it `Revenue OS`, select your workspace
 4. Go to **Incoming Webhooks** → toggle **ON**
 5. Click **Add New Webhook to Workspace**
 6. Select the channel where you want alerts (e.g., `#sales-alerts`)
@@ -130,7 +130,7 @@ If not installed, download from [nodejs.org](https://nodejs.org) (use the LTS ve
 ### 2.2 — Install Dependencies
 
 ```bash
-cd ai-prospecting-agent
+cd revenue-os
 npm install
 ```
 
@@ -151,6 +151,35 @@ npm test
 ```
 
 All tests should pass. These validate the core parsing logic, input sanitization, and safety guards.
+
+---
+
+## Phase 2.5: Run the Onboarding Wizard (RECOMMENDED)
+
+Before configuring environment variables or running `npm run setup`, use the onboarding wizard to customize everything for your business. This ensures that when schemas and governance are created, they already reflect your company, ICP, brand voice, and objectives — not generic placeholders.
+
+### How to Run
+
+Open this repository in any AI coding assistant that supports Skills:
+- **Claude Code** (CLI or VS Code extension)
+- **Cursor**
+- **Windsurf**
+- **GitHub Copilot**
+
+Then say: **"onboard me"** or **"set up my agent"**
+
+### What the Wizard Does
+
+1. **Asks about your business** — company name, website, what you sell, your role
+2. **Researches your brand** — searches your website, recent news, competitors, market position, and website tone. Arrives at every question with context, not blank
+3. **Suggests your ICP** — pre-fills target titles, company sizes, industries, and disqualifiers based on research
+4. **Identifies competitors** — finds them automatically, asks you to confirm and add positioning
+5. **Analyzes your existing data** — checks for CSV files in `/data/`, detects field mappings and gaps
+6. **Configures everything** — rewrites governance variables (ICP, brand voice, outreach playbook, signals, competitors), updates discovery config, sets cadences, and adjusts schemas if needed
+
+**After the wizard finishes**, continue to Phase 3 (environment variables) and Phase 4 (`npm run setup`). The setup command will create collections and governance with your business-specific content instead of generic defaults.
+
+> **Skip this step** only if you prefer to configure governance manually in the Personize dashboard after running `npm run setup`. The wizard saves 30-60 minutes of manual customization.
 
 ---
 
@@ -221,7 +250,7 @@ This reads from your `.env` file automatically.
 
 ### 4.1 — Run Setup (Collections + Governance)
 
-One command creates everything: 4 collections (Contacts, Companies, Outreach Log, Web Research) with workspace properties, and 8 governance variables that control the agent's behavior.
+One command creates everything: 6 collections (Contacts, Companies, Outreach Log, Web Research, Campaigns, Products) with workspace properties, and 8 governance variables that control the agent's behavior.
 
 ```bash
 npm run setup
@@ -229,10 +258,12 @@ npm run setup
 
 **Expected output:**
 ```
-Created Contacts collection (with workspace properties)
+Created Contacts collection (with workspace + campaign + ecommerce properties)
 Created Companies collection (with account workspace properties)
-Created Outreach Log collection
+Created Outreach Log collection (with campaign attribution)
 Created Web Research collection
+Created Campaigns collection
+Created Products collection
 Schema setup complete.
 Created: ICP Definition
 Created: Brand Voice
@@ -245,18 +276,9 @@ If it says "already exists" — that's fine, it's idempotent.
 
 ### 4.2 — Customize Your Governance (IMPORTANT)
 
-**Expected output:**
-```
-Created: ICP Definition
-Created: Brand Voice
-Created: Outreach Playbook
-Created: Signal Definitions
-Created: Competitor Policy
-```
+**If you ran the onboarding wizard (Phase 2.5):** Your governance variables are already customized with your business-specific content. Review them in the Personize dashboard to confirm everything looks right, but you can skip the manual editing below.
 
-Go to [personize.ai](https://personize.ai) dashboard → **Governance** section.
-
-Edit each variable with YOUR specific details:
+**If you skipped the wizard:** Go to [personize.ai](https://personize.ai) dashboard → **Governance** section and edit each variable with YOUR specific details:
 
 | Variable | What to Customize |
 |---|---|
@@ -266,12 +288,12 @@ Edit each variable with YOUR specific details:
 | **Signal Definitions** | Which signals matter for YOUR product (adjust scores) |
 | **Competitor Policy** | Replace `[Competitor A/B/C]` with your actual competitors and positioning |
 
-> **This is the most important step.** The quality of your outreach depends entirely on how specific and accurate these governance variables are. Spend 30-60 minutes getting these right.
+> **This is the most important step.** The quality of your outreach depends entirely on how specific and accurate these governance variables are. If you didn't use the onboarding wizard, spend 30-60 minutes getting these right.
 
 ### 4.3 — Verify Setup
 
 Go to the Personize dashboard and confirm:
-- 4 collections visible (Contacts, Companies, Outreach Log, Web Research)
+- 5 collections visible (Contacts, Companies, Outreach Log, Web Research, Campaigns)
 - 8 governance variables visible
 - All governance variables have your real content (not the placeholder text)
 
@@ -424,7 +446,120 @@ When you've reviewed enough dry-run output and are confident:
 
 ---
 
-## Phase 8: Daily Operations (No Code Needed)
+## Phase 8: Connect AI Assistant (Claude / Cowork / OpenClaw)
+
+Revenue OS includes an MCP server that gives AI assistants direct access to your sales pipeline. This means you can manage campaigns, discover contacts, and check status through natural conversation.
+
+### 8.1 — Add MCP Servers to Your AI Assistant
+
+Add both Personize and Revenue OS MCP servers to your assistant's config:
+
+**Claude Code / Cowork** (`~/.claude/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "personize": {
+      "command": "npx",
+      "args": ["@personize/mcp-server"],
+      "env": { "PERSONIZE_SECRET_KEY": "your_key_here" }
+    },
+    "revenue-os": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp-server.ts"],
+      "cwd": "/path/to/revenue-os",
+      "env": {
+        "PERSONIZE_SECRET_KEY": "your_key_here",
+        "APOLLO_API_KEY": "your_key_here",
+        "TAVILY_API_KEY": "your_key_here"
+      }
+    }
+  }
+}
+```
+
+A `.mcp.json` file is already included in the repo root for convenience.
+
+### 8.2 — Available MCP Tools (16 total)
+
+Once connected, your AI assistant has 19 Revenue OS tools (discovery, research, campaigns, ecommerce, status, search) plus 13 Personize MCP tools (memory, recall, governance, AI generation).
+
+Full tool reference with parameters and example responses: **[MCP-TOOLS.md](MCP-TOOLS.md)**
+
+The repo also includes a **[CLAUDE.md](CLAUDE.md)** file that gives AI assistants automatic context about the architecture, available tools, and conventions when working in this repo.
+
+### 8.3 — Using the CLI
+
+Revenue OS also includes a CLI for campaign management:
+
+```bash
+# Campaign management
+npm run ros -- campaign:create --name "Fintech Q2" --market "US Fintech" --cadence standard --daily-cap 30
+npm run ros -- campaign:list
+npm run ros -- campaign:stats fintech-q2
+npm run ros -- campaign:activate fintech-q2
+npm run ros -- campaign:pause fintech-q2
+npm run ros -- campaign:enroll fintech-q2 --emails alice@acme.com,bob@tech.co
+
+# Sender management
+npm run ros -- sender:list
+
+# Full system status
+npm run ros -- status
+```
+
+### 8.4 — DRY_RUN Behavior
+
+Revenue OS defaults to `DRY_RUN=true`. In this mode:
+- Emails are **generated** but **not sent**
+- All workspace updates, stats, and logs still work
+- Your AI assistant will warn you about this when you ask to start campaigns
+
+To go live: set `DRY_RUN=false` in `.env` and restart Trigger.dev.
+
+---
+
+## Phase 9: Create Your First Campaign
+
+### Via AI Assistant (Recommended)
+
+```
+You: Find me CTOs at fintech companies and create a campaign.
+AI:  [searches Apollo, memorizes contacts, creates campaign, enrolls qualified contacts]
+AI:  "Created 'Fintech CTOs Q2' with 23 contacts. Ready to activate?"
+```
+
+### Via CLI
+
+```bash
+# 1. Create the campaign
+npm run ros -- campaign:create --name "Fintech CTOs Q2" --market "US Fintech" --cadence standard --daily-cap 20
+
+# 2. Enroll contacts (already in Personize from CSV import or CRM sync)
+npm run ros -- campaign:enroll fintech-ctos-q2 --emails sarah@acme.com,mike@techco.com
+
+# 3. Activate
+npm run ros -- campaign:activate fintech-ctos-q2
+
+# 4. Check status
+npm run ros -- campaign:stats fintech-ctos-q2
+```
+
+### What Happens Automatically
+
+Once a campaign is Active and `DRY_RUN=false`:
+- Outreach engine (10am + 2pm UTC) queries contacts per campaign
+- Respects per-campaign daily send caps
+- Uses campaign-specific sender profiles
+- Loads campaign governance overrides before org defaults
+- Account preflight prevents cross-campaign carpet-bombing
+- Every send is logged with campaign attribution (angle, sender, step)
+- Replies increment campaign stats automatically
+- Daily digest includes per-campaign health with auto-pause warnings
+- Weekly learning loop analyzes angle performance across campaigns
+
+---
+
+## Phase 10: Daily Operations (No Code Needed)
 
 ### What Happens Automatically
 
@@ -511,17 +646,22 @@ These are optional integrations that make the agent smarter.
 | File | Purpose | When You'd Edit It |
 |---|---|---|
 | `.env` | Your API keys (local dev) | Phase 3 |
-| `src/setup/create-schemas.ts` | Collection definitions | Only if adding new properties |
+| `.mcp.json` | MCP server configuration | Phase 8 — verify paths and keys |
+| `src/mcp-server.ts` | MCP server for AI assistants (16 tools) | When adding new MCP tools |
+| `src/lib/campaign.ts` | Campaign enrollment, stats, ICP matching | When changing enrollment logic |
+| `src/scripts/ros.ts` | CLI for campaign management | When adding new CLI commands |
+| `src/setup/create-schemas.ts` | 5 collection definitions | Only if adding new properties |
 | `src/setup/create-governance.ts` | Default governance content | Never — edit in Personize dashboard instead |
-| `src/pipelines/sync-hubspot.ts` | CRM sync logic | Only if adding Salesforce or changing fields |
-| `src/pipelines/detect-signals.ts` | Signal scoring | Only if changing scoring logic |
-| `src/pipelines/generate-outreach.ts` | Email generation | Only if changing sequence structure |
+| `src/pipelines/generate-outreach.ts` | Email generation (campaign-aware) | Only if changing sequence structure |
 | `src/pipelines/source-contacts.ts` | Contact sourcing | When connecting Apollo/ZoomInfo API |
-| `src/delivery/hubspot-deliver.ts` | Send-and-log orchestrator | When adding a new delivery provider |
-| `src/delivery/smartlead.ts` | Smartlead API sender | Rarely — already configured |
-| `src/delivery/sendgrid.ts` | SendGrid sender | Rarely — already configured |
-| `src/delivery/gmail.ts` | Gmail API sender | Rarely — already configured |
-| `src/delivery/slack-notify.ts` | Slack alerts | Rarely — already configured |
+| `src/trigger/personize-webhook.ts` | Receives Personize events, routes to campaigns | When changing webhook routing logic |
+| `src/trigger/outreach-engine.ts` | Campaign-aware outreach scheduler | When changing scheduling logic |
+| `src/trigger/outreach-sequence.ts` | Cadence-driven email sequence | When changing sequence behavior |
+| `src/trigger/learning-loop.ts` | Weekly angle performance analysis | When changing learning frequency |
+| `src/trigger/daily-digest.ts` | Daily Slack report + campaign health + auto-pause | When changing digest format |
+| `src/pipelines/sync-ecommerce.ts` | Import products + purchases from CSV | When changing ecommerce data format |
+| `src/pipelines/infer-preferences.ts` | AI preference inference from purchase history | When changing inference logic |
+| `src/delivery/*.ts` | Email, LinkedIn, phone, Slack delivery | Rarely — already configured |
 | `src/trigger/*.ts` | Autopilot schedules | Only to change run times (cron expressions) |
 | `trigger.config.ts` | Trigger.dev project config | Only once during setup |
 
@@ -533,7 +673,7 @@ These are optional integrations that make the agent smarter.
 # Install
 npm install
 
-# Setup (run once — creates collections + governance)
+# Setup (run once — creates 5 collections + governance)
 npm run setup
 
 # Test
@@ -545,4 +685,14 @@ npx trigger.dev@latest dev
 
 # Deploy to production
 npx trigger.dev@latest deploy
+
+# Campaign CLI
+npm run ros -- campaign:create --name "My Campaign" --cadence standard
+npm run ros -- campaign:list
+npm run ros -- campaign:stats my-campaign
+npm run ros -- campaign:activate my-campaign
+npm run ros -- campaign:pause my-campaign
+npm run ros -- campaign:enroll my-campaign --emails a@x.com,b@y.com
+npm run ros -- sender:list
+npm run ros -- status
 ```

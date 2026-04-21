@@ -17,9 +17,15 @@ import { accountWorkspace } from '../lib/account-workspace.js';
 import { workspace } from '../lib/workspace.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { ACCOUNT_STRATEGY_SCHEMA, ACCOUNT_STRATEGY_DEFAULTS } from '../lib/llm-schemas.js';
+import { SALES_ROLES, type SalesRoleId } from '../config/sales-roles.js';
 import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'account-strategy' });
+
+/** Validate that a string is a known SalesRoleId. */
+function isValidRoleId(value: string): value is SalesRoleId {
+  return value in SALES_ROLES;
+}
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -69,7 +75,9 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
   const contactSummaries = contacts.map((c) => {
     const ws = contactRollup.workspaceStates[c.email] ?? {};
     const wsContext = `Status: ${ws.sequenceStatus || 'Unknown'} | Emails: ${ws.emailsSent || 0} | Tasks: ${(ws.pendingTasks || []).length} | Issues: ${(ws.openIssues || []).length}`;
-    const assignedSender = (c as any).assignedSender || 'Not assigned';
+    const contact = c as Record<string, unknown>;
+    const assignedSender = (contact.assignedSender as string) || 'Not assigned';
+    const roleOwner = (contact.roleOwner as string) || 'unassigned';
     return [
       `- ${c.firstName} ${c.lastName} (${c.jobTitle || 'Unknown role'})`,
       `  Email: ${c.email}`,
@@ -79,7 +87,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
       `  Sentiment: ${c.sentiment || 'Unknown'}`,
       `  Last Contacted: ${c.lastContacted || 'Never'}`,
       `  Assigned Sender: ${assignedSender}`,
-      `  Role Owner: ${(c as any).roleOwner || 'unassigned'}`,
+      `  Role Owner: ${roleOwner}`,
       `  Workspace: ${wsContext || 'No workspace data'}`,
     ].join('\n');
   }).join('\n\n');
@@ -238,18 +246,24 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
     if (action === 'handoff' || contactEmail === 'handoff') {
       // Format: handoff|contact_email|from_role|to_role|reason
       const targetEmail = action === 'handoff' ? parts[1] : contactEmail;
-      const fromRole = (action === 'handoff' ? parts[2] : rationale) as any;
-      const toRole = (action === 'handoff' ? parts[3] : priority) as any;
+      const fromRoleStr = action === 'handoff' ? parts[2] : rationale;
+      const toRoleStr = action === 'handoff' ? parts[3] : String(priority);
       const handoffReason = action === 'handoff' ? (parts[4] || 'account strategy') : 'account strategy';
 
-      if (targetEmail && fromRole && toRole) {
-        try {
-          const { processHandoff } = await import('./process-handoff.js');
-          await processHandoff(targetEmail, fromRole, toRole, handoffReason, parsed.strategy_summary);
-          actionsCreated++;
-          log.info('Handoff triggered by strategizer', { contact: targetEmail, fromRole, toRole });
-        } catch (err) {
-          log.warn('Failed to process handoff', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
+      if (targetEmail && fromRoleStr && toRoleStr) {
+        if (!isValidRoleId(fromRoleStr)) {
+          log.warn('Invalid fromRole in handoff action, skipping', { targetEmail, fromRole: fromRoleStr });
+        } else if (!isValidRoleId(toRoleStr)) {
+          log.warn('Invalid toRole in handoff action, skipping', { targetEmail, toRole: toRoleStr });
+        } else {
+          try {
+            const { processHandoff } = await import('./process-handoff.js');
+            await processHandoff(targetEmail, fromRoleStr, toRoleStr, handoffReason, parsed.strategy_summary);
+            actionsCreated++;
+            log.info('Handoff triggered by strategizer', { contact: targetEmail, fromRole: fromRoleStr, toRole: toRoleStr });
+          } catch (err) {
+            log.warn('Failed to process handoff', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
+          }
         }
       }
       continue;

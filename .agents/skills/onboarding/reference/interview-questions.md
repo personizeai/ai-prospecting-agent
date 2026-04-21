@@ -2,6 +2,8 @@
 
 Each question includes **why we ask** and **how the answer maps to configuration**.
 
+> **Important:** After getting Q1 (company name and website), IMMEDIATELY run the RESEARCH action before continuing to Q2+. Research findings pre-fill and inform all subsequent questions — instead of asking blank questions, present informed suggestions the user can confirm or correct. See SKILL.md → "Action: RESEARCH" for details.
+
 ---
 
 ## Phase 1: The Business
@@ -10,7 +12,7 @@ Each question includes **why we ask** and **how the answer maps to configuration
 
 > "What's your company name, and what's your website URL?"
 
-**Why:** The company name appears in sender identity, governance variables, and brand voice examples. The website URL is used for research and to verify the business exists.
+**Why:** The company name appears in sender identity, governance variables, and brand voice examples. The website URL is used for research and to verify the business exists. **After this answer, research the company before continuing.**
 
 **Maps to:**
 - `create-governance.ts` → Brand Voice (sign-off name, company references)

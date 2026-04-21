@@ -9,7 +9,7 @@ import type { GeneratedEmail } from '../types.js';
  *
  * Setup:
  *   1. Create a Smartlead account at smartlead.ai
- *   2. Create one campaign (e.g. "AI Prospecting Agent") — set it to Active
+ *   2. Create one campaign (e.g. "Revenue OS") — set it to Active
  *   3. Add your warmed email accounts to that campaign
  *   4. Set SMARTLEAD_API_KEY and SMARTLEAD_CAMPAIGN_ID in your environment
  *

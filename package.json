@@ -1,7 +1,7 @@
 {
-  "name": "ai-prospecting-agent",
+  "name": "revenue-os",
   "version": "1.0.0",
-  "description": "Full end-to-end AI prospecting agent powered by Personize + Trigger.dev",
+  "description": "The open-source operating system for AI-powered revenue teams — prospecting, enrichment, outreach, pipeline signals, and deal intelligence powered by Personize + Trigger.dev",
   "private": false,
   "type": "module",
   "engines": {
@@ -10,9 +10,11 @@
   "scripts": {
     "setup:schemas": "npx tsx src/setup/create-schemas.ts",
     "setup:governance": "npx tsx src/setup/create-governance.ts",
-    "setup": "npm run setup:schemas && npm run setup:governance",
+    "setup": "npm run setup:schemas && npm run setup:governance && npm run setup:senders",
+    "setup:senders": "npx tsx src/setup/sync-senders.ts",
     "gmail:auth": "npx tsx src/setup/gmail-auth.ts",
     "sync:csv": "npx tsx src/scripts/run-csv-sync.ts",
+    "ros": "npx tsx src/scripts/ros.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/__tests__/*.test.ts",
     "test:integration": "node --import tsx --test src/__tests__/integration/*.test.ts",
@@ -22,7 +24,8 @@
   },
   "dependencies": {
     "@hubspot/api-client": "^12.0.0",
-    "@personize/sdk": "^0.6.6",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@personize/sdk": "^0.9.1",
     "@trigger.dev/sdk": "^3.0.0",
     "csv-parse": "^5.6.0",
     "dotenv": "^16.4.0",

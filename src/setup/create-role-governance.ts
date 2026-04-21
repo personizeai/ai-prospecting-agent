@@ -180,7 +180,7 @@ async function main() {
   log.info('Creating role-specific governance overlays...');
 
   // List existing to avoid duplicates
-  const existing = await client.guidelines.list();
+  const existing = await client.context.list({ type: 'guideline' });
   const existingNames = new Set(
     (existing.data?.actions || []).map((a: any) => a.payload?.name).filter(Boolean),
   );
@@ -195,7 +195,8 @@ async function main() {
       continue;
     }
 
-    await client.guidelines.create({
+    await client.context.create({
+      type: 'guideline',
       name: variable.name,
       value: variable.value,
       tags: variable.tags,

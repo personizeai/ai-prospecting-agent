@@ -69,6 +69,8 @@ export interface WorkspaceMessage {
   senderProfileId?: string;
   /** Actual email address used to send (for audit trail). */
   senderEmail?: string;
+  /** Provider message ID (e.g., Gmail Message-ID header). Used to match inReplyTo on replies for attribution. */
+  messageId?: string;
   status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'replied' | 'bounced';
 }
 
@@ -346,6 +348,26 @@ async function getSequenceState(email: string): Promise<{
   }
 }
 
+// ─── Attribution Helpers ──────────────────────────────────────────
+
+/**
+ * Find a sent message by its provider Message-ID (for reply attribution).
+ * When an inbound reply arrives with an In-Reply-To header, call this to
+ * identify which outreach step/angle the reply is responding to.
+ */
+async function findMessageByMessageId(email: string, targetMessageId: string): Promise<(WorkspaceMessage & { sentAt: string }) | null> {
+  if (!targetMessageId) return null;
+  const messages = await readProperty<Array<WorkspaceMessage & { sentAt: string }>>(email, 'messages_sent', []);
+  return messages.find(m => m.messageId === targetMessageId) ?? null;
+}
+
+/**
+ * Get all messages sent to a contact (for metrics/attribution).
+ */
+async function getMessagesSent(email: string): Promise<Array<WorkspaceMessage & { sentAt: string }>> {
+  return readProperty<Array<WorkspaceMessage & { sentAt: string }>>(email, 'messages_sent', []);
+}
+
 // ─── Cross-Record Queries ─────────────────────────────────────────
 
 /**
@@ -508,15 +530,17 @@ async function setRoleOwner(
     recordId: email,
     type: 'Contact',
     propertyName: 'role_owner_history',
-    propertyValue: {
-      fromRole: previousRole,
-      toRole: roleId,
-      reason,
-      changedBy,
-      timestamp: new Date().toISOString(),
+    arrayPush: {
+      items: [{
+        fromRole: previousRole,
+        toRole: roleId,
+        reason,
+        changedBy,
+        timestamp: new Date().toISOString(),
+      }],
     },
-    arrayPush: true,
-  } as any);
+    updatedBy: changedBy,
+  });
 
   log.info('Role owner updated', { email, fromRole: previousRole, toRole: roleId, reason, changedBy });
 }
@@ -531,14 +555,14 @@ async function getRoleOwner(email: string): Promise<SalesRoleId | 'unassigned'> 
 /**
  * Get contacts owned by a specific role (for role-scoped scheduling).
  */
-async function getContactsByRole(roleId: SalesRoleId, limit = 50): Promise<Array<{ email: string; properties: any }>> {
+async function getContactsByRole(roleId: SalesRoleId, limit = 50): Promise<Array<{ email: string; properties: Record<string, unknown> }>> {
   try {
     const result = await memoryCrud.filterByProperty({
       type: 'Contact',
       conditions: [{ propertyName: 'role_owner', operator: 'equals', value: roleId }],
       limit,
     });
-    return (result as any)?.records || [];
+    return result.records.map((r) => ({ email: r.recordId, properties: r.matchedProperties }));
   } catch (err) {
     log.warn('Failed to query contacts by role', { roleId, error: (err as Error).message });
     return [];
@@ -560,6 +584,9 @@ export const workspace = {
   getOpenTasks,
   getIssues,
   getSequenceState,
+  // Attribution
+  findMessageByMessageId,
+  getMessagesSent,
   // Cross-record queries
   getAllPendingTasks,
   // Task lifecycle (arrayPatch — race-free)

@@ -12,8 +12,20 @@ This reference maps every configuration setting to its runtime effect, so the on
 |---|---|---|
 | `src/setup/create-governance.ts` | 6 governance variables pushed to Personize | Controls ALL AI-generated content — every email, every reply analysis, every signal interpretation |
 | `src/config/prospecting.config.ts` | All tunable settings | Controls targeting, cadence timing, discovery filters, API limits, enrichment rules |
-| `src/setup/create-schemas.ts` | 4 collection schemas | Controls what data fields are stored per contact/company/outreach/research |
+| `src/setup/create-schemas.ts` | 6 collection schemas (Contacts, Companies, Outreach Log, Web Research, Campaigns, Products) | Controls what data fields are stored per entity. Campaigns stores campaign config + stats. Products stores ecommerce catalog. Contacts include ecommerce properties (total_orders, style_preferences, customer_segment). |
 | `.env` | API keys, feature flags | Controls which integrations are active (Personize + Trigger.dev required, everything else optional) |
+
+### Campaign & MCP Infrastructure (new)
+
+| Component | What It Does | Storage |
+|---|---|---|
+| `src/mcp-server.ts` | MCP server with 16 tools for AI assistants (Claude, Cowork, OpenClaw) | Wraps Revenue OS functions as MCP tools |
+| `src/lib/campaign.ts` | Campaign enrollment, stats, ICP matching, capacity checking | Campaigns collection in Personize |
+| `src/scripts/ros.ts` | CLI for campaign management | Calls campaign.ts + sender-profiles.ts |
+| `src/trigger/learning-loop.ts` | Weekly angle-to-outcome analysis with governance suggestions | Personize memory (system-logs) |
+| `.mcp.json` | MCP server configuration for AI assistants | Repo root |
+| `src/pipelines/sync-ecommerce.ts` | Import products + purchases from CSV to Personize | Products + Contacts collections |
+| `src/pipelines/infer-preferences.ts` | AI inference of style, price tier, segment from purchase history | Contact ecommerce properties |
 
 ### Email Infrastructure (managed via dashboard, not .env)
 
@@ -45,7 +57,9 @@ These files read from governance + config at runtime. They don't need changes:
 | `src/lib/sender-profiles.ts` | Sender profile CRUD, assignment, health tracking, warmup ramp | Sender profiles from Personize |
 | `src/delivery/smtp.ts` | SMTP send + thread reply via nodemailer | IMAP account SMTP config |
 | `src/trigger/imap-reply-monitor.ts` | Polls IMAP inboxes every 3 min, matches replies to contacts | IMAP accounts from Personize |
-| `src/trigger/personize-webhook.ts` | Receives Personize memorize webhooks, routes to pipelines | Webhook payload + pipeline config |
+| `src/trigger/personize-webhook.ts` | Receives Personize memorize webhooks, matches to campaigns, auto-enrolls, routes to pipelines | Webhook payload + pipeline config + campaign ICP criteria |
+| `src/trigger/learning-loop.ts` | Weekly: queries outreach-log, analyzes angle performance, suggests governance updates | Outreach-log memories + Slack + Personize memory |
+| `src/trigger/daily-digest.ts` | Daily Slack report with campaign health, auto-pause for underperformers, time-series snapshots, daily brief memorized for Claude | Metrics + campaigns + Slack + Personize memory |
 
 ---
 

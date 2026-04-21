@@ -455,6 +455,282 @@ export const CALL_ANALYSIS_DEFAULTS = {
   referred_contact: 'N/A',
 };
 
+// ─── generate-interview-guide.ts ────────────────────────────────────
+
+export const INTERVIEW_GUIDE_SCHEMA = {
+  opening: {
+    description: 'Interview opening: introduce yourself, explain the purpose, ask for recording consent, build rapport. 3-5 sentences, warm and professional.',
+    type: 'string',
+    required: true,
+  },
+  topics: {
+    description: 'Array of topic objects as JSON strings: {"topic":"...","objective":"...","primary_question":"...","probes":["..."],"max_minutes":5}. Order by priority. 4-6 topics.',
+    type: 'string[]',
+    required: true,
+  },
+  closing: {
+    description: 'Interview closing: thank them, summarize what you heard, explain next steps, ask if they have questions. 3-4 sentences.',
+    type: 'string',
+    required: true,
+  },
+  ai_interviewer_prompt: {
+    description: 'Full system prompt for the AI voice agent conducting the interview. Include: role, tone, pacing, how to probe deeper, how to handle tangents, when to move on, how to wrap up. Must be self-contained.',
+    type: 'string',
+    required: true,
+  },
+  knowledge_gaps: {
+    description: 'What we do NOT know about this contact that this interview should fill. Array of specific gaps.',
+    type: 'string[]',
+    required: true,
+  },
+} as const satisfies SchemaMap;
+
+export const INTERVIEW_GUIDE_DEFAULTS = {
+  opening: '',
+  topics: [] as string[],
+  closing: '',
+  ai_interviewer_prompt: '',
+  knowledge_gaps: [] as string[],
+};
+
+// ─── analyze-interview.ts ───────────────────────────────────────────
+
+export const INTERVIEW_ANALYSIS_SCHEMA = {
+  quality: {
+    description: 'Overall interview quality based on depth and completeness of answers',
+    type: 'string',
+    required: true,
+    enumValues: ['excellent', 'good', 'partial', 'poor'] as const,
+  },
+  summary: {
+    description: '3-5 sentence executive summary of the interview: who, what was discussed, key takeaways, recommended action',
+    type: 'string',
+    required: true,
+  },
+  topic_findings: {
+    description: 'Array of per-topic findings as JSON strings: {"topic":"...","finding":"...","quotes":["..."],"confidence":"high|medium|low"}',
+    type: 'string[]',
+    required: true,
+  },
+  budget: {
+    description: 'Budget information extracted (amount, range, or "not discussed")',
+    type: 'string',
+    required: false,
+    default: 'not discussed',
+  },
+  authority: {
+    description: 'Decision-making authority: who decides, who influences, approval process (or "not discussed")',
+    type: 'string',
+    required: false,
+    default: 'not discussed',
+  },
+  need: {
+    description: 'Core need or pain point identified (or "not discussed")',
+    type: 'string',
+    required: false,
+    default: 'not discussed',
+  },
+  timeline: {
+    description: 'Purchase/decision timeline mentioned (or "not discussed")',
+    type: 'string',
+    required: false,
+    default: 'not discussed',
+  },
+  decision_process: {
+    description: 'How decisions are made: committee, single buyer, procurement process (or "not discussed")',
+    type: 'string',
+    required: false,
+    default: 'not discussed',
+  },
+  metrics: {
+    description: 'Success metrics or KPIs the contact cares about (or "not discussed")',
+    type: 'string',
+    required: false,
+    default: 'not discussed',
+  },
+  champion: {
+    description: 'Internal champion identified: name, title, level of advocacy (or "not identified")',
+    type: 'string',
+    required: false,
+    default: 'not identified',
+  },
+  competitive_intel: {
+    description: 'Competitors mentioned: "competitor_name | context". Array of pipe-separated strings.',
+    type: 'string[]',
+    required: false,
+    default: [],
+  },
+  product_feedback: {
+    description: 'Feature requests, product feedback, or wishlist items mentioned',
+    type: 'string[]',
+    required: false,
+    default: [],
+  },
+  concerns: {
+    description: 'Objections, concerns, or blockers raised by the contact',
+    type: 'string[]',
+    required: false,
+    default: [],
+  },
+  sentiment_arc: {
+    description: 'How the contact sentiment changed over the interview',
+    type: 'string',
+    required: true,
+    enumValues: ['warming', 'steady_positive', 'steady_neutral', 'cooling', 'mixed'] as const,
+  },
+  next_steps: {
+    description: 'Recommended next steps based on what was learned. 2-4 specific actions.',
+    type: 'string[]',
+    required: true,
+  },
+  sentiment: {
+    description: 'Overall contact sentiment during the interview',
+    type: 'string',
+    required: true,
+    enumValues: ['positive', 'neutral', 'negative'] as const,
+  },
+  urgency: {
+    description: 'How urgently follow-up is needed based on interview findings',
+    type: 'string',
+    required: true,
+    enumValues: ['high', 'medium', 'low'] as const,
+  },
+} as const satisfies SchemaMap;
+
+export const INTERVIEW_ANALYSIS_DEFAULTS = {
+  quality: 'partial',
+  summary: 'Interview completed',
+  topic_findings: [] as string[],
+  budget: 'not discussed',
+  authority: 'not discussed',
+  need: 'not discussed',
+  timeline: 'not discussed',
+  decision_process: 'not discussed',
+  metrics: 'not discussed',
+  champion: 'not identified',
+  competitive_intel: [] as string[],
+  product_feedback: [] as string[],
+  concerns: [] as string[],
+  sentiment_arc: 'steady_neutral',
+  next_steps: [] as string[],
+  sentiment: 'neutral',
+  urgency: 'medium',
+};
+
+// ─── infer-preferences.ts (ecommerce) ─────────────────────────
+
+export const PREFERENCE_INFERENCE_SCHEMA = {
+  style_preferences: {
+    description: 'Detailed style profile: aesthetic, colors, materials, brand affinity. Be specific, e.g., "minimalist streetwear with earth tones and sustainable materials".',
+    type: 'string',
+    required: true,
+  },
+  price_tier: {
+    description: 'Typical price range based on actual purchase amounts',
+    type: 'string',
+    required: true,
+    enumValues: ['Budget', 'Mid-Range', 'Premium', 'Luxury'] as const,
+  },
+  customer_segment: {
+    description: 'Behavioral segment based on recency, frequency, monetary value',
+    type: 'string',
+    required: true,
+    enumValues: ['New', 'Active', 'Loyal', 'VIP', 'At-Risk', 'Lapsed', 'Win-Back'] as const,
+  },
+  category_affinity: {
+    description: 'Comma-separated list of preferred categories ranked by purchase frequency',
+    type: 'string',
+    required: true,
+  },
+  purchase_frequency: {
+    description: 'How often this customer buys (e.g., "monthly", "every 2-3 months", "seasonal")',
+    type: 'string',
+    required: true,
+  },
+  recommended_product_ids: {
+    description: 'Product IDs from catalog that match their style but they have not purchased yet. 3-5 items.',
+    type: 'string[]',
+    required: true,
+  },
+} as const satisfies SchemaMap;
+
+export const PREFERENCE_INFERENCE_DEFAULTS = {
+  style_preferences: '',
+  price_tier: 'Mid-Range',
+  customer_segment: 'Active',
+  category_affinity: '',
+  purchase_frequency: '',
+  recommended_product_ids: [] as string[],
+};
+
+// ─── generate-outreach.ts (ecommerce variable mode) ───────────
+
+export const ECOMMERCE_VARIABLES_SCHEMA = {
+  headline: {
+    description: 'Primary headline, 5-12 words, emotionally compelling. Reference their specific style or last purchase.',
+    type: 'string',
+    required: true,
+  },
+  subheadline: {
+    description: '1 sentence connecting to their personal style or purchase pattern.',
+    type: 'string',
+    required: true,
+  },
+  short_paragraph: {
+    description: '2-3 sentences. The hook — why this matters to THEM specifically. Reference purchases, preferences, or timing.',
+    type: 'string',
+    required: true,
+  },
+  long_paragraph: {
+    description: '4-6 sentences. The story — product recommendations with context, social proof, or seasonal relevance. Personal and specific.',
+    type: 'string',
+    required: true,
+  },
+  image_prompt: {
+    description: 'AI image generation prompt for a lifestyle hero image. Describe scene, mood, lighting, style. Reference their aesthetic.',
+    type: 'string',
+    required: true,
+  },
+  cta_text: {
+    description: 'Call-to-action button text. 2-5 words, action-oriented, specific to the offer.',
+    type: 'string',
+    required: true,
+  },
+  product_recommendations: {
+    description: 'Array of recommended product IDs from catalog, ordered by relevance to this customer.',
+    type: 'string[]',
+    required: true,
+  },
+  angle: {
+    description: '1-sentence description of the personalization angle used',
+    type: 'string',
+    required: true,
+  },
+  subject_line: {
+    description: 'Email subject line, under 60 characters. Personal, not generic.',
+    type: 'string',
+    required: true,
+  },
+  preview_text: {
+    description: 'Email preview text (shows after subject in inbox), 40-90 characters. Complements subject, adds intrigue.',
+    type: 'string',
+    required: true,
+  },
+} as const satisfies SchemaMap;
+
+export const ECOMMERCE_VARIABLES_DEFAULTS = {
+  headline: '',
+  subheadline: '',
+  short_paragraph: '',
+  long_paragraph: '',
+  image_prompt: '',
+  cta_text: 'Shop Now',
+  product_recommendations: [] as string[],
+  angle: '',
+  subject_line: '',
+  preview_text: '',
+};
+
 // ─── LinkedIn Event Analysis Schema ───────────────────────────────
 
 export const LINKEDIN_EVENT_ANALYSIS_SCHEMA = {

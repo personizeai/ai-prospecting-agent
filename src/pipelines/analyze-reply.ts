@@ -25,6 +25,8 @@ import { REPLY_ANALYSIS_SCHEMA, REPLY_ANALYSIS_DEFAULTS } from '../lib/llm-schem
 import { ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
 
+const log = logger.child({ pipeline: 'analyze-reply' });
+
 // ─── Types ─────────────────────────────────────────────────────────
 
 export type ReplySentiment = 'positive' | 'question' | 'negative' | 'ooo' | 'referral' | 'neutral';
@@ -477,8 +479,8 @@ export async function handleAnalyzedReply(
         }
       }
     }
-  } catch {
-    // Sales Org not enabled or handoff failed — non-fatal
+  } catch (err) {
+    log.warn('Handoff processing failed', { error: String(err), contactEmail });
   }
 
   return analysis;

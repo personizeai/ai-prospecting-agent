@@ -167,6 +167,10 @@ export const CSV_CONFIG = {
   notesFile: 'notes.csv',
   dealsFile: 'deals.csv',
 
+  /** Ecommerce CSV files. Set to empty string to skip. */
+  purchasesFile: 'purchases.csv',
+  productsFile: 'products.csv',
+
   /** Source tag value used in memorized records (distinguishes from HubSpot). */
   sourceTag: 'csv',
 };
@@ -203,7 +207,7 @@ export const SMARTLEAD_CONFIG = {
   baseUrl: 'https://server.smartlead.ai/api/v1',
 
   /** Smartlead campaign ID to send emails through.
-   *  Create a single "AI Prospecting Agent" campaign in Smartlead,
+   *  Create a single "Revenue OS" campaign in Smartlead,
    *  set it to active, and paste the numeric ID here.
    *  Smartlead uses this campaign's warmed mailboxes for all sends. */
   campaignId: process.env.SMARTLEAD_CAMPAIGN_ID || '',
@@ -216,13 +220,139 @@ export const MANUAL_HUBSPOT_CONFIG = {
   ownerId: process.env.HUBSPOT_OWNER_ID || '',
 };
 
-// ─── Gmail Senders ────────────────────────────────────────────────
-/** Multiple Google Workspace senders for email delivery.
- *  Each sender needs their own OAuth2 refresh token (run `npm run gmail:auth` per sender).
- *  All senders can share the same GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET.
+// ─── Email Sender Accounts ───────────────────────────────────────
+//
+// Define ALL sender accounts here — any provider (Gmail, Outlook, Zoho,
+// Fastmail, ZapMail, Instantly, or any IMAP/SMTP host).
+//
+// Each sender needs:
+//   - An email + display name
+//   - A provider preset OR custom IMAP/SMTP hosts
+//   - Credentials: app password (most providers) or OAuth2 refresh token (Gmail)
+//   - Persona: how this sender is matched to leads (executive, technical, general, consultative)
+//
+// Passwords come from env vars — never hardcode credentials.
+// Run `npm run setup:senders` to provision accounts + sender profiles in Personize.
+// Re-run after adding/removing entries — it syncs (creates new, removes missing).
+//
+// For Gmail OAuth2: run `npm run gmail:auth` per sender to get refresh tokens.
+// For all others: generate App Passwords in each provider's security settings.
+
+export type EmailProviderPreset = 'gmail' | 'outlook' | 'yahoo' | 'zoho' | 'fastmail' | 'custom';
+
+export interface SenderAccountConfig {
+  /** Unique key for this sender (used for env var lookup and idempotent sync).
+   *  e.g., 'alice', 'bob', 'sales1'. Maps to env var: SENDER_ALICE_PASSWORD */
+  key: string;
+  /** Email address for this sender. */
+  email: string;
+  /** Display name on outbound emails (e.g., "Alice Smith"). */
+  displayName: string;
+  /** Provider preset — auto-fills IMAP/SMTP hosts and ports.
+   *  Use 'custom' and set imapHost/smtpHost for unlisted providers. */
+  provider: EmailProviderPreset;
+  /** Auth method. Default: 'password' (app passwords). Use 'oauth2' for Gmail OAuth2. */
+  auth?: 'password' | 'oauth2';
+  /** Persona for lead matching: C-suite → executive, engineers → technical, etc. */
+  persona?: 'technical' | 'executive' | 'general' | 'consultative';
+  /** Daily send limit (default: 100). Keep under 100/day for best deliverability. */
+  dailySendLimit?: number;
+  /** Max leads assigned to this sender (default: 50). */
+  maxLeadsAssigned?: number;
+  /** Enable warmup ramp on first setup (default: true). */
+  warmup?: boolean;
+  /** Custom warmup ramp schedule (default: [5, 10, 15, 25, 35, 50, 75, 100]). */
+  warmupRamp?: number[];
+  /** Whether IMAP polling is enabled for reply monitoring (default: true). */
+  pollingEnabled?: boolean;
+  /** IMAP folders to monitor (default: ['INBOX']). */
+  folders?: string[];
+  /** Poll interval in minutes (default: 3). */
+  pollIntervalMinutes?: number;
+  /** Custom IMAP host (only needed for provider: 'custom'). */
+  imapHost?: string;
+  /** Custom IMAP port (default: 993). */
+  imapPort?: number;
+  /** Custom SMTP host (only needed for provider: 'custom'). */
+  smtpHost?: string;
+  /** Custom SMTP port (default: 587). */
+  smtpPort?: number;
+  /** Whether SMTP uses implicit TLS (true for port 465, false for 587 STARTTLS). Default: false. */
+  smtpSecure?: boolean;
+  /** Email signature (HTML). */
+  signature?: string;
+}
+
+/** Provider presets — IMAP and SMTP hosts for common providers. */
+export const EMAIL_PROVIDER_PRESETS: Record<EmailProviderPreset, {
+  imapHost: string; imapPort: number; imapSecure: boolean;
+  smtpHost: string; smtpPort: number; smtpSecure: boolean;
+}> = {
+  gmail:    { imapHost: 'imap.gmail.com',         imapPort: 993, imapSecure: true, smtpHost: 'smtp.gmail.com',           smtpPort: 587, smtpSecure: false },
+  outlook:  { imapHost: 'outlook.office365.com',   imapPort: 993, imapSecure: true, smtpHost: 'smtp-mail.outlook.com',    smtpPort: 587, smtpSecure: false },
+  yahoo:    { imapHost: 'imap.mail.yahoo.com',     imapPort: 993, imapSecure: true, smtpHost: 'smtp.mail.yahoo.com',      smtpPort: 587, smtpSecure: false },
+  zoho:     { imapHost: 'imap.zoho.com',           imapPort: 993, imapSecure: true, smtpHost: 'smtp.zoho.com',            smtpPort: 587, smtpSecure: false },
+  fastmail: { imapHost: 'imap.fastmail.com',       imapPort: 993, imapSecure: true, smtpHost: 'smtp.fastmail.com',        smtpPort: 587, smtpSecure: false },
+  custom:   { imapHost: '',                        imapPort: 993, imapSecure: true, smtpHost: '',                          smtpPort: 587, smtpSecure: false },
+};
+
+/**
+ * Load sender accounts from EMAIL_SENDERS env var (JSON array) or inline config.
  *
- *  Set via GMAIL_SENDERS env var as JSON array, or falls back to single-sender env vars.
- *  Daily limit per sender: keep under 100/day for best deliverability (Google allows 2,000). */
+ * Credentials are loaded from env vars named: SENDER_{KEY}_PASSWORD or SENDER_{KEY}_REFRESH_TOKEN
+ * where {KEY} is the sender's key in UPPER_CASE (e.g., key: 'alice' → SENDER_ALICE_PASSWORD).
+ */
+function loadSenderAccounts(): SenderAccountConfig[] {
+  if (process.env.EMAIL_SENDERS) {
+    try {
+      return JSON.parse(process.env.EMAIL_SENDERS) as SenderAccountConfig[];
+    } catch {
+      throw new Error('EMAIL_SENDERS is not valid JSON. Expected: [{"key":"alice","email":"alice@co.com","displayName":"Alice","provider":"gmail"}]');
+    }
+  }
+
+  // Backward compatible: single Gmail sender via legacy env vars
+  if (process.env.SENDER_EMAIL && (process.env.GMAIL_REFRESH_TOKEN || process.env.SENDER_DEFAULT_PASSWORD)) {
+    return [{
+      key: 'default',
+      email: process.env.SENDER_EMAIL,
+      displayName: process.env.SENDER_NAME || 'Sales Team',
+      provider: process.env.GMAIL_REFRESH_TOKEN ? 'gmail' : 'custom' as EmailProviderPreset,
+      auth: process.env.GMAIL_REFRESH_TOKEN ? 'oauth2' : 'password',
+    }];
+  }
+
+  return [];
+}
+
+export const EMAIL_SENDERS_CONFIG = {
+  /** All configured sender accounts (loaded from EMAIL_SENDERS env var or inline). */
+  senders: loadSenderAccounts(),
+
+  /** Default warmup ramp for new senders (overridable per sender). */
+  defaultWarmupRamp: [5, 10, 15, 25, 35, 50, 75, 100],
+
+  /** Default daily send limit per sender. */
+  defaultDailySendLimit: 100,
+
+  /** Default max leads per sender. */
+  defaultMaxLeadsAssigned: 50,
+};
+
+// ─── Gmail OAuth2 (shared credentials for Gmail senders) ─────────
+//
+// If any sender uses provider: 'gmail' with auth: 'oauth2', these
+// shared OAuth2 credentials are used. One Google Cloud project for all.
+
+export const GMAIL_OAUTH_CONFIG = {
+  clientId: process.env.GMAIL_CLIENT_ID || '',
+  clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
+};
+
+// ─── Legacy Gmail Config (backward compatible) ──────────────────
+// Kept for existing gmail.ts delivery provider. New setups should
+// use EMAIL_SENDERS_CONFIG + provider: 'gmail' instead.
+
 export interface GmailSender {
   email: string;
   name: string;
@@ -231,7 +361,6 @@ export interface GmailSender {
 }
 
 function loadGmailSenders(): GmailSender[] {
-  // Option 1: Multi-sender JSON array
   if (process.env.GMAIL_SENDERS) {
     try {
       const parsed = JSON.parse(process.env.GMAIL_SENDERS);
@@ -242,11 +371,9 @@ function loadGmailSenders(): GmailSender[] {
         dailyLimit: s.dailyLimit || 100,
       }));
     } catch {
-      throw new Error('GMAIL_SENDERS is not valid JSON. Expected: [{"email":"...","name":"...","refreshToken":"..."}]');
+      throw new Error('GMAIL_SENDERS is not valid JSON.');
     }
   }
-
-  // Option 2: Single-sender env vars (backward compatible)
   if (process.env.GMAIL_REFRESH_TOKEN && process.env.SENDER_EMAIL) {
     return [{
       email: process.env.SENDER_EMAIL,
@@ -255,28 +382,20 @@ function loadGmailSenders(): GmailSender[] {
       dailyLimit: 100,
     }];
   }
-
   return [];
 }
 
 export const GMAIL_CONFIG = {
-  /** OAuth2 Client ID (shared across all senders — one Google Cloud project). */
   clientId: process.env.GMAIL_CLIENT_ID || '',
-
-  /** OAuth2 Client Secret (shared across all senders). */
   clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
-
-  /** All configured sender accounts. */
   senders: loadGmailSenders(),
-
-  /** Selection strategy: 'round-robin' rotates evenly, 'random' picks randomly. */
   strategy: (process.env.GMAIL_SENDER_STRATEGY || 'round-robin') as 'round-robin' | 'random',
 };
 
 // ─── IMAP Reply Monitoring ────────────────────────────────────────
 //
-// IMAP accounts are managed via the dashboard (Settings → Email Accounts)
-// and stored in Personize as a guideline. These are just default poll settings.
+// Default poll settings for IMAP accounts. Individual sender accounts
+// can override these via their own pollIntervalMinutes and folders.
 //
 // Credentials: Encrypted with AES-256-GCM using IMAP_ENCRYPTION_KEY or
 // PERSONIZE_SECRET_KEY. For Gmail: use App Passwords (not regular password).
@@ -295,15 +414,10 @@ export const IMAP_CONFIG = {
   /** How many days back to search on first poll (no lastCheckedAt). */
   initialLookbackDays: Number(process.env.IMAP_INITIAL_LOOKBACK_DAYS) || 1,
 
-  /** Common IMAP presets for quick setup in the dashboard. */
-  presets: {
-    gmail: { host: 'imap.gmail.com', port: 993, secure: true },
-    outlook: { host: 'outlook.office365.com', port: 993, secure: true },
-    yahoo: { host: 'imap.mail.yahoo.com', port: 993, secure: true },
-    zoho: { host: 'imap.zoho.com', port: 993, secure: true },
-    fastmail: { host: 'imap.fastmail.com', port: 993, secure: true },
-    custom: { host: '', port: 993, secure: true },
-  } as Record<string, { host: string; port: number; secure: boolean }>,
+  /** Provider presets (IMAP only — for backward compat with dashboard). */
+  presets: Object.fromEntries(
+    Object.entries(EMAIL_PROVIDER_PRESETS).map(([k, v]) => [k, { host: v.imapHost, port: v.imapPort, secure: v.imapSecure }]),
+  ) as Record<string, { host: string; port: number; secure: boolean }>,
 };
 
 // ─── Apollo.io Settings ────────────────────────────────────────────
@@ -675,6 +789,68 @@ export const CALL_CONFIG = {
   /** ElevenLabs webhook secret for signature verification.
    *  Set in ElevenLabs General Settings → Webhooks when creating the webhook. */
   elevenlabsWebhookSecret: process.env.ELEVENLABS_WEBHOOK_SECRET || '',
+};
+
+// ─── AI Phone Interview [OPTIONAL — off by default] ───────────────
+//
+// AI-conducted phone interviews for deeper qualification, win/loss analysis,
+// customer health checks, and feature validation. Unlike cold calls (short,
+// scripted, pitch-oriented), interviews are longer, discovery-oriented
+// conversations that extract structured insights.
+//
+// Uses the same voice providers as CALL_CONFIG (Bland.ai, Vapi, ElevenLabs)
+// but with conversation-mode prompts, longer durations, and structured
+// post-interview analysis.
+//
+// Trigger points:
+//   - After a positive cold call (analyze-call outcome = interested)
+//   - Post-demo / post-meeting (manual or CRM event trigger)
+//   - Win/loss after deal closes (CRM stage change)
+//   - Scheduled customer health check (recurring)
+//   - NPS score received (webhook from survey tool)
+
+export const INTERVIEW_CONFIG = {
+  /** Master toggle — enables AI phone interviews. */
+  enabled: process.env.INTERVIEW_ENABLED === 'true',
+
+  /** Voice provider for interviews. Reuses CALL_CONFIG provider credentials.
+   *  'vapi' is recommended — best at long-form, dynamic conversations.
+   *  'bland-ai' and 'elevenlabs' also supported. */
+  provider: (process.env.INTERVIEW_PROVIDER || CALL_CONFIG.provider) as 'bland-ai' | 'vapi' | 'elevenlabs',
+
+  /** Max interview duration in minutes. AI will wrap up as this limit approaches. */
+  maxDurationMins: Number(process.env.INTERVIEW_MAX_DURATION_MINS) || 20,
+
+  /** Max interviews per day (these are longer/more expensive than cold calls). */
+  dailyLimit: Number(process.env.INTERVIEW_DAILY_LIMIT) || 10,
+
+  /** Minimum ICP score to auto-trigger a discovery interview.
+   *  Manual interviews (via trigger task) bypass this gate. */
+  minScoreForAutoInterview: Number(process.env.INTERVIEW_MIN_SCORE) || 70,
+
+  /** Require explicit recording consent at the start of the interview.
+   *  The AI interviewer will ask for consent before proceeding.
+   *  If the contact declines, the interview ends gracefully. */
+  requireRecordingConsent: process.env.INTERVIEW_REQUIRE_CONSENT !== 'false',
+
+  /** Vapi assistant ID specifically for interviews (optional — overrides CALL_CONFIG).
+   *  Use a separate assistant with longer timeout and conversational system prompt. */
+  vapiInterviewAssistantId: process.env.VAPI_INTERVIEW_ASSISTANT_ID || '',
+
+  /** ElevenLabs agent ID specifically for interviews (optional — overrides CALL_CONFIG). */
+  elevenlabsInterviewAgentId: process.env.ELEVENLABS_INTERVIEW_AGENT_ID || '',
+
+  /** Webhook URL for interview completion events (defaults to CALL_WEBHOOK_URL). */
+  webhookUrl: process.env.INTERVIEW_WEBHOOK_URL || CALL_CONFIG.webhookUrl,
+
+  /** Default interview purposes to auto-trigger.
+   *  'discovery' — after positive cold call
+   *  'win_loss'  — after deal closed-won or closed-lost
+   *  'customer_health' — recurring for existing customers */
+  autoTriggerPurposes: (process.env.INTERVIEW_AUTO_PURPOSES || 'discovery')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean) as Array<'discovery' | 'win_loss' | 'customer_health' | 'feature_validation' | 'nps_followup'>,
 };
 
 // ─── Salesforce [OPTIONAL — only if CRM_SOURCE includes 'salesforce'] ──
