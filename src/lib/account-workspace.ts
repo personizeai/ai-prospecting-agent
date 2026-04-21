@@ -16,6 +16,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { memoryCrud } from './personize-crud.js';
 import { logger } from './logger.js';
 
@@ -249,12 +250,9 @@ async function setStrategy(domain: string, strategy: AccountStrategy) {
 // ─── Read Functions ────────────────────────────────────────────────
 
 async function getDigest(domain: string, tokenBudget = 3000) {
-  return client.memory.smartDigest({
-    website_url: domain,
-    type: 'Company',
-    token_budget: tokenBudget,
-    include_properties: true,
-    include_memories: true,
+  return memory.retrieveDigest({
+    websiteUrl: domain,
+    maxTokens: tokenBudget,
   });
 }
 

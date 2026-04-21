@@ -13,6 +13,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { SALES_ORG_CONFIG } from '../config/prospecting.config.js';
 import { inferRoleFromStatus, type SalesRoleId } from '../config/sales-roles.js';
@@ -38,13 +39,11 @@ export async function assignRoleToContact(
   let status = leadStatus;
   if (!status) {
     try {
-      const digest = await client.memory.smartDigest({
+      const digest = await memory.retrieveDigest({
         email,
-        type: 'Contact',
-        token_budget: 100,
-        include_properties: true,
+        maxTokens: 100,
       });
-      status = (digest.data as any)?.properties?.lead_status?.value || 'New';
+      status = (digest as any)?.properties?.lead_status?.value || 'New';
     } catch {
       status = 'New';
     }

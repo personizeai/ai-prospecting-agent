@@ -30,18 +30,20 @@ export const learningLoopTask = schedules.task({
 
     // 1. Gather recent outreach data
     const [sends, replies] = await Promise.all([
-      client.memory.recall({
+      memory.retrieve({
         message: 'OUTREACH SENT emails with angles and subjects from the last 14 days outreach-log',
         limit: 200,
+        mode: 'fast',
       }),
-      client.memory.recall({
+      memory.retrieve({
         message: 'REPLY received with sentiment and angle attribution from the last 14 days outreach-log reply',
         limit: 100,
+        mode: 'fast',
       }),
     ]);
 
-    const sendCount = sends.data?.results?.length ?? sends.data?.length ?? 0;
-    const replyCount = replies.data?.results?.length ?? replies.data?.length ?? 0;
+    const sendCount = (sends as any)?.results?.length ?? (sends as any)?.length ?? 0;
+    const replyCount = (replies as any)?.results?.length ?? (replies as any)?.length ?? 0;
 
     if (sendCount < 10) {
       log.info('Not enough data for learning loop', { sends: sendCount });
@@ -49,8 +51,8 @@ export const learningLoopTask = schedules.task({
     }
 
     // 2. AI analysis
-    const sendsData = JSON.stringify(sends.data?.results ?? sends.data ?? []);
-    const repliesData = JSON.stringify(replies.data?.results ?? replies.data ?? []);
+    const sendsData = JSON.stringify((sends as any)?.results ?? sends ?? []);
+    const repliesData = JSON.stringify((replies as any)?.results ?? replies ?? []);
 
     const analysis = await client.ai.prompt({
       context: `## OUTREACH SENDS (last 14 days)\n${sendsData}\n\n## REPLIES\n${repliesData}`,

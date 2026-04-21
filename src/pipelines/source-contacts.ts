@@ -23,24 +23,23 @@ export async function sourceContactsForAccount(account: HotAccount) {
       message: 'ICP contact criteria: titles, seniority, departments to target',
       mode: 'fast',
     }),
-    client.memory.smartDigest({
-      website_url: account.domain,
-      type: 'Company',
-      token_budget: 1500,
+    memory.retrieveDigest({
+      websiteUrl: account.domain,
+      maxTokens: 1500,
     }),
   ]);
 
-  const existingContacts = await client.memory.recall({
+  const existingContacts = await memory.retrieve({
     message: `contacts at ${account.company} ${account.domain}`,
-    type: 'Contact',
     limit: 10,
+    mode: 'fast',
   });
 
   const context = [
     guidelines.data?.compiledContext || '',
-    companyDigest.data?.compiledContext || '',
-    existingContacts.data?.length
-      ? `EXISTING CONTACTS:\n${existingContacts.data.map((c: any) => `- ${c.email}: ${c.content?.substring(0, 100)}`).join('\n')}`
+    (companyDigest as any)?.compiledContext || '',
+    (existingContacts as any)?.length
+      ? `EXISTING CONTACTS:\n${(existingContacts as any).map((c: any) => `- ${c.email}: ${c.content?.substring(0, 100)}`).join('\n')}`
       : 'No existing contacts at this company.',
     `TARGET TITLES: ${DISCOVERY_CONFIG.targetTitles.join(', ')}`,
     `TARGET SENIORITIES: ${DISCOVERY_CONFIG.targetSeniorities.join(', ')}`,

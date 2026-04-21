@@ -59,14 +59,12 @@ async function getContactDetails(email: string): Promise<{
   title: string;
   phone: string;
 } | null> {
-  const digest = await client.memory.smartDigest({
+  const digest = await memory.retrieveDigest({
     email,
-    type: 'Contact',
-    token_budget: 500,
-    include_properties: true,
+    maxTokens: 500,
   });
 
-  const props = (digest.data as any)?.properties || {};
+  const props = (digest as any)?.properties || {};
   const firstName = props.first_name?.value || '';
   const lastName = props.last_name?.value || '';
   const name = `${firstName} ${lastName}`.trim() || 'Unknown';
@@ -80,12 +78,13 @@ async function getContactDetails(email: string): Promise<{
 
 /** Check if we already conducted an interview for this purpose. */
 async function hasExistingInterview(email: string, purpose: InterviewPurpose): Promise<boolean> {
-  const history = await client.memory.recall({
+  const history = await memory.retrieve({
     message: `interview ${purpose} for ${email}`,
     limit: 5,
+    mode: 'fast',
   });
 
-  for (const item of history.data || []) {
+  for (const item of (history as any) || []) {
     const content = (item.content || '').toUpperCase();
     if (content.includes('[INTERVIEW GUIDE') && content.includes(purpose.toUpperCase())) {
       return true;

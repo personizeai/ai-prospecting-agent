@@ -24,32 +24,32 @@ export async function inferPreferencesForCustomer(
 ): Promise<{ email: string; stylePreferences: string; priceTier: string; segment: string; recommendations: string[] } | null> {
   // 1. Recall purchase history and profile
   const [purchaseHistory, contactDigest, productCatalog] = await Promise.all([
-    client.memory.recall({
+    memory.retrieve({
       message: `all purchases, orders, products bought by ${email}`,
       limit: 20,
+      mode: 'fast',
     }),
-    client.memory.smartDigest({
+    memory.retrieveDigest({
       email,
-      type: 'Contact',
-      token_budget: 1500,
+      maxTokens: 1500,
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: 'product catalog, product descriptions, categories, pricing',
-      type: 'Product',
       limit: 30,
+      mode: 'fast',
     }),
   ]);
 
-  const purchaseContent = purchaseHistory.data?.map((r: any) => r.content).join('\n') || '';
+  const purchaseContent = (purchaseHistory as any)?.map((r: any) => r.content).join('\n') || '';
   if (!purchaseContent) {
     log.info('No purchase history found, skipping', { email });
     return null;
   }
 
   const context = [
-    '## CUSTOMER PROFILE\n' + (contactDigest.data?.compiledContext || 'No profile data.'),
+    '## CUSTOMER PROFILE\n' + ((contactDigest as any)?.compiledContext || 'No profile data.'),
     '## PURCHASE HISTORY\n' + purchaseContent,
-    '## PRODUCT CATALOG (for reference)\n' + (productCatalog.data?.map((r: any) => r.content).join('\n') || 'No catalog data.'),
+    '## PRODUCT CATALOG (for reference)\n' + ((productCatalog as any)?.map((r: any) => r.content).join('\n') || 'No catalog data.'),
   ].join('\n\n---\n\n');
 
   // 2. AI inference

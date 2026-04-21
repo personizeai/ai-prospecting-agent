@@ -1,4 +1,5 @@
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import type { GeneratedEmail } from '../types.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { OUTREACH_EMAIL_SCHEMA, OUTREACH_EMAIL_DEFAULTS, ECOMMERCE_VARIABLES_SCHEMA, ECOMMERCE_VARIABLES_DEFAULTS } from '../lib/llm-schemas.js';
@@ -26,19 +27,19 @@ export async function assembleContext(email: string, roleId?: SalesRoleId): Prom
       ? getGovernanceForRole(roleId, governanceMessage)
       : client.ai.smartGuidelines({ message: governanceMessage, mode: 'full' })
           .then((r) => r.data?.compiledContext || ''),
-    client.memory.smartDigest({
+    memory.retrieveDigest({
       email,
-      type: 'Contact',
-      token_budget: 2000,
+      maxTokens: 2000,
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: `company information, buying signals, account status for the company of ${email}`,
-      type: 'Company',
       limit: 5,
+      mode: 'fast',
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: `previous outreach, emails sent, responses from ${email}`,
       limit: 5,
+      mode: 'fast',
     }),
   ]);
 
@@ -48,9 +49,9 @@ export async function assembleContext(email: string, roleId?: SalesRoleId): Prom
 
   return [
     '## GOVERNANCE\n' + (governanceContent || 'No governance configured.'),
-    '## CONTACT PROFILE\n' + (contactDigest.data?.compiledContext || ''),
-    '## COMPANY CONTEXT\n' + (companyContext.data?.map((r: any) => r.content).join('\n') || 'No company data.'),
-    '## PREVIOUS OUTREACH\n' + (previousOutreach.data?.map((r: any) => r.content).join('\n') || 'No previous outreach.'),
+    '## CONTACT PROFILE\n' + ((contactDigest as any)?.compiledContext || ''),
+    '## COMPANY CONTEXT\n' + ((companyContext as any)?.map((r: any) => r.content).join('\n') || 'No company data.'),
+    '## PREVIOUS OUTREACH\n' + ((previousOutreach as any)?.map((r: any) => r.content).join('\n') || 'No previous outreach.'),
   ].join('\n\n---\n\n');
 }
 
@@ -108,11 +109,12 @@ export async function generateOutreachForContact(
   // Resolve cadence — use override if provided, otherwise look up ICP score
   let cadence = cadenceOverride;
   if (!cadence) {
-    const scoreRecall = await client.memory.recall({
+    const scoreRecall = await memory.retrieve({
       message: `ICP score signal assessment for ${email}`,
       limit: 1,
+      mode: 'fast',
     });
-    const scoreContent = scoreRecall.data?.[0]?.content || '';
+    const scoreContent = (scoreRecall as any)?.[0]?.content || '';
     const scoreMatch = scoreContent.match(/icp_fit_score[":]*\s*(\d+)/i);
     const icpScore = scoreMatch ? parseInt(scoreMatch[1], 10) : undefined;
     cadence = getCadence(icpScore);
@@ -258,23 +260,23 @@ export async function generateEcommerceVariables(
   const [governanceContent, contactDigest, purchaseHistory, productCatalog] = await Promise.all([
     client.ai.smartGuidelines({ message: 'brand voice, ecommerce playbook, customer communication style', mode: 'full' })
       .then((r) => r.data?.compiledContext || ''),
-    client.memory.smartDigest({
+    memory.retrieveDigest({
       email,
-      type: 'Contact',
-      token_budget: 2000,
+      maxTokens: 2000,
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: `all purchases, orders, products bought, shopping preferences for ${email}`,
       limit: 20,
+      mode: 'fast',
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: 'product catalog, new arrivals, bestsellers, product descriptions',
-      type: 'Product',
       limit: 20,
+      mode: 'fast',
     }),
   ]);
 
-  const purchaseContent = purchaseHistory.data?.map((r: any) => r.content).join('\n') || '';
+  const purchaseContent = (purchaseHistory as any)?.map((r: any) => r.content).join('\n') || '';
   if (!purchaseContent) {
     log.info('No purchase history found, skipping variable generation', { email });
     return null;
@@ -282,9 +284,9 @@ export async function generateEcommerceVariables(
 
   let context = [
     '## GOVERNANCE\n' + (governanceContent || 'No governance configured.'),
-    '## CUSTOMER PROFILE\n' + (contactDigest.data?.compiledContext || ''),
+    '## CUSTOMER PROFILE\n' + ((contactDigest as any)?.compiledContext || ''),
     '## PURCHASE HISTORY\n' + purchaseContent,
-    '## PRODUCT CATALOG\n' + (productCatalog.data?.map((r: any) => r.content).join('\n') || 'No catalog data.'),
+    '## PRODUCT CATALOG\n' + ((productCatalog as any)?.map((r: any) => r.content).join('\n') || 'No catalog data.'),
   ].join('\n\n---\n\n');
 
   // Load campaign-specific governance if provided

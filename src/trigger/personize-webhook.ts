@@ -20,6 +20,7 @@
 
 import { task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { enrichContactsTask } from './enrich-contacts.js';
 import { reportFailure } from './error-handler.js';
@@ -156,13 +157,11 @@ async function processRecord(record: {
     if (pipeline.evaluateStrategy) {
       try {
         // Look up the contact's company domain
-        const digest = await client.memory.smartDigest({
+        const digest = await memory.retrieveDigest({
           email,
-          type: 'Contact',
-          token_budget: 200,
-          include_properties: true,
+          maxTokens: 200,
         });
-        const domain = (digest.data as any)?.properties?.company_website?.value || '';
+        const domain = (digest as any)?.properties?.company_website?.value || '';
 
         if (domain) {
           const { evaluateAccountStrategy } = await import('../pipelines/account-strategy.js');
@@ -177,13 +176,11 @@ async function processRecord(record: {
     // Match to campaign + start outreach for new high-score contacts
     if (pipeline.startSequence && isNew) {
       try {
-        const digest = await client.memory.smartDigest({
+        const digest = await memory.retrieveDigest({
           email,
-          type: 'Contact',
-          token_budget: 200,
-          include_properties: true,
+          maxTokens: 200,
         });
-        const props = (digest.data as any)?.properties || {};
+        const props = (digest as any)?.properties || {};
         const leadScore = Number(props.lead_score?.value) || 0;
         const icpMatch = props.icp_match?.value === true || props.icp_match?.value === 'true';
         const outreachStage = props.outreach_stage?.value || 'Not Started';

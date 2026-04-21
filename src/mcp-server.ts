@@ -583,12 +583,13 @@ server.tool(
   `Read the latest daily brief (same as what's posted to Slack). Useful at the start of a conversation.`,
   {},
   async () => {
-    const result = await client.memory.recall({
+    const result = await memory.retrieve({
       message: 'DAILY BRIEF prospecting agent report',
       limit: 1,
+      mode: 'fast',
     });
 
-    const brief = result.data?.[0]?.content || result.data?.results?.[0]?.content;
+    const brief = (result as any)?.[0]?.content || (result as any)?.results?.[0]?.content;
     if (!brief) {
       return { content: [{ type: 'text' as const, text: 'No daily brief found. The daily digest may not have run yet.' }] };
     }

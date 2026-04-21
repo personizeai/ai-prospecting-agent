@@ -19,6 +19,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { memoryCrud } from './personize-crud.js';
 import { logger } from './logger.js';
 
@@ -273,12 +274,9 @@ async function rewriteContext(email: string, context: string, author: string) {
 // ─── Read Functions ────────────────────────────────────────────────
 
 async function getDigest(email: string, tokenBudget = 3000) {
-  return client.memory.smartDigest({
+  return memory.retrieveDigest({
     email,
-    type: 'Contact',
-    token_budget: tokenBudget,
-    include_properties: true,
-    include_memories: true,
+    maxTokens: tokenBudget,
   });
 }
 

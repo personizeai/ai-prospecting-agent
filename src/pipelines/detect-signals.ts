@@ -30,15 +30,14 @@ async function shouldRescoreCompany(domain: string): Promise<RescoreDecision> {
   const { rescoring } = SIGNAL_CONFIG;
 
   try {
-    const recall = await client.memory.smartRecall({
-      query: 'SIGNAL ASSESSMENT icp_fit_score signal_strength recommended_action',
-      website_url: domain,
-      fast_mode: true,
-      min_score: 0.3,
+    const recall = await memory.retrieve({
+      message: 'SIGNAL ASSESSMENT icp_fit_score signal_strength recommended_action',
+      websiteUrl: domain,
       limit: 1,
+      mode: 'deep',
     });
 
-    const results = (recall.data as any)?.results ?? [];
+    const results = (recall as any)?.results ?? [];
     if (results.length === 0) {
       return { rescore: true, reason: 'never_scored' };
     }
@@ -125,15 +124,14 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
     }
 
     try {
-      const digest = await client.memory.smartDigest({
-        website_url: domain,
-        type: 'Company',
-        token_budget: 2000,
+      const digest = await memory.retrieveDigest({
+        websiteUrl: domain,
+        maxTokens: 2000,
       });
 
       const context = [
         guidelines.data?.compiledContext || '',
-        digest.data?.compiledContext || '',
+        (digest as any)?.compiledContext || '',
       ].join('\n\n---\n\n');
 
       const result = await client.ai.prompt({

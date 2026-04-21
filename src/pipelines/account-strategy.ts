@@ -113,7 +113,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
 
   const context = [
     guidelines.data?.compiledContext ? `## Governance & Guidelines\n${guidelines.data.compiledContext}` : '',
-    companyDigest.data?.compiledContext ? `## Company Profile\n${companyDigest.data.compiledContext}` : '',
+    (companyDigest as any)?.compiledContext ? `## Company Profile\n${(companyDigest as any).compiledContext}` : '',
     `## Contacts at This Account (${contacts.length})\n${contactSummaries}`,
     senderProfilesSummary ? `## Available Sender Profiles (${activeSenderProfiles.length})\n${senderProfilesSummary}` : '',
     previousStrategyText ? `## Previous Account Strategy\n${previousStrategyText}` : '',
@@ -164,7 +164,7 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
 
   // ── STEP 4: Persist strategy ────────────────────────────────────
 
-  const companyName = companyDigest.data?.properties?.company_name || domain;
+  const companyName = (companyDigest as any)?.properties?.company_name || domain;
 
   await accountWorkspace.setStrategy(domain, {
     accountStage: parsed.account_stage,

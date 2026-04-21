@@ -166,14 +166,14 @@ async function snapshotCurrent(
  */
 async function getHistory(id: string, limit = 10): Promise<GovernanceVersion[]> {
   try {
-    const result = await client.memory.recall({
+    const result = await memory.retrieve({
       message: `governance snapshot history for ${id}`,
-      type: 'governance-history',
       limit,
+      mode: 'fast',
     });
 
     const versions: GovernanceVersion[] = [];
-    for (const record of result.data || []) {
+    for (const record of (result as any) || []) {
       const props = (record as any).properties || {};
       if (props.governance_id?.value === id) {
         versions.push({

@@ -14,6 +14,7 @@
 
 import { task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { processInterviewResult } from '../pipelines/analyze-interview.js';
 import { reportFailure } from './error-handler.js';
 import { logger } from '../lib/logger.js';
@@ -29,19 +30,20 @@ async function recoverInterviewGuide(
   email: string,
   purpose: string,
 ): Promise<InterviewGuide> {
-  const history = await client.memory.recall({
+  const history = await memory.retrieve({
     message: `interview guide ${purpose} for ${email}`,
     limit: 3,
+    mode: 'fast',
   });
 
   // Try to extract topic info from the stored guide
-  const guideMemory = (history.data || []).find((item) => {
+  const guideMemory = ((history as any) || []).find((item: any) => {
     const content = (item.content || '').toUpperCase();
     return content.includes('[INTERVIEW GUIDE') && content.includes(purpose.toUpperCase());
   });
 
   const topicsStr = guideMemory?.content?.match(/Topics: (.+)/)?.[1] || '';
-  const topics: InterviewTopic[] = topicsStr.split(',').map((t) => ({
+  const topics: InterviewTopic[] = topicsStr.split(',').map((t: string) => ({
     topic: t.trim(),
     objective: '',
     primaryQuestion: '',
@@ -50,7 +52,7 @@ async function recoverInterviewGuide(
   }));
 
   const gapsStr = guideMemory?.content?.match(/Knowledge Gaps: (.+)/)?.[1] || '';
-  const knowledgeGaps = gapsStr.split(',').map((g) => g.trim()).filter(Boolean);
+  const knowledgeGaps = gapsStr.split(',').map((g: string) => g.trim()).filter(Boolean);
 
   return {
     email,

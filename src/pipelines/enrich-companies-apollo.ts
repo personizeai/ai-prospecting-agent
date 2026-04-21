@@ -50,13 +50,14 @@ export async function enrichCompanies(): Promise<EnrichmentRunResult> {
 
     // Check if already enriched
     if (ENRICHMENT_CONFIG.skipAlreadyEnriched) {
-      const existing = await client.memory.recall({
+      const existing = await memory.retrieve({
         message: `[ENRICHMENT from Apollo] ${domain}`,
-        website_url: domain,
+        websiteUrl: domain,
         limit: 1,
+        mode: 'fast',
       });
 
-      if (existing.data?.length) {
+      if ((existing as any)?.length) {
         log.info('Skipping already enriched company', { domain });
         result.skipped++;
         continue;

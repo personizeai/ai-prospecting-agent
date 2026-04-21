@@ -37,13 +37,13 @@ export async function researchCompany(
 
   // ── Dedup: skip if researched recently ───────────────────────────
   if (TAVILY_CONFIG.skipIfResearchedWithinDays > 0) {
-    const existing = await client.memory.recall({
-      query: `[WEB RESEARCH] ${domain}`,
-      website_url: domain,
-      filters: { tags: ['web-research', 'tavily'] },
+    const existing = await memory.retrieve({
+      message: `[WEB RESEARCH] ${domain}`,
+      websiteUrl: domain,
+      mode: 'fast',
     });
 
-    const recent = (existing.data || []).find((m: any) => {
+    const recent = ((existing as any) || []).find((m: any) => {
       const content = String(m.content || '');
       if (!content.includes('[WEB RESEARCH]')) return false;
       const dateMatch = content.match(/Researched:\s*(\d{4}-\d{2}-\d{2})/);

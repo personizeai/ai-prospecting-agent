@@ -96,12 +96,13 @@ async function collectAngleMetrics(): Promise<AnglePerformance[]> {
 
   try {
     // Query outreach-log records for angle data
-    const outreachLogs = await client.memory.recall({
+    const outreachLogs = await memory.retrieve({
       message: 'outreach sent angle reply opened clicked',
       limit: 200,
+      mode: 'fast',
     });
 
-    for (const record of outreachLogs.data || []) {
+    for (const record of (outreachLogs as any) || []) {
       const content = (record as any).content || '';
       const props = (record as any).properties || {};
 
@@ -142,14 +143,15 @@ async function collectAngleMetrics(): Promise<AnglePerformance[]> {
 
 async function collectContentMetrics(): Promise<ContentPerformance> {
   try {
-    const performanceData = await client.memory.recall({
+    const performanceData = await memory.retrieve({
       message: 'blog post performance views per day published',
       limit: 100,
+      mode: 'fast',
     });
 
     const posts: Array<{ title: string; views: number; viewsPerDay: number; ageDays: number }> = [];
 
-    for (const record of performanceData.data || []) {
+    for (const record of (performanceData as any) || []) {
       const content = (record as any).content || '';
       if (!content.includes('[PERFORMANCE]')) continue;
 
@@ -191,12 +193,13 @@ async function detectCrossSignals(): Promise<StrategyMetrics['crossSignals']> {
 
   try {
     // Find topics/themes mentioned in positive reply analyses
-    const replyNotes = await client.memory.recall({
+    const replyNotes = await memory.retrieve({
       message: 'positive reply analysis key points topics mentioned interested',
       limit: 50,
+      mode: 'fast',
     });
 
-    for (const record of replyNotes.data || []) {
+    for (const record of (replyNotes as any) || []) {
       const content = String((record as any).content || '');
       if (content.toLowerCase().includes('positive') || content.toLowerCase().includes('interested')) {
         // Extract key phrases (simple heuristic — the meta-agent will do deeper analysis)
@@ -208,12 +211,13 @@ async function detectCrossSignals(): Promise<StrategyMetrics['crossSignals']> {
     }
 
     // Find top content topics (from CMS analytics already synced)
-    const topContent = await client.memory.recall({
+    const topContent = await memory.retrieve({
       message: 'blog post high performance views popular',
       limit: 10,
+      mode: 'fast',
     });
 
-    for (const record of topContent.data || []) {
+    for (const record of (topContent as any) || []) {
       const content = String((record as any).content || '');
       const titleMatch = content.match(/"([^"]+)"/);
       if (titleMatch) {

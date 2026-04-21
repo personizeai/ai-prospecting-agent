@@ -61,7 +61,7 @@ export async function analyzeReply(
 
   const context = [
     '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
-    '## LEAD WORKSPACE\n' + (digest.data?.compiledContext || ''),
+    '## LEAD WORKSPACE\n' + ((digest as any)?.compiledContext || ''),
     '## INCOMING REPLY\n' +
       (replySubject ? `Subject: ${replySubject}\n` : '') +
       `Body:\n${replyBody}`,

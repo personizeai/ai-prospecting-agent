@@ -15,6 +15,7 @@
 
 import { task, schedules } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { INTERVIEW_CONFIG, CALL_CONFIG } from '../config/prospecting.config.js';
 import { generateInterviewGuide } from '../pipelines/generate-interview-guide.js';
 import { conductInterview, getRemainingInterviewCapacity } from '../pipelines/conduct-interview.js';
@@ -150,16 +151,16 @@ export const interviewHealthCheckScheduler = schedules.task({
 
     // Find customers due for health check
     // Look for contacts with lead_status = 'Customer' who haven't had a health check recently
-    const customers = await client.memory.recall({
+    const customers = await memory.retrieve({
       message: 'active customer accounts due for health check, no recent interview',
-      type: 'Contact',
       limit: 20,
+      mode: 'fast',
     });
 
     let scheduled = 0;
     let skipped = 0;
 
-    for (const customer of customers.data || []) {
+    for (const customer of (customers as any) || []) {
       if (getRemainingInterviewCapacity() <= 0) {
         log.info('Interview daily limit reached, stopping scheduler');
         break;
@@ -172,12 +173,13 @@ export const interviewHealthCheckScheduler = schedules.task({
       }
 
       // Check if we already did a health check recently (within 30 days)
-      const recentChecks = await client.memory.recall({
+      const recentChecks = await memory.retrieve({
         message: `interview customer_health for ${email}`,
         limit: 1,
+        mode: 'fast',
       });
 
-      const hasRecentCheck = (recentChecks.data || []).some((item) => {
+      const hasRecentCheck = ((recentChecks as any) || []).some((item: any) => {
         const content = (item.content || '').toUpperCase();
         if (!content.includes('[INTERVIEW') || !content.includes('CUSTOMER_HEALTH')) return false;
         // Check if within last 30 days

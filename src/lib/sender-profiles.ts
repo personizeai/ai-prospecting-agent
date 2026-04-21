@@ -21,6 +21,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { imapAccounts } from './imap-accounts.js';
 import { logger } from './logger.js';
 import type { ImapAccount } from './imap-service.js';
@@ -298,13 +299,11 @@ async function assignSender(opts: {
  */
 async function resolveForContact(contactEmail: string): Promise<ResolvedSender | null> {
   try {
-    const digest = await client.memory.smartDigest({
+    const digest = await memory.retrieveDigest({
       email: contactEmail,
-      type: 'Contact',
-      token_budget: 100,
-      include_properties: true,
+      maxTokens: 100,
     });
-    const profileId = (digest.data as any)?.properties?.assigned_sender?.value;
+    const profileId = (digest as any)?.properties?.assigned_sender?.value;
     if (!profileId) return null;
 
     const profile = await getById(profileId);

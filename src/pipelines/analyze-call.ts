@@ -115,7 +115,7 @@ export async function analyzeCall(result: CallResult): Promise<CallAnalysis> {
 
   const context = [
     '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
-    '## LEAD WORKSPACE\n' + (digest.data?.compiledContext || ''),
+    '## LEAD WORKSPACE\n' + ((digest as any)?.compiledContext || ''),
     '## CALL DETAILS',
     `Provider: ${result.provider}`,
     `Duration: ${result.durationSecs} seconds`,

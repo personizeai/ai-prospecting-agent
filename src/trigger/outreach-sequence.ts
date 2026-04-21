@@ -1,5 +1,6 @@
 import { task, wait } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { generateOutreachForContact } from '../pipelines/generate-outreach.js';
 import { sendAndLog } from '../delivery/hubspot-deliver.js';
@@ -237,13 +238,11 @@ export const fullSequenceTask = task({
         const { generateLinkedInMessage } = await import('../pipelines/generate-linkedin-message.js');
         const { sendViaLinkedIn } = await import('../delivery/linkedin.js');
 
-        const contactData = await client.memory.smartDigest({
+        const contactData = await memory.retrieveDigest({
           email: contactEmail,
-          type: 'Contact',
-          token_budget: 300,
-          include_properties: true,
+          maxTokens: 300,
         });
-        const linkedinUrl = (contactData.data as any)?.properties?.linkedin_url?.value || '';
+        const linkedinUrl = (contactData as any)?.properties?.linkedin_url?.value || '';
 
         if (linkedinUrl) {
           const linkedInMsg = await generateLinkedInMessage(contactEmail, String(linkedinUrl), cadence.maxEmails + 1, dryRun);

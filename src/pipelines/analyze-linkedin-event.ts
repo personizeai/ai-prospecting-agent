@@ -153,7 +153,7 @@ async function analyzeLinkedInReply(event: LinkedInEvent): Promise<LinkedInEvent
 
   const context = [
     '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
-    '## LEAD WORKSPACE\n' + (digest.data?.compiledContext || ''),
+    '## LEAD WORKSPACE\n' + ((digest as any)?.compiledContext || ''),
     '## LINKEDIN REPLY',
     `From: ${event.firstName} ${event.lastName} (${event.profileUrl})`,
     event.company ? `Company: ${event.company}` : '',

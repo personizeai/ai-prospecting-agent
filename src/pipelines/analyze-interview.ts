@@ -101,7 +101,7 @@ export async function analyzeInterview(
 
   const context = [
     '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
-    '## LEAD WORKSPACE\n' + (digest.data?.compiledContext || ''),
+    '## LEAD WORKSPACE\n' + ((digest as any)?.compiledContext || ''),
     '## INTERVIEW DETAILS',
     `Purpose: ${guide.purpose}`,
     `Provider: ${result.provider}`,
