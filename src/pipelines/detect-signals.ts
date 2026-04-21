@@ -34,7 +34,7 @@ async function shouldRescoreCompany(domain: string): Promise<RescoreDecision> {
       message: 'SIGNAL ASSESSMENT icp_fit_score signal_strength recommended_action',
       websiteUrl: domain,
       limit: 1,
-      mode: 'deep',
+      mode: 'fast',
     });
 
     const results = (recall as any)?.results ?? [];
