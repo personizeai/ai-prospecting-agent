@@ -144,7 +144,6 @@ async function syncContacts(conn: any) {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   log.info('Contact sync complete', { totalSynced });
@@ -211,7 +210,6 @@ async function syncAccounts(conn: any) {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   log.info('Account sync complete', { totalSynced });

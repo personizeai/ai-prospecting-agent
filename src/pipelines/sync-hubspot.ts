@@ -150,7 +150,6 @@ async function syncHubSpotContacts() {
       } catch (err) {
         log.error('Failed to sync contact batch', { batchStart: i, error: err instanceof Error ? err.message : String(err) });
       }
-      await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
     }
 
     after = nextAfter;
@@ -234,7 +233,6 @@ async function syncHubSpotCompanies() {
       } catch (err) {
         log.error('Failed to sync company batch', { batchStart: i, error: err instanceof Error ? err.message : String(err) });
       }
-      await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
     }
 
     after = nextAfter;

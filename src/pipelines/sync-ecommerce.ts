@@ -1,7 +1,7 @@
 import { parse } from 'csv-parse/sync';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { client } from '../config.js';
 import { memory } from '../lib/memory.js';
 import { CSV_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
@@ -42,7 +42,6 @@ async function batchMemorize(records: any[], label: string): Promise<number> {
     } catch (err) {
       log.error('Failed to sync batch', { label, batchStart: i, error: err instanceof Error ? err.message : String(err) });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   return totalSynced;
@@ -167,43 +166,41 @@ async function syncPurchases(): Promise<{ memorized: number; customersUpdated: n
 
   const memorized = await batchMemorize(purchaseRecords, 'purchases');
 
-  // 2. Update aggregate stats per customer
-  let customersUpdated = 0;
-  for (const [email, purchases] of customerPurchases) {
+  // 2. Update aggregate stats per customer — build items array, then saveBatch in chunks of 100
+  const aggregateItems = [...customerPurchases.entries()].map(([email, purchases]) => {
     const totalOrders = new Set(purchases.map((p) => p.order_id || `${p.email}-${p.purchase_date}`)).size;
     const totalSpent = purchases.reduce((sum, p) => sum + (Number(p.amount) || 0) * (Number(p.quantity) || 1), 0);
     const productIds = [...new Set(purchases.map((p) => p.product_id))];
     const categories = [...new Set(purchases.map((p) => p.category).filter(Boolean))];
-
-    const dates = purchases
-      .map((p) => p.purchase_date)
-      .filter(Boolean)
-      .sort();
+    const dates = purchases.map((p) => p.purchase_date).filter(Boolean).sort();
     const firstPurchase = dates[0] || '';
     const lastPurchase = dates[dates.length - 1] || '';
 
-    try {
-      await memory.save({
-        email,
-        collectionName: 'contacts',
-        content: `[PURCHASE SUMMARY] ${totalOrders} orders, $${totalSpent.toFixed(2)} total spent. Categories: ${categories.join(', ')}. Last purchase: ${lastPurchase}.`,
-        properties: {
-          total_orders: { value: totalOrders, extractMemories: false },
-          total_spent: { value: Math.round(totalSpent * 100) / 100, extractMemories: false },
-          first_purchase_date: { value: firstPurchase, extractMemories: false },
-          last_purchase_date: { value: lastPurchase, extractMemories: false },
-          purchased_product_ids: { value: productIds, extractMemories: false },
-          favorite_categories: { value: categories, extractMemories: false },
-          source: { value: 'Ecommerce CSV', extractMemories: false },
-        },
-        tags: ['ecommerce', 'customer', 'purchase-summary'],
-      });
-      customersUpdated++;
-    } catch (err) {
-      log.error('Failed to update customer aggregate', { email, error: err instanceof Error ? err.message : String(err) });
-    }
+    return {
+      email,
+      collectionName: 'contacts',
+      content: `[PURCHASE SUMMARY] ${totalOrders} orders, $${totalSpent.toFixed(2)} total spent. Categories: ${categories.join(', ')}. Last purchase: ${lastPurchase}.`,
+      properties: {
+        total_orders: { value: totalOrders, extractMemories: false },
+        total_spent: { value: Math.round(totalSpent * 100) / 100, extractMemories: false },
+        first_purchase_date: { value: firstPurchase, extractMemories: false },
+        last_purchase_date: { value: lastPurchase, extractMemories: false },
+        purchased_product_ids: { value: productIds, extractMemories: false },
+        favorite_categories: { value: categories, extractMemories: false },
+        source: { value: 'Ecommerce CSV', extractMemories: false },
+      },
+      tags: ['ecommerce', 'customer', 'purchase-summary'],
+    };
+  });
 
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
+  let customersUpdated = 0;
+  for (let i = 0; i < aggregateItems.length; i += 100) {
+    try {
+      await memory.saveBatch(aggregateItems.slice(i, i + 100).map((r) => ({ ...r, enhanced: true })));
+      customersUpdated += Math.min(100, aggregateItems.length - i);
+    } catch (err) {
+      log.error('Failed to update customer aggregates batch', { batchStart: i, error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   log.info('Purchase sync complete', { memorized, customersUpdated });

@@ -1,7 +1,7 @@
 import { parse } from 'csv-parse/sync';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { client } from '../config.js';
 import { memory } from '../lib/memory.js';
 import { CSV_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
@@ -32,7 +32,7 @@ function parseCSVFile<T extends object>(filePath: string): T[] {
   }) as T[];
 }
 
-/** Memorize records in batches of 50 with rate-limit pauses. */
+/** Memorize records in batches of 50. SDK handles 429 retries internally. */
 async function batchMemorize(records: any[], label: string): Promise<number> {
   let totalSynced = 0;
 
@@ -45,7 +45,6 @@ async function batchMemorize(records: any[], label: string): Promise<number> {
     } catch (err) {
       log.error('Failed to sync batch', { label, batchStart: i, error: err instanceof Error ? err.message : String(err) });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   return totalSynced;
