@@ -878,6 +878,8 @@ The RECALL → GOVERN → ACT → STORE operating loop is a single Personize gui
 | Document | What It Covers |
 |---|---|
 | [SETUP-GUIDE.md](SETUP-GUIDE.md) | Step-by-step setup instructions (8 phases) |
+| [UPGRADING.md](UPGRADING.md) | How to pull latest changes into your fork without breaking your setup |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 | [PLAN.md](PLAN.md) | Human-owned strategic intent scaffold (vision, goals, campaigns, decisions) |
 | [STATUS.md](STATUS.md) | Agent-regenerated live system state (run `npm run status`) |
 | [docs/plans/2026-04-21-agent-native-convergence.md](docs/plans/2026-04-21-agent-native-convergence.md) | 6-phase plan that converged Revenue OS toward the autonomous-agent operating model |

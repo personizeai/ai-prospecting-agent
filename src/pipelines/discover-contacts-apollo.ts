@@ -28,11 +28,13 @@ export async function discoverContactsForAccount(account: HotAccount): Promise<n
 
   // Dedup: skip if we discovered contacts at this company recently
   try {
+    // Upstream PR #7 used prefer_recent / min_score on smartRecall; SDK 0.9.x
+    // retrieve does not expose those. Relying on semantic match + mode:'fast'.
     const recent = await memory.retrieve({
       message: `CONTACT DISCOVERY via Apollo ${account.domain}`,
       websiteUrl: account.domain,
       limit: 1,
-      mode: 'deep',
+      mode: 'fast',
     });
 
     const results = (recent as any)?.results ?? [];
