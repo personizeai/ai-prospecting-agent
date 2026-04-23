@@ -1,56 +1,69 @@
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import type { GeneratedEmail } from '../types.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
-import { OUTREACH_EMAIL_SCHEMA, OUTREACH_EMAIL_DEFAULTS } from '../lib/llm-schemas.js';
+import { OUTREACH_EMAIL_SCHEMA, OUTREACH_EMAIL_DEFAULTS, ECOMMERCE_VARIABLES_SCHEMA, ECOMMERCE_VARIABLES_DEFAULTS } from '../lib/llm-schemas.js';
 import { validateEmailHtml } from '../lib/email-html.js';
-import { getCadence, type CadenceDefinition, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
+import { getCadence, type CadenceDefinition, ACCOUNT_STRATEGY_CONFIG, SALES_ORG_CONFIG } from '../config/prospecting.config.js';
 import { AGENT_MODE } from '../config/prospecting.config.js';
 import { accountPreflight } from './account-preflight.js';
+import { getGovernanceForRole } from '../lib/role-governance.js';
 import { logger } from '../lib/logger.js';
 import { workspace } from '../lib/workspace.js';
+import type { SalesRoleId } from '../config/sales-roles.js';
 
-/** Assemble full context: governance + contact + company + previous outreach. */
-export async function assembleContext(email: string): Promise<string> {
-  const [guidelines, contactDigest, companyContext, previousOutreach] = await Promise.all([
-    client.ai.smartGuidelines({
-      message: 'brand voice, outreach playbook, ICP definition, competitor policy',
-      mode: 'full',
-    }),
-    client.memory.smartDigest({
+/**
+ * Assemble full context: governance + contact + company + previous outreach.
+ *
+ * When roleId is provided and SALES_ORG is enabled, fetches role-specific
+ * governance overlays (e.g., SDR challenger tone, AE consultative tone).
+ */
+export async function assembleContext(email: string, roleId?: SalesRoleId): Promise<string> {
+  const governanceMessage = 'brand voice, outreach playbook, ICP definition, competitor policy';
+
+  const [governanceContent, contactDigest, companyContext, previousOutreach] = await Promise.all([
+    // Use role-aware governance when available
+    (roleId && SALES_ORG_CONFIG.enabled)
+      ? getGovernanceForRole(roleId, governanceMessage)
+      : client.context.retrieve({ message: governanceMessage, types: ['guideline'], mode: 'full' })
+          .then((r) => r.data?.compiledContext || ''),
+    memory.retrieveDigest({
       email,
-      type: 'Contact',
-      token_budget: 2000,
+      maxTokens: 2000,
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: `company information, buying signals, account status for the company of ${email}`,
-      type: 'Company',
       limit: 5,
+      mode: 'fast',
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: `previous outreach, emails sent, responses from ${email}`,
       limit: 5,
+      mode: 'fast',
     }),
   ]);
 
-  const governanceContent = guidelines.data?.compiledContext || '';
   if (!governanceContent) {
     logger.warn('Governance is empty — emails will generate without brand voice, ICP, or playbook rules. Run: npm run setup:governance');
   }
 
   return [
     '## GOVERNANCE\n' + (governanceContent || 'No governance configured.'),
-    '## CONTACT PROFILE\n' + (contactDigest.data?.compiledContext || ''),
-    '## COMPANY CONTEXT\n' + (companyContext.data?.map((r: any) => r.content).join('\n') || 'No company data.'),
-    '## PREVIOUS OUTREACH\n' + (previousOutreach.data?.map((r: any) => r.content).join('\n') || 'No previous outreach.'),
+    '## CONTACT PROFILE\n' + ((contactDigest as any)?.compiledContext || ''),
+    '## COMPANY CONTEXT\n' + ((companyContext as any)?.map((r: any) => r.content).join('\n') || 'No company data.'),
+    '## PREVIOUS OUTREACH\n' + ((previousOutreach as any)?.map((r: any) => r.content).join('\n') || 'No previous outreach.'),
   ].join('\n\n---\n\n');
 }
 
 /** Generate the next email in the sequence for a contact.
- *  Cadence (pace + length) is auto-selected from ICP score, or passed explicitly. */
+ *  Cadence (pace + length) is auto-selected from ICP score, or passed explicitly.
+ *  When campaignId is provided, loads campaign-specific governance overrides. */
 export async function generateOutreachForContact(
   email: string,
   dryRun = true,
   cadenceOverride?: CadenceDefinition,
+  roleId?: SalesRoleId,
+  campaignId?: string,
 ): Promise<GeneratedEmail | null> {
   const log = logger.child({ pipeline: 'generate-outreach' });
 
@@ -96,11 +109,12 @@ export async function generateOutreachForContact(
   // Resolve cadence — use override if provided, otherwise look up ICP score
   let cadence = cadenceOverride;
   if (!cadence) {
-    const scoreRecall = await client.memory.recall({
+    const scoreRecall = await memory.retrieve({
       message: `ICP score signal assessment for ${email}`,
       limit: 1,
+      mode: 'fast',
     });
-    const scoreContent = scoreRecall.data?.[0]?.content || '';
+    const scoreContent = (scoreRecall as any)?.[0]?.content || '';
     const scoreMatch = scoreContent.match(/icp_fit_score[":]*\s*(\d+)/i);
     const icpScore = scoreMatch ? parseInt(scoreMatch[1], 10) : undefined;
     cadence = getCadence(icpScore);
@@ -144,9 +158,29 @@ export async function generateOutreachForContact(
   const nextStep = contactState.emailsSent + 1;
   log.info('Generating email', { email, step: nextStep, maxEmails: cadence.maxEmails, cadence: cadence.label });
 
-  let context = await assembleContext(email);
+  let context = await assembleContext(email, roleId);
   if (accountContext) {
     context = `## ACCOUNT STRATEGY CONTEXT\n${accountContext}\n\n---\n\n${context}`;
+  }
+
+  // Load campaign-specific governance overrides (takes priority over org governance)
+  if (campaignId) {
+    try {
+      const { campaigns: campaignLib } = await import('../lib/campaign.js');
+      const config = await campaignLib.getConfig(campaignId);
+      if (config?.governanceOverrides?.length) {
+        const campaignGov = await client.context.retrieve({
+          message: config.governanceOverrides.join(', '),
+          types: ['guideline'],
+          mode: 'full',
+        });
+        if (campaignGov.data?.compiledContext) {
+          context = `## CAMPAIGN GOVERNANCE (${config.name})\n${campaignGov.data.compiledContext}\n\n---\n\n${context}`;
+        }
+      }
+    } catch (err) {
+      log.warn('Campaign governance load failed, using org defaults', { campaignId, error: (err as Error).message });
+    }
   }
 
   // Use agent mode terminology for multi-vertical support
@@ -210,6 +244,137 @@ ${buildJsonInstruction(OUTREACH_EMAIL_SCHEMA)}`,
   }
 
   return { email, step: nextStep, subject, bodyHtml, bodyText, angle };
+}
+
+/** Generate ecommerce personalization variables for a customer.
+ *  Returns structured variables (headline, paragraphs, image prompt, CTA, product recommendations)
+ *  that can be injected into any ESP template (Klaviyo, Mailchimp, Braze, etc.).
+ *  Uses purchase history + inferred preferences for deep personalization. */
+export async function generateEcommerceVariables(
+  email: string,
+  campaignType: 'winback' | 'post-purchase' | 'promotional' | 'seasonal' = 'winback',
+  campaignId?: string,
+): Promise<import('../types.js').EcommerceVariables | null> {
+  const log = logger.child({ pipeline: 'generate-ecommerce-variables' });
+
+  // Assemble context with purchase history emphasis
+  const [governanceContent, contactDigest, purchaseHistory, productCatalog] = await Promise.all([
+    client.context.retrieve({ message: 'brand voice, ecommerce playbook, customer communication style', types: ['guideline'], mode: 'full' })
+      .then((r) => r.data?.compiledContext || ''),
+    memory.retrieveDigest({
+      email,
+      maxTokens: 2000,
+    }),
+    memory.retrieve({
+      message: `all purchases, orders, products bought, shopping preferences for ${email}`,
+      limit: 20,
+      mode: 'fast',
+    }),
+    memory.retrieve({
+      message: 'product catalog, new arrivals, bestsellers, product descriptions',
+      limit: 20,
+      mode: 'fast',
+    }),
+  ]);
+
+  const purchaseContent = (purchaseHistory as any)?.map((r: any) => r.content).join('\n') || '';
+  if (!purchaseContent) {
+    log.info('No purchase history found, skipping variable generation', { email });
+    return null;
+  }
+
+  let context = [
+    '## GOVERNANCE\n' + (governanceContent || 'No governance configured.'),
+    '## CUSTOMER PROFILE\n' + ((contactDigest as any)?.compiledContext || ''),
+    '## PURCHASE HISTORY\n' + purchaseContent,
+    '## PRODUCT CATALOG\n' + ((productCatalog as any)?.map((r: any) => r.content).join('\n') || 'No catalog data.'),
+  ].join('\n\n---\n\n');
+
+  // Load campaign-specific governance if provided
+  if (campaignId) {
+    try {
+      const { campaigns: campaignLib } = await import('../lib/campaign.js');
+      const config = await campaignLib.getConfig(campaignId);
+      if (config?.governanceOverrides?.length) {
+        const campaignGov = await client.context.retrieve({
+          message: config.governanceOverrides.join(', '),
+          types: ['guideline'],
+          mode: 'full',
+        });
+        if (campaignGov.data?.compiledContext) {
+          context = `## CAMPAIGN GOVERNANCE (${config.name})\n${campaignGov.data.compiledContext}\n\n---\n\n${context}`;
+        }
+      }
+    } catch (err) {
+      log.warn('Campaign governance load failed', { campaignId, error: (err as Error).message });
+    }
+  }
+
+  const campaignPrompts: Record<string, string> = {
+    winback: `This is a WIN-BACK email. The customer hasn't purchased recently. Make them feel remembered, not guilt-tripped. Reference their SPECIFIC past purchases and preferences. Create excitement about what's new that matches their taste. The tone should be warm and personal — like a favorite store clerk who remembers them.`,
+    'post-purchase': `This is a POST-PURCHASE email. The customer just bought something. Help them get value from their purchase and naturally introduce complementary products. The tone should be helpful, not pushy. Reference their specific order.`,
+    promotional: `This is a PROMOTIONAL email. Feature products that match this customer's specific style, price range, and category preferences. Make it feel curated FOR THEM, not a blast. Reference their purchase history to justify why these picks matter.`,
+    seasonal: `This is a SEASONAL campaign. Connect the season/occasion to this customer's specific style and preferences. Reference past purchases to make seasonal picks feel personal, not generic.`,
+  };
+
+  const result = await client.ai.prompt({
+    ...aiOptions,
+    context,
+    instructions: [
+      {
+        prompt: `Analyze this customer deeply. Identify: their style profile, favorite categories, price sensitivity, what they've been buying, what they haven't tried yet, and what would genuinely excite them. Note any patterns (seasonal buying, brand loyalty, category expansion).`,
+        maxSteps: 2,
+      },
+      {
+        prompt: `Generate personalized email variables for this customer.
+
+${campaignPrompts[campaignType] || campaignPrompts.winback}
+
+IMPORTANT:
+- Every variable must reference something SPECIFIC about THIS customer (not generic marketing copy)
+- Product recommendations must come from the catalog AND match their style/price tier
+- The image prompt should describe a lifestyle scene matching their aesthetic
+- Subject line must be personal enough that they stop scrolling
+
+${buildJsonInstruction(ECOMMERCE_VARIABLES_SCHEMA)}`,
+        maxSteps: 3,
+      },
+    ],
+    evaluate: true,
+    evaluationCriteria: `Variables must: (1) reference at least 2 specific facts about the customer's purchase history or preferences, (2) follow brand voice, (3) include product recommendations from the actual catalog, (4) not invent purchases or facts, (5) feel personal — not like a template.`,
+  });
+
+  const output = String(result.data || '');
+  const { data: parsed, usedFallback, errors } = parseLLMJson(output, ECOMMERCE_VARIABLES_SCHEMA, ECOMMERCE_VARIABLES_DEFAULTS);
+
+  if (usedFallback) {
+    log.warn('LLM returned non-JSON, used regex fallback', { email });
+  }
+  if (errors.length > 0) {
+    log.warn('Parse warnings', { email, warnings: errors.join(', ') });
+  }
+
+  if (!parsed.headline || !parsed.short_paragraph) {
+    log.error('Variable generation produced empty output', { email, rawOutput: output.substring(0, 500) });
+    return null;
+  }
+
+  log.info('Ecommerce variables generated', { email, campaignType, angle: parsed.angle, products: parsed.product_recommendations.length });
+
+  return {
+    email,
+    campaignType,
+    headline: parsed.headline,
+    subheadline: parsed.subheadline,
+    shortParagraph: parsed.short_paragraph,
+    longParagraph: parsed.long_paragraph,
+    imagePrompt: parsed.image_prompt,
+    ctaText: parsed.cta_text,
+    productRecommendations: parsed.product_recommendations,
+    angle: parsed.angle,
+    subjectLine: parsed.subject_line,
+    previewText: parsed.preview_text,
+  };
 }
 
 /** Generate a 30-second cold call opening script for a contact. */

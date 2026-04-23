@@ -1,5 +1,6 @@
 import { task, wait } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { generateOutreachForContact } from '../pipelines/generate-outreach.js';
 import { sendAndLog } from '../delivery/hubspot-deliver.js';
@@ -7,6 +8,7 @@ import { notifySlack } from '../delivery/slack-notify.js';
 import { reportFailure } from './error-handler.js';
 import { getCadence, getCadenceName } from '../config/prospecting.config.js';
 import { senderProfiles } from '../lib/sender-profiles.js';
+import { outreachLog } from '../lib/outreach-log.js';
 
 /**
  * Check workspace for stop signals: opt-out, reply, bounce, or issue.
@@ -40,8 +42,9 @@ async function recordEmailSent(
   cadence: { maxEmails: number; label: string },
   senderProfileId?: string,
   senderEmail?: string,
+  messageId?: string,
 ) {
-  // Record the message with actual sender tracking
+  // Record the message with actual sender tracking + messageId for attribution
   await workspace.addMessageSent(contactEmail, {
     channel: 'email',
     subject: generated.subject,
@@ -51,6 +54,7 @@ async function recordEmailSent(
     sentBy: 'outreach-agent',
     senderProfileId,
     senderEmail,
+    messageId,
     status: dryRun ? 'sent' : 'delivered',
   });
 
@@ -134,7 +138,7 @@ export const fullSequenceTask = task({
   onFailure: async (payload, error, { ctx }) => {
     await reportFailure(`full-outreach-sequence (${payload.contactEmail})`, ctx.run.id, error);
   },
-  run: async ({ contactEmail, crmId, icpScore }: { contactEmail: string; crmId: string; icpScore?: number }) => {
+  run: async ({ contactEmail, crmId, icpScore, campaignId }: { contactEmail: string; crmId: string; icpScore?: number; campaignId?: string }) => {
     const dryRun = process.env.DRY_RUN !== 'false';
     const cadence = getCadence(icpScore);
     const cadenceName = getCadenceName(icpScore);
@@ -160,8 +164,8 @@ export const fullSequenceTask = task({
         };
       }
 
-      // Generate and send the email
-      const generated = await generateOutreachForContact(contactEmail, dryRun, cadence);
+      // Generate and send the email (campaign-aware governance if campaignId provided)
+      const generated = await generateOutreachForContact(contactEmail, dryRun, cadence, undefined, campaignId);
       if (!generated) {
         await workspace.addUpdate(contactEmail, {
           author: 'outreach-agent',
@@ -182,24 +186,39 @@ export const fullSequenceTask = task({
       // Resolve sender profile for this contact (if assigned)
       let senderProfileId: string | undefined;
       let senderEmail: string | undefined;
+      let messageId: string | undefined;
 
       if (!dryRun) {
         const resolved = await senderProfiles.resolveForContact(contactEmail);
         if (resolved) {
           // Send via the assigned sender's SMTP account
           const { sendViaSmtp } = await import('../delivery/hubspot-deliver.js');
-          await sendViaSmtp(generated, resolved.account.id);
+          const smtpResult = await sendViaSmtp(generated, resolved.account.id);
           senderProfileId = resolved.profile.id;
           senderEmail = resolved.account.email;
+          messageId = smtpResult.messageId;
           await senderProfiles.recordSend(resolved.profile.id);
         } else {
           // Fallback to default provider (Gmail API, SendGrid, etc.)
           const result = await sendAndLog(generated, crmId);
           senderEmail = result.senderEmail;
+          messageId = result.messageId;
         }
       }
 
-      await recordEmailSent(contactEmail, generated, dryRun, cadence, senderProfileId, senderEmail);
+      await recordEmailSent(contactEmail, generated, dryRun, cadence, senderProfileId, senderEmail, messageId);
+
+      // Write to outreach-log for angle-to-outcome attribution (feedback loop)
+      await outreachLog.recordSend({
+        contactEmail,
+        channel: 'email',
+        step: generated.step,
+        subject: generated.subject,
+        angle: generated.angle,
+        messageId,
+        senderEmail,
+      });
+
       results.push({ step, subject: generated.subject });
 
       // Durable wait between emails — Trigger.dev checkpoints, no cost during wait
@@ -219,13 +238,11 @@ export const fullSequenceTask = task({
         const { generateLinkedInMessage } = await import('../pipelines/generate-linkedin-message.js');
         const { sendViaLinkedIn } = await import('../delivery/linkedin.js');
 
-        const contactData = await client.memory.smartDigest({
+        const contactData = await memory.retrieveDigest({
           email: contactEmail,
-          type: 'Contact',
-          token_budget: 300,
-          include_properties: true,
+          maxTokens: 300,
         });
-        const linkedinUrl = (contactData.data as any)?.properties?.linkedin_url?.value || '';
+        const linkedinUrl = (contactData as any)?.properties?.linkedin_url?.value || '';
 
         if (linkedinUrl) {
           const linkedInMsg = await generateLinkedInMessage(contactEmail, String(linkedinUrl), cadence.maxEmails + 1, dryRun);

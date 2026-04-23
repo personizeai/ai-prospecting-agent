@@ -7,6 +7,7 @@ import {
   getGmailSendCount,
   incrementGmailSendCount,
 } from '../lib/capacity-store.js';
+import { isDryRun } from '../lib/dry-run.js';
 
 /**
  * Gmail API multi-sender for Google Workspace.
@@ -166,6 +167,14 @@ export async function sendViaGmail(generated: GeneratedEmail): Promise<GmailSend
     throw new Error(`Invalid recipient email address: "${generated.email}"`);
   }
 
+  if (await isDryRun()) {
+    const sender = selectSender();
+    const senderEmail = sender?.email ?? 'dry-run@example.com';
+    const senderName = sender?.name ?? 'DRY RUN';
+    console.info('[DRY_RUN] Would send via Gmail', { to: generated.email, subject: generated.subject, campaign: generated.angle });
+    return { messageId: 'dry-run', threadId: 'dry-run', senderEmail, senderName };
+  }
+
   const sender = selectSender();
   if (!sender) {
     const capacity = getRemainingCapacity();
@@ -239,6 +248,16 @@ export async function sendGmailReply(
   const ctx: ThreadContext = typeof thread === 'string'
     ? { threadId: thread }
     : thread;
+
+  if (await isDryRun()) {
+    const drySender = ctx.preferSenderEmail
+      ? GMAIL_CONFIG.senders.find((s) => s.email === ctx.preferSenderEmail) ?? selectSender()
+      : selectSender();
+    const senderEmail = drySender?.email ?? 'dry-run@example.com';
+    const senderName = drySender?.name ?? 'DRY RUN';
+    console.info('[DRY_RUN] Would send Gmail reply', { to: generated.email, subject: generated.subject, threadId: ctx.threadId });
+    return { messageId: 'dry-run', threadId: ctx.threadId, senderEmail, senderName };
+  }
 
   let sender: GmailSender | null = null;
   if (ctx.preferSenderEmail) {

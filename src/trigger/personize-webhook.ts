@@ -20,8 +20,10 @@
 
 import { task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
-import { enrichContactsTask } from './enrich-contacts.js';
+import { enrichContacts } from '../pipelines/enrich-apollo.js';
+import { enrichCompanies } from '../pipelines/enrich-companies-apollo.js';
 import { reportFailure } from './error-handler.js';
 import { logger, withContext } from '../lib/logger.js';
 
@@ -131,13 +133,25 @@ async function processRecord(record: {
       });
     }
 
+    // Auto-assign role (Sales Org)
+    if (isNew) {
+      try {
+        const { assignRoleToContact } = await import('../pipelines/assign-role.js');
+        const assignedRole = await assignRoleToContact(email);
+        if (assignedRole) executed.push(`assignRole:${assignedRole}`);
+      } catch (err) {
+        log.warn('Role assignment failed', { email, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
     // Enrich (Apollo)
     if (pipeline.enrich) {
       try {
-        await enrichContactsTask.trigger();
+        await enrichContacts();
+        await enrichCompanies();
         executed.push('enrich');
       } catch (err) {
-        log.warn('Enrich trigger failed', { error: err instanceof Error ? err.message : String(err) });
+        log.warn('Enrich failed', { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -145,13 +159,11 @@ async function processRecord(record: {
     if (pipeline.evaluateStrategy) {
       try {
         // Look up the contact's company domain
-        const digest = await client.memory.smartDigest({
+        const digest = await memory.retrieveDigest({
           email,
-          type: 'Contact',
-          token_budget: 200,
-          include_properties: true,
+          maxTokens: 200,
         });
-        const domain = (digest.data as any)?.properties?.company_website?.value || '';
+        const domain = (digest as any)?.properties?.company_website?.value || '';
 
         if (domain) {
           const { evaluateAccountStrategy } = await import('../pipelines/account-strategy.js');
@@ -163,24 +175,50 @@ async function processRecord(record: {
       }
     }
 
-    // Start outreach sequence for new high-score contacts
+    // Match to campaign + start outreach for new high-score contacts
     if (pipeline.startSequence && isNew) {
       try {
-        const digest = await client.memory.smartDigest({
+        const digest = await memory.retrieveDigest({
           email,
-          type: 'Contact',
-          token_budget: 200,
-          include_properties: true,
+          maxTokens: 200,
         });
-        const props = (digest.data as any)?.properties || {};
+        const props = (digest as any)?.properties || {};
         const leadScore = Number(props.lead_score?.value) || 0;
         const icpMatch = props.icp_match?.value === true || props.icp_match?.value === 'true';
         const outreachStage = props.outreach_stage?.value || 'Not Started';
+        const existingCampaign = props.campaign_id?.value;
 
         if (icpMatch && outreachStage === 'Not Started' && leadScore >= 40) {
+          // Campaign matching: find the best active campaign for this contact
+          let campaignId = existingCampaign || '';
+
+          if (!campaignId) {
+            const { campaigns } = await import('../lib/campaign.js');
+            const contactProps: Record<string, any> = {};
+            for (const [key, val] of Object.entries(props)) {
+              contactProps[key] = (val as any)?.value ?? val;
+            }
+
+            const match = await campaigns.matchToCampaign(contactProps);
+            if (match) {
+              // Enroll in campaign (assigns sender, sets campaign_id, increments stats)
+              const enrollment = await campaigns.enroll(email, match.campaignId);
+              if (enrollment.enrolled) {
+                campaignId = match.campaignId;
+                executed.push(`campaignEnrolled:${match.campaignId}`);
+                log.info('Auto-enrolled in campaign via webhook', {
+                  email,
+                  campaignId: match.campaignId,
+                  icpScore: match.score,
+                  sender: enrollment.senderId,
+                });
+              }
+            }
+          }
+
           const { fullSequenceTask } = await import('./outreach-sequence.js');
           const crmId = props.crm_id?.value || '';
-          await fullSequenceTask.trigger({ contactEmail: email, crmId, icpScore: leadScore });
+          await fullSequenceTask.trigger({ contactEmail: email, crmId, icpScore: leadScore, campaignId });
           executed.push('startSequence');
         }
       } catch (err) {
@@ -207,10 +245,8 @@ async function processRecord(record: {
     // Discover contacts (Apollo)
     if (pipeline.discoverContacts && isNew) {
       try {
-        const { discoverContactsTask } = await import('./discover-contacts.js');
-        await discoverContactsTask.trigger({
-          hotAccounts: [{ company: domain, domain, score: 50, strength: 'webhook', action: 'discover' }],
-        });
+        const { discoverContactsForHotAccounts } = await import('../pipelines/discover-contacts-apollo.js');
+        await discoverContactsForHotAccounts([{ company: domain, domain, score: 50, strength: 'webhook', action: 'discover' }]);
         executed.push('discoverContacts');
       } catch (err) {
         log.warn('Contact discovery failed', { domain, error: err instanceof Error ? err.message : String(err) });

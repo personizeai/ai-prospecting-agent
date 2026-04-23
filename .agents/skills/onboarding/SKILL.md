@@ -1,18 +1,18 @@
 ---
 name: onboarding
-description: "Full onboarding wizard for the AI Prospecting Agent. Interviews the user about their business (company name, website, product, ICP, leads, objectives), then configures the entire system: rewrites governance variables (ICP, brand voice, playbook, signals, competitors), updates collection schemas, sets sequence cadences, configures discovery filters, and generates environment setup guidance. Use this skill whenever the user wants to set up, configure, or reconfigure their prospecting agent, or says things like 'set up my agent', 'configure for my business', 'onboard', 'customize the agent', 'update my ICP', or 'I need to change my target audience'."
+description: "Full onboarding wizard for Revenue OS. Interviews the user about their business (company name, website, product, ICP, leads, objectives), then configures the entire system: rewrites governance variables (ICP, brand voice, playbook, signals, competitors), updates collection schemas, sets sequence cadences, configures discovery filters, and generates environment setup guidance. Use this skill whenever the user wants to set up, configure, or reconfigure their Revenue OS instance, or says things like 'set up my agent', 'configure for my business', 'onboard', 'customize the agent', 'update my ICP', or 'I need to change my target audience'."
 license: Apache-2.0
-compatibility: "Requires the ai-prospecting-agent repository and @personize/sdk"
+compatibility: "Requires the revenue-os repository and @personize/sdk"
 metadata: {"author": "personize-ai", "version": "1.0", "emoji": "\U0001F680", "requires": {"env": ["PERSONIZE_SECRET_KEY"]}}
 ---
 
 # Skill: Onboarding Wizard
 
-This skill transforms a generic AI prospecting agent into a fully configured, business-specific outreach machine. It interviews the user about their business, selects the right agent mode, then writes all configuration, governance, schemas, and cadence settings.
+This skill transforms a generic Revenue OS instance into a fully configured, business-specific outreach machine. It interviews the user about their business, selects the right agent mode, then writes all configuration, governance, schemas, and cadence settings.
 
 ## What This Skill Does
 
-The AI Prospecting Agent ships with 18 pre-built modes (outbound-sdr, ecommerce-winback, talent-sourcing, member-renewal, donor-engagement, etc.) and placeholder configuration. This skill helps the user pick the right mode, replaces ALL placeholders with business-specific settings through a guided conversation, and produces a fully configured agent.
+Revenue OS ships with 18 pre-built modes (outbound-sdr, ecommerce-winback, talent-sourcing, member-renewal, donor-engagement, etc.) and placeholder configuration. This skill helps the user pick the right mode, replaces ALL placeholders with business-specific settings through a guided conversation, and produces a fully configured agent.
 
 **End result:** A fully configured agent ready to run outreach on behalf of the user's specific business and use case.
 
@@ -22,7 +22,7 @@ The AI Prospecting Agent ships with 18 pre-built modes (outbound-sdr, ecommerce-
 
 **If the user hasn't given specifics yet**, introduce yourself and start with mode selection:
 
-> "I'm your onboarding wizard for the AI Prospecting Agent. First — what are you using this for? Here are some popular modes:
+> "I'm your onboarding wizard for Revenue OS. First — what are you using this for? Here are some popular modes:
 >
 > **Sales & GTM:** Outbound SDR, ABM, Cold Deal Revival, Partner Recruitment, Event Follow-Up
 > **Ecommerce:** Win-Back, Post-Purchase Upsell, Cart Abandonment
@@ -55,12 +55,14 @@ The AI Prospecting Agent ships with 18 pre-built modes (outbound-sdr, ecommerce-
 
 ## Actions
 
-You have 3 actions. They are sequential for first-time setup, but can be used independently for reconfiguration.
+You have 4 actions. They are sequential for first-time setup, but can be used independently for reconfiguration.
 
 | Action | What It Does | Files Modified |
 |---|---|---|
 | **INTERVIEW** | Ask about the business, product, ICP, leads, objectives | None (gathering info) |
+| **RESEARCH** | Research the user's brand, competitors, and market using web search | None (gathering intel) |
 | **CONFIGURE** | Write governance, schemas, config, and cadences | `create-governance.ts`, `prospecting.config.ts`, `create-schemas.ts` |
+| **CAMPAIGN** | Create the user's first campaign based on interview answers (ICP, cadence, senders, governance overrides) | Creates Campaign record in Personize via `src/lib/campaign.ts` |
 | **VERIFY** | Confirm everything looks right, provide next steps | None (review + guidance) |
 
 ---
@@ -87,6 +89,28 @@ After mode selection, use the mode's `terminology` to adjust all subsequent ques
 2. **What you sell** — Product/service description, value proposition, key differentiators
 3. **Your role** — Are you the founder? Sales leader? Marketing? This shapes how the agent talks
 
+### Phase 1.5: Brand & Market Research (automatic — do NOT skip)
+
+**After getting the company website, IMMEDIATELY run the RESEARCH action before continuing to Phase 2.** This lets you ask smarter questions and pre-fill suggestions in all subsequent phases.
+
+> "Great — let me research your company before we continue. I'll look at your website, recent news, competitors, and market position so I can pre-fill the right defaults."
+
+Run the RESEARCH action (see below), then present findings:
+
+> "Here's what I found about [Company]:
+> - **What you do:** [summary from website]
+> - **Market/industry:** [detected vertical]
+> - **Competitors I found:** [list]
+> - **Recent news:** [funding, hiring, launches]
+> - **Tech stack signals:** [detected technologies]
+>
+> Does this look right? Anything to correct or add?"
+
+Use these findings to pre-fill suggestions in Phase 2-5. Instead of asking blank questions, present informed suggestions:
+- Phase 2: "Based on your product, I'd suggest targeting [titles] at [company types]. Sound right, or would you adjust?"
+- Phase 3: "I found these competitors: [list]. What's your main advantage over each?"
+- Phase 5: "Your website tone is [X] — should outreach emails match that, or be different?"
+
 ### Phase 2: The Target
 
 4. **Who do you sell to?** — Industry verticals, company sizes, geographies
@@ -101,7 +125,9 @@ After mode selection, use the mode's `terminology` to adjust all subsequent ques
 
 ### Phase 4: Current State
 
-10. **Do you have leads already?** — In HubSpot? CSV? Zapier? How many contacts and companies?
+> **Before asking these questions**, check the `/data/` directory for existing CSV files and analyze them (see RESEARCH action → "Analyzing Existing Data"). If data exists, present what you found instead of asking Q10 blind.
+
+10. **Do you have leads already?** — In HubSpot? CSV? Zapier? How many contacts and companies? If you found CSVs in `/data/`, present: "I see you have [N] contacts and [N] companies in CSV files. Want to use these as your starting data?"
 11. **What CRM do you use?** — HubSpot, Salesforce, CSV-only, Zapier, or something else?
 12. **Email setup** — How many email accounts do you have? Gmail, Outlook, ZapMail, Instantly, or other? Do you have app passwords or credentials ready? (Email accounts are connected via the dashboard — Settings → Email Accounts — not in .env)
 13. **Do you have API keys ready?** — Personize, Trigger.dev (required). Optional: Apollo, Tavily, Slack, HubSpot
@@ -131,9 +157,77 @@ After mode selection, use the mode's `terminology` to adjust all subsequent ques
 
 ---
 
+## Action: RESEARCH
+
+Research the user's company, competitors, and market BEFORE continuing the interview past Phase 1. This makes the entire onboarding intelligent — the AI arrives at each question with context, not blank.
+
+### What to Research
+
+Using web search (WebSearch tool), research the following about the user's company:
+
+1. **Company website** — What does the company do? What's their value proposition? What industry are they in?
+2. **Product/service** — What exactly do they sell? Who are their customers? What pricing tier?
+3. **Competitors** — Who competes with them? Search for "[company name] alternatives" and "[company name] competitors"
+4. **Recent news** — Any funding rounds, product launches, hiring surges, partnerships in the last 6 months?
+5. **Tech stack** — What technologies do they use? (Check job postings, BuiltWith-style signals)
+6. **Market position** — Are they a startup, growth-stage, or enterprise? What's their approximate size?
+7. **Brand voice** — What tone does their website/blog use? Formal? Casual? Technical? Consultative?
+8. **Existing content** — Do they have a blog, case studies, or social presence that reveals their messaging style?
+
+### How to Use Research Results
+
+Research findings become **pre-filled suggestions** in subsequent phases:
+
+| Research Finding | Pre-fills |
+|---|---|
+| Company description | Phase 1 Q2 (what you sell) — confirm, don't re-ask |
+| Detected industry/vertical | Phase 2 Q4 — suggest target industries |
+| Company size signals | Phase 2 Q4 — suggest employee count ranges |
+| Competitor names | Phase 3 Q8 — present as "I found these competitors..." |
+| Website tone | Phase 5 Q14 — suggest matching outreach style |
+| Job postings (titles hiring for) | Phase 2 Q5 — infer buyer titles from what roles they sell to |
+| Tech stack | ICP tech stack signals in governance |
+
+### Presenting Research
+
+Present findings conversationally, asking the user to confirm or correct:
+
+> "Before we continue, I researched [Company] and here's what I found:
+>
+> **Your product:** [1-2 sentence summary from website]
+> **Industry:** [detected vertical — e.g., B2B SaaS, Cybersecurity, FinTech]
+> **Company size:** [approximate — e.g., 50-200 employees based on LinkedIn/signals]
+> **Competitors:** [list 3-5 with brief descriptions]
+> **Recent activity:** [funding, product launches, hiring trends]
+> **Website tone:** [casual/professional/technical — with specific examples]
+>
+> Is this accurate? Anything wrong or missing? This saves us a lot of questions."
+
+After confirmation, skip or pre-fill any interview questions the research already answered. Only ask about things the research couldn't determine (deal size, internal preferences, forbidden phrases, etc.).
+
+### Analyzing Existing Data
+
+If the user has existing data (CSV files in `/data/`, HubSpot connected, etc.), analyze it:
+
+1. **Check `/data/` directory** for CSV files — read headers and sample rows to understand what fields they have
+2. **Count records** — how many contacts, companies, deals?
+3. **Identify field mapping** — which CSV columns map to which collection properties?
+4. **Detect gaps** — what data is missing that the agent needs? (e.g., no LinkedIn URLs, no phone numbers)
+5. **Suggest schema adjustments** — if their data has fields not in the default schema, propose adding custom properties
+
+Present data findings:
+
+> "I also looked at your existing data:
+> - **contacts.csv**: [N] contacts with [fields]. Missing: [gaps]
+> - **companies.csv**: [N] companies with [fields]. Missing: [gaps]
+>
+> The default schemas cover most of your fields. [I'd suggest adding X custom property / Everything maps cleanly]."
+
+---
+
 ## Action: CONFIGURE
 
-After the interview, generate all configuration. Present each section to the user for confirmation before writing.
+After the interview and research, generate all configuration. Present each section to the user for confirmation before writing.
 
 ### Step 1: Governance Variables
 

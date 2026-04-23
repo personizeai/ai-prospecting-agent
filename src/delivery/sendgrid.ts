@@ -1,7 +1,13 @@
 import { createRequire } from 'module';
 import type { GeneratedEmail } from '../types.js';
+import { isDryRun } from '../lib/dry-run.js';
 
 export async function sendViaSendGrid(generated: GeneratedEmail) {
+  if (await isDryRun()) {
+    console.info('[DRY_RUN] Would send via SendGrid', { to: generated.email, subject: generated.subject, campaign: generated.angle });
+    return [{ headers: { 'x-message-id': 'dry-run' } }] as Array<{ headers?: Record<string, string> }>;
+  }
+
   if (!process.env.SENDGRID_API_KEY) {
     throw new Error('Missing required environment variable: SENDGRID_API_KEY');
   }

@@ -1,4 +1,5 @@
 import { client, RATE_LIMIT_PAUSE_MS, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import type { HotAccount } from '../types.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { SIGNAL_ASSESSMENT_SCHEMA, SIGNAL_ASSESSMENT_DEFAULTS } from '../lib/llm-schemas.js';
@@ -30,16 +31,17 @@ async function shouldRescoreCompany(domain: string): Promise<RescoreDecision> {
   const { rescoring } = SIGNAL_CONFIG;
 
   try {
-    const recall = await client.memory.smartRecall({
-      query: 'SIGNAL ASSESSMENT icp_fit_score signal_strength recommended_action',
-      website_url: domain,
-      fast_mode: true,
-      prefer_recent: true,
-      min_score: 0.3,
+    // Note: SDK 0.9.x retrieve does not expose `prefer_recent` / `min_score`.
+    // Upstream's PR #7 used those on the deprecated smartRecall; we rely on
+    // semantic search quality + mode:'fast' for the dedup existence check.
+    const recall = await memory.retrieve({
+      message: 'SIGNAL ASSESSMENT icp_fit_score signal_strength recommended_action',
+      websiteUrl: domain,
       limit: 1,
+      mode: 'fast',
     });
 
-    const results = (recall.data as any)?.results ?? [];
+    const results = (recall as any)?.results ?? [];
     if (results.length === 0) {
       return { rescore: true, reason: 'never_scored' };
     }
@@ -102,8 +104,9 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
   }
 
   // Fetch guidelines once outside the loop (same for every company)
-  const guidelines = await client.ai.smartGuidelines({
+  const guidelines = await client.context.retrieve({
     message: 'ICP scoring criteria and buying signal definitions',
+    types: ['guideline'],
     mode: 'fast',
   });
 
@@ -145,13 +148,13 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
     log.info('Scoring company', { companyName, domain, rescoreReason: rescoreCheck.reason });
 
     try {
-      const digest = await client.memory.smartDigest({
-        website_url: domain,
-        type: 'Company',
-        token_budget: 2000,
+      const digest = await memory.retrieveDigest({
+        websiteUrl: domain,
+        maxTokens: 2000,
       });
 
-      const digestContext = digest.data?.compiledContext || '';
+      // digest is already unwrapped by the memory facade.
+      const digestContext = (digest as any)?.compiledContext || '';
       log.debug('Company digest', {
         companyName,
         domain,
@@ -203,8 +206,8 @@ export async function detectAndScoreSignals(): Promise<HotAccount[]> {
         isHot,
       });
 
-      await client.memory.memorize({
-        website_url: domain,
+      await memory.save({
+        websiteUrl: domain,
         content: `[SIGNAL ASSESSMENT ${new Date().toISOString().split('T')[0]}]\n${output}`,
         enhanced: true,
         tags: ['assessment', 'signal-detection'],

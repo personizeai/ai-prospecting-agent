@@ -1,24 +1,24 @@
-<h1 align="center">AI Prospecting Agent</h1>
+<h1 align="center">Revenue OS</h1>
 
 <p align="center">
-  <strong>Open-source alternative to HubSpot Prospecting Agent, Artisan, 11x, and AI SDRs — with full customizability at a fraction of the cost.</strong>
+  <strong>The open-source operating system for AI-powered revenue teams.</strong>
 </p>
 
 <!-- Badges -->
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/tests-280%20passing-brightgreen.svg" alt="Tests: 280 passing" />
+  <img src="https://img.shields.io/badge/tests-318%20passing-brightgreen.svg" alt="Tests: 318 passing" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
   <img src="https://img.shields.io/badge/cost-%2450–%24200%2Fmo-success.svg" alt="Cost: $50–$200/mo" />
 </p>
 
-<!-- Early Access Banner -->
+<!-- Alpha Banner -->
 <p align="center">
-  <img src="https://img.shields.io/badge/status-early%20access-orange.svg" alt="Early Access" />
+  <img src="https://img.shields.io/badge/status-alpha-orange.svg" alt="Alpha" />
 </p>
 <blockquote align="center">
-  <strong>Early Access</strong> — This project is under active development. APIs and configuration may change.<br/>
+  <strong>Alpha</strong> — Revenue OS is in alpha. Fast-evolving, community-driven, and already powering real pipelines.<br/>
   Want to collaborate closely? <a href="CONTRIBUTING.md#collaborate-closely">Let us know</a> · <a href="CONTRIBUTING.md#sponsors">Become a sponsor</a>
 </blockquote>
 
@@ -30,12 +30,14 @@
 <!-- Navigation -->
 <p align="center">
   <a href="#getting-started">Getting Started</a> &middot;
+  <a href="#modules">Modules</a> &middot;
   <a href="#how-it-works">How It Works</a> &middot;
   <a href="#account-strategizer--coordinated-multi-contact-outreach">Account Strategy</a> &middot;
   <a href="#csv-import--no-crm-required">CSV Import</a> &middot;
+  <a href="ECOMMERCE.md">Ecommerce</a> &middot;
   <a href="#why-open-source">Why Open Source</a> &middot;
   <a href="#extend-it">Extend It</a> &middot;
-  <a href="ROADMAP.md">Roadmap</a> &middot;
+  <a href="PLAN.md">Plan</a> &middot;
   <a href="#community">Community</a>
 </p>
 
@@ -45,8 +47,41 @@
 
 <!-- Positioning -->
 <blockquote>
-<p>Most AI SDR tools charge $2K–$5K/mo for a black box you can't inspect, can't customize, and can't leave. This agent gives you the same pipeline — open source, fully customizable, and you own every line of code.</p>
+<p>Most AI SDR tools charge $2K–$5K/mo for a black box you can't inspect, can't customize, and can't leave. Revenue OS gives you the same pipeline — open source, fully customizable, and you own every line of code.</p>
 </blockquote>
+
+## What is Revenue OS?
+
+Revenue OS is the open-source operating system for autonomous revenue teams. It unifies prospecting, enrichment, outreach, pipeline signals, and deal intelligence into a single, modular platform — where the AI SDK is one ingredient among many.
+
+**The goal:** Give every revenue team a complete, customizable, AI-powered operating system that replaces fragmented point tools — at a fraction of the cost.
+
+---
+
+## Modules
+
+Revenue OS ships with 12 integrated modules. Each is a standalone capability that works independently and compounds when combined.
+
+| Module | What It Does |
+|--------|-------------|
+| **Campaign Management** | First-class campaigns with ICP targeting, cadence config, sender pools, governance overrides, daily caps, A/B variant schema, auto-pause, and aggregate stats |
+| **MCP Server (AI Interface)** | 24 profile-scoped tools (`workflow` / `agent` / `admin`) for Claude Code / Cowork / OpenClaw / Goose: Apollo search, Tavily research, campaign CRUD, contact discovery + enrollment, ecommerce, sender health, daily status, pipeline dispatcher (`run_pipeline`), PLAN/STATUS readers, DRY_RUN gate |
+| **Prospecting Engine** | 18 agent modes across 8 industries. ICP scoring, signal detection, account strategy |
+| **Contact Intelligence** | Apollo discovery + enrichment, Tavily web research, company news & funding signals |
+| **Outreach Orchestration** | Campaign-aware multi-channel sequences — email, LinkedIn (HeyReach), AI voice calls (Bland.ai, Vapi, ElevenLabs) |
+| **Sender Infrastructure** | Stable sender profiles with warmup ramp, health monitoring, auto-pause, seamless email rotation |
+| **Sales Org Simulation** | 5 sales roles (SDR, AE, CSM, Sales Ops, Revenue Analyst) with auto-handoffs and role-based scheduling |
+| **Reply Intelligence** | IMAP monitoring, intent classification (6 types), auto-routing, campaign stat attribution |
+| **Account Coordination** | Carpet-bomb prevention across campaigns, multi-contact strategy, pre-flight gates, negative event blocking |
+| **CRM Sync** | HubSpot, Salesforce, CSV, Clay — bidirectional sync with webhook receivers |
+| **Event-Driven Ingestion** | Personize webhook receives memorize events from any source (Zapier, HubSpot, API), scores ICP, auto-enrolls in campaigns |
+| **Governance** | Brand voice, ICP rules, outreach playbooks, competitor policy — per-campaign overrides, editable without code changes |
+| **Learning Loop** | Weekly angle-to-outcome analysis, playbook suggestions, auto-pause underperformers |
+| **Ops Dashboard** | Real-time health, contacts, outreach, campaign analytics — full Next.js dashboard with authenticated API |
+| **CLI** | `npm run ros` — campaign create/list/stats/activate/pause/enroll, sender list, system status |
+| **Task Execution** | AI + human task dispatch with escalation, decline, and reschedule logic |
+| **Ecommerce Personalization** | Import purchase history + product catalog, infer style/preferences per customer, generate personalized email variables for any ESP (Klaviyo, Mailchimp, Braze). Win-back, post-purchase, promotional, seasonal campaigns. [Full guide](ECOMMERCE.md) |
+| **Observability** | 15-min health checks, daily Slack digest with campaign health, weekly performance reports, structured logging |
 
 <!-- Feature grid -->
 <table>
@@ -79,9 +114,9 @@ Built with ❤️ by the <a href="https://personize.ai" target="_blank">Personiz
 
 ---
 
-## What Is This?
+## How It Works
 
-A fully autonomous prospecting agent that runs your outbound pipeline end to end:
+A fully autonomous revenue operating system that runs your outbound pipeline end to end:
 
 1. **Connect your email** — Any Gmail, Outlook, ZapMail, Instantly, or IMAP/SMTP account. The agent monitors your inbox and sends from your real business address. Buy pre-warmed mailboxes from [ZapMail](https://zapmail.ai) or similar, export the credentials, connect in 30 seconds
 2. **Syncs your CRM** — Pulls contacts, companies, and engagement history from HubSpot, Salesforce, Clay, or CSV files. Or skip CRM entirely — memorize contacts via Zapier, API, or CSV and the agent picks them up via webhook
@@ -105,10 +140,28 @@ No babysitting. No vendor lock-in. No manual data entry. Your sales team gets wa
 
 ---
 
+## 18 Agent Modes
+
+Revenue OS isn't just for cold outbound. It ships with 18 pre-configured modes across 8 industries:
+
+| Category | Modes |
+|----------|-------|
+| **Sales & GTM** | Outbound SDR, ABM, Cold Deal Revival, Partner Recruitment, Event Follow-Up, Agency Outreach |
+| **Ecommerce & D2C** | Win-Back, Post-Purchase Upsell, Cart Abandonment |
+| **Membership & Community** | Member Renewal, Member Onboarding |
+| **Recruiting & HR** | Talent Sourcing, Employee Onboarding |
+| **Education** | Student Enrollment, Alumni Engagement |
+| **Real Estate** | Real Estate Nurture |
+| **Nonprofit** | Donor Engagement, Volunteer Recruitment |
+
+Each mode reconfigures governance, cadences, signals, terminology, and discovery targets — the pipeline stays the same.
+
+---
+
 ## Architecture
 
 <p align="center">
-  <img src="architecture.svg" alt="AI Prospecting Agent Architecture" width="100%" />
+  <img src="architecture.svg" alt="Revenue OS Architecture" width="100%" />
 </p>
 
 ---
@@ -117,7 +170,7 @@ No babysitting. No vendor lock-in. No manual data entry. Your sales team gets wa
 
 Most AI SDR tools are black boxes that cost $1,000–$5,000+/month, lock you into their platform, and give you zero control over how your outreach works. You can't see which enrichment provider they use, which AI model writes your emails, or why a prospect was scored the way it was. When something doesn't work, you file a support ticket and wait.
 
-This agent is different:
+Revenue OS is different:
 
 - **You own the code.** Fork it, modify it, deploy it on your own infrastructure. Every pipeline, every prompt, every decision — visible and editable.
 - **You own the data.** Every contact, every email, every signal — stored in your accounts, not someone else's.
@@ -134,13 +187,17 @@ This agent is different:
 
 This isn't a weekend prototype. It's production-grade code designed for long-term maintainability — by your team, by contributors, and by AI coding assistants.
 
-### 280 Automated Tests
+### 318 Automated Tests
 
 Every critical path is tested. LLM JSON output parsing with regex fallback, email HTML sanitization against XSS, email address validation with disposable domain detection, cadence auto-selection, reply sentiment classification across 6 intent types, sequence state machines, enrichment deduplication, web research result parsing, configuration validation, input sanitization, HubSpot engagement formatting, Gmail multi-sender rotation, daily limit enforcement, MIME construction, and reply threading. Plus integration tests covering full pipeline flows end-to-end. Run `npm test` and know everything works before you deploy.
 
 ### Modular Pipeline Architecture
 
-Every pipeline is a standalone, single-responsibility TypeScript file. `sync-hubspot.ts` does CRM sync. `sync-csv.ts` does CSV import. `detect-signals.ts` does ICP scoring. `research-company.ts` does web research. `generate-outreach.ts` writes emails. No pipeline knows about the others. Swap one out, the rest keep running. Add a new one, nothing breaks. This is the kind of separation of concerns that makes the codebase navigable for humans and AI agents alike.
+Every pipeline is a standalone, single-responsibility TypeScript file. `sync-hubspot.ts` does CRM sync. `sync-csv.ts` does CSV import. `detect-signals.ts` does ICP scoring. `research-company.ts` does web research. `generate-outreach.ts` writes emails. No pipeline knows about the others. Swap one out, the rest keep running. Add a new one, nothing breaks. Every pipeline is a pure async function — runnable from the CLI (`npm run pipeline <name> -i '<json>'`), from the MCP `run_pipeline` tool, or from a Trigger.dev task. This is the kind of separation of concerns that makes the codebase navigable for humans and AI agents alike.
+
+### Central Memory Facade
+
+All Personize SDK memory calls go through `src/lib/memory.ts` — one import, one consistent surface (`memory.save`, `memory.retrieve`, `memory.saveBatch`, `memory.filterByProperty`, `memory.update`, etc.). The facade absorbs SDK shape divergence and auto-unwraps `ApiResponse` envelopes, so callers get the inner data or a thrown `PersonizeError`. Upgrading the SDK in the future means editing one file, not 70.
 
 ### Fully Typed, End to End
 
@@ -159,7 +216,7 @@ The codebase is structured so that AI tools (Cursor, Claude Code, GitHub Copilot
 Architecture docs, setup guides, flow diagrams, API integration details, cost analysis, and testing coverage — all maintained alongside the code. Not an afterthought. The documentation explains the *why* behind design decisions so contributors (human or AI) can extend the system without breaking its invariants.
 
 ```
-ai-prospecting-agent/
+revenue-os/
 ├── data/                 # CSV import files (contacts, companies, notes, deals)
 ├── src/
 │   ├── trigger/          # 14 scheduled + event-driven tasks (Trigger.dev)
@@ -199,7 +256,7 @@ ai-prospecting-agent/
 
 ## How It Compares
 
-| Capability | This Agent | HubSpot Sales Hub | Salesforce Sales Cloud | Artisan (Ava) | 11x (Alice) |
+| Capability | Revenue OS | HubSpot Sales Hub | Salesforce Sales Cloud | Artisan (Ava) | 11x (Alice) |
 |---|---|---|---|---|---|
 | **Pricing** | Free to start — $50–$200/mo at scale | $800–$3,600/mo | $1,500–$6,000/mo | $2,000+/mo | Custom ($$$$) |
 | **Open source** | Yes — fork, extend, self-host | No | No | No | No |
@@ -242,7 +299,7 @@ ai-prospecting-agent/
 
 ### Why Personize?
 
-Personize is the AI memory and governance layer that makes this agent actually work well. Here's what it brings:
+Personize is the AI memory and governance layer that makes Revenue OS actually work well. Here's what it brings:
 
 - **Persistent memory per prospect** — The agent remembers every interaction, every piece of research, every signal across conversations. Your 3rd email references context from the 1st, not generic follow-up fluff.
 - **Deep context assembly** — Before writing any email, the agent pulls the full picture: CRM history, web research, engagement signals, past outreach, and deal context. This is what makes the personalization real, not surface-level.
@@ -254,7 +311,7 @@ Personize is the AI memory and governance layer that makes this agent actually w
 
 ## Go Deep on Inbound with AI SDR
 
-This agent isn't limited to cold outreach. Feed it more context and it gets dramatically smarter:
+Revenue OS isn't limited to cold outreach. Feed it more context and it gets dramatically smarter:
 
 - **Inbound emails** — Memorize every email received. The agent references past conversations in follow-ups.
 - **Call transcripts** — Upload call recordings or transcripts. The agent knows what was discussed, what objections were raised, what was promised.
@@ -296,7 +353,7 @@ You start free. Personize includes $50 in credits, Apollo gives you 10K free enr
 
 ## No Server to Manage
 
-This agent runs entirely on [Trigger.dev](https://trigger.dev) — a serverless platform purpose-built for durable workflows:
+Revenue OS runs entirely on [Trigger.dev](https://trigger.dev) — a serverless platform purpose-built for durable workflows:
 
 - **No infrastructure** — No VMs, no containers, no Kubernetes. Deploy with one command.
 - **Durable execution** — Multi-day email sequences survive restarts. A 5-day wait between emails just works.
@@ -365,7 +422,7 @@ Every pipeline is a standalone TypeScript file. Swap Gmail for SendGrid. Replace
 
 ## CSV Import — No CRM Required
 
-Don't use HubSpot? No problem. The agent supports CSV files as a first-class data source — use them instead of or alongside HubSpot.
+Don't use HubSpot? No problem. Revenue OS supports CSV files as a first-class data source — use them instead of or alongside HubSpot.
 
 ### How It Works
 
@@ -459,7 +516,7 @@ await personize.memorize('contacts', {
 
 ### Outreach Channels
 
-The agent ships with three fully integrated outreach channels:
+Revenue OS ships with three fully integrated outreach channels:
 
 | Channel | Provider | How It Works |
 |---|---|---|
@@ -479,7 +536,7 @@ Built a new integration? Added a clever pipeline? Share it:
 2. Add your extension
 3. Open a PR
 
-We're building a library of community-contributed pipelines, data connectors, and outreach channels. Your addition helps everyone run smarter prospecting.
+We're building a library of community-contributed pipelines, data connectors, and outreach channels. Your addition helps everyone run smarter revenue operations.
 
 ---
 
@@ -694,8 +751,8 @@ The default path (IMAP/SMTP) requires zero vendor signup — just an email and p
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/personizeai/ai-prospecting-agent.git
-cd ai-prospecting-agent
+git clone https://github.com/personizeai/revenue-os.git
+cd revenue-os
 
 # 2. Install dependencies
 npm install
@@ -705,24 +762,35 @@ cp .env.example .env
 # Add your Personize + Trigger.dev keys
 # Email accounts are managed via the dashboard (not .env)
 
-# 4. Create Personize schemas and governance rules
+# 4. Run the onboarding wizard (RECOMMENDED — do this BEFORE npm run setup)
+# Open this repo in your AI coding assistant (Claude Code, Cursor, Windsurf, Copilot)
+# and say "onboard me" or "set up my agent". The AI will:
+#   - Ask about your business, goals, and target audience
+#   - Research your brand, competitors, and market
+#   - Analyze your existing data (CSV files, CRM)
+#   - Customize governance rules, ICP, brand voice, and schemas for YOUR business
+#   - So when you run setup, everything is already tailored to you
+#
+# Skip this step only if you want to configure manually.
+
+# 5. Create Personize schemas and governance rules
 npm run setup
 
-# 5. Load your data
+# 6. Load your data
 # Option A: HubSpot/Salesforce — data syncs automatically on schedule
 # Option B: CSV — add your data to data/*.csv, then run:
 npm run sync:csv
 # Option C: Zapier/API — memorize contacts via Personize, agent picks them up via webhook
 
-# 6. Test locally (dry-run mode — no emails sent)
+# 7. Test locally (dry-run mode — no emails sent)
 npx trigger.dev@latest dev
 
-# 7. Connect email accounts
+# 8. Connect email accounts
 # Open the dashboard (localhost:3006) → Settings → Email Accounts
 # Add your Gmail, Outlook, ZapMail, or custom IMAP/SMTP accounts
 # The agent starts monitoring inboxes and can send outreach immediately
 
-# 8. Deploy to production
+# 9. Deploy to production
 npx trigger.dev@latest deploy
 ```
 
@@ -732,7 +800,7 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 
 1. Review 20+ dry-run emails in the Trigger.dev dashboard
 2. Adjust governance rules in Personize if tone or content needs tuning
-3. Set `DRY_RUN=false` in your environment
+3. Flip the safety gate off: `npx tsx src/scripts/ros.ts dry-run off --reason "first production send"` (writes to `data/state/dry_run.txt`, auto-audits to `data/state/dry_run.log`)
 4. Redeploy: `npx trigger.dev@latest deploy`
 5. Monitor Slack for the first few days
 
@@ -760,7 +828,7 @@ See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed step-by-step instructions.
 
 ## Testing
 
-280 automated tests covering LLM output parsing, email HTML sanitization, email validation, cadence selection, reply classification, sequence management, enrichment, Gmail multi-sender, and more — plus integration tests for full pipeline flows.
+318 automated tests covering LLM output parsing, email HTML sanitization, email validation, cadence selection, reply classification, sequence management, enrichment, Gmail multi-sender, and more — plus integration tests for full pipeline flows.
 
 ```bash
 # Unit tests
@@ -775,14 +843,54 @@ npm run test:all
 
 ---
 
+## Human ↔ Agent Interface
+
+Revenue OS runs as well with autonomous agents (Claude Code, Cowork, Goose, OpenClaw) as it does with a human operator. Three primitives make that possible:
+
+| File / Command | Owner | What it does |
+|---|---|---|
+| `PLAN.md` | **Human** | Your strategic intent — vision, active goals, campaigns, decisions, backlog. Agents read it every session. Agents **never** write to it. |
+| `STATUS.md` | **Agent** | Live system state — active campaigns, pipeline stage counts, credits, DRY_RUN status, recent activity. Regenerate with `npm run status`. |
+| `data/state/dry_run.txt` | **Safety gate** | `true` (default) = no real sends; logged as `[DRY_RUN] Would send ...`. Flip with `npx tsx src/scripts/ros.ts dry-run on\|off --reason "..."`. Every flip audits to `data/state/dry_run.log`. |
+| `governance/<slug>/SKILL.md` | **Human-editable markdown** | Brand voice, ICP, playbooks — 14 guidelines as folder-based markdown. `npm run setup:governance` syncs them declaratively to Personize (idempotent diff-and-apply). |
+| `npm run pipeline --list` | **Any agent or human** | Lists all 33 registered pipeline entry points. Run any of them via `npm run pipeline <name> -i '<json>'`. |
+
+### MCP profile model
+
+Revenue OS MCP tools are profile-scoped. Set `MCP_PROFILE` before launching the server:
+
+| Profile | Tool count | Best for |
+|---|---|---|
+| `workflow` | ~8 | Task-focused pipelines, read-only + narrow actions |
+| `agent` (default) | ~20 | Claude Code / Cowork / Goose / OpenClaw — broad capability |
+| `admin` | ~24 | Everything, including `set_dry_run` and bulk writes |
+
+The `admin` profile alone can flip the DRY_RUN safety gate — and every flip requires a reason that's audited to `data/state/dry_run.log`.
+
+### Shared agent playbook
+
+The RECALL → GOVERN → ACT → STORE operating loop is a single Personize guideline (`governance/agent-playbook/SKILL.md`) — repo-agnostic, loaded once per session via `context_retrieve(contextNames=['agent-playbook'])`. Both Revenue OS and [GTM Superagent](../GTM%20superagent) reference the same playbook; neither duplicates it.
+
+---
+
 ## Architecture Docs
 
 | Document | What It Covers |
 |---|---|
 | [SETUP-GUIDE.md](SETUP-GUIDE.md) | Step-by-step setup instructions (8 phases) |
 | [UPGRADING.md](UPGRADING.md) | How to pull latest changes into your fork without breaking your setup |
-| [ROADMAP.md](ROADMAP.md) | Planned features and integrations |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
+| [PLAN.md](PLAN.md) | Human-owned strategic intent scaffold (vision, goals, campaigns, decisions) |
+| [STATUS.md](STATUS.md) | Agent-regenerated live system state (run `npm run status`) |
+| [docs/plans/2026-04-21-agent-native-convergence.md](docs/plans/2026-04-21-agent-native-convergence.md) | 6-phase plan that converged Revenue OS toward the autonomous-agent operating model |
+| [docs/plans/pipeline-inventory.md](docs/plans/pipeline-inventory.md) | Every pipeline classified by purity, inputs, callers, refactor effort |
+| [docs/plans/trigger-keep-list.md](docs/plans/trigger-keep-list.md) | Which Trigger.dev tasks stay (cron + webhooks) vs moved to agent-invokable |
+| [Docs/PRODUCTION-HARDENING.md](Docs/PRODUCTION-HARDENING.md) | Structured LLM outputs, email validation, named cadences, health monitoring, daily digest, structured logging |
+| [Docs/FLOWS-AND-TESTING.md](Docs/FLOWS-AND-TESTING.md) | Pipeline flows with diagrams, trigger schedules, test coverage |
+| [Docs/ENRICHMENT-AND-RESEARCH.md](Docs/ENRICHMENT-AND-RESEARCH.md) | Apollo and Tavily API details, data flows, cost analysis |
+| [Docs/TASK-EXECUTOR.md](Docs/TASK-EXECUTOR.md) | Task executor architecture, human→AI task examples, extending the decision space |
+| [Docs/LEAD-WORKSPACE.md](Docs/LEAD-WORKSPACE.md) | Workspace collaboration model for leads |
+| [Docs/ACCOUNT-STRATEGY.md](Docs/ACCOUNT-STRATEGY.md) | Account strategizer — multi-contact coordination, 10 edge cases, pre-flight gate |
 
 ---
 
@@ -801,7 +909,7 @@ Want to collaborate more closely or sponsor the project? See [how to get involve
 
 ## Sponsors
 
-This project is supported by companies who believe outbound should be open. [Become a sponsor](CONTRIBUTING.md#sponsors).
+This project is supported by companies who believe revenue operations should be open. [Become a sponsor](CONTRIBUTING.md#sponsors).
 
 <!-- Gold Sponsors -->
 <!-- <a href="https://example.com"><img src="logo.png" width="200" alt="Sponsor" /></a> -->
@@ -821,5 +929,5 @@ MIT — use it however you want.
   <br /><br />
   <a href="#getting-started"><strong>Get started &rarr;</strong></a>
   <br /><br />
-  Star this repo if you believe outbound should be open.
+  Star this repo if you believe revenue operations should be open.
 </p>

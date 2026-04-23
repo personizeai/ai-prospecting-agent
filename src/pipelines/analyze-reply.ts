@@ -15,6 +15,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { accountWorkspace } from '../lib/account-workspace.js';
 import { evaluateAccountStrategy } from './account-strategy.js';
@@ -24,6 +25,8 @@ import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { REPLY_ANALYSIS_SCHEMA, REPLY_ANALYSIS_DEFAULTS } from '../lib/llm-schemas.js';
 import { ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
+
+const log = logger.child({ pipeline: 'analyze-reply' });
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -50,15 +53,16 @@ export async function analyzeReply(
   // Read full workspace context: who is this person, what did we send, what do we know
   const [digest, guidelines] = await Promise.all([
     workspace.getDigest(contactEmail, 3000),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'reply handling, outreach playbook, brand voice, competitor policy',
+      types: ['guideline'],
       mode: 'fast',
     }),
   ]);
 
   const context = [
     '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
-    '## LEAD WORKSPACE\n' + (digest.data?.compiledContext || ''),
+    '## LEAD WORKSPACE\n' + ((digest as any)?.compiledContext || ''),
     '## INCOMING REPLY\n' +
       (replySubject ? `Subject: ${replySubject}\n` : '') +
       `Body:\n${replyBody}`,
@@ -266,7 +270,7 @@ export async function handleAnalyzedReply(
     ].join('\n'), 'reply-analyzer');
 
     // Update lead status in Personize memory
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       content: `[LEAD STATUS UPDATE] Opted out. Reason: ${analysis.summary}`,
       collectionName: 'contacts',
@@ -425,7 +429,7 @@ export async function handleAnalyzedReply(
 
   // ─── Always: update contact properties ───────────────────────
   if (analysis.sentiment !== 'negative') {
-    await client.memory.memorize({
+    await memory.save({
       email: contactEmail,
       content: `[REPLY RECEIVED] Sentiment: ${analysis.sentiment}. Summary: ${analysis.summary}`,
       collectionName: 'contacts',
@@ -448,6 +452,37 @@ export async function handleAnalyzedReply(
       },
       tags: ['reply', analysis.sentiment],
     });
+  }
+
+  // ─── Sales Org: Check for role handoff ──────────────────────
+  try {
+    const { SALES_ORG_CONFIG } = await import('../config/prospecting.config.js');
+    if (SALES_ORG_CONFIG.enabled && (analysis.sentiment === 'positive' || analysis.sentiment === 'question')) {
+      const currentRole = await workspace.getRoleOwner(contactEmail);
+      if (currentRole && currentRole !== 'unassigned') {
+        const { getHandoffTarget } = await import('../config/sales-roles.js');
+        const newStatus = analysis.sentiment === 'positive' ? 'Engaged' : 'Contacted';
+        const handoff = getHandoffTarget(currentRole, newStatus);
+
+        if (handoff) {
+          const { processHandoff } = await import('./process-handoff.js');
+          await processHandoff(
+            contactEmail,
+            currentRole,
+            handoff.toRole,
+            `${analysis.sentiment} reply: ${analysis.summary}`,
+            [
+              `Sentiment: ${analysis.sentiment}`,
+              `Key points: ${analysis.keyPoints.join(', ')}`,
+              `Suggested response: ${analysis.suggestedResponse || ''}`,
+              `Next action: ${analysis.nextAction}`,
+            ].join('\n'),
+          );
+        }
+      }
+    }
+  } catch (err) {
+    log.warn('Handoff processing failed', { error: String(err), contactEmail });
   }
 
   return analysis;

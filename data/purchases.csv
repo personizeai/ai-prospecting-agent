@@ -1,0 +1,11 @@
+email,product_id,product_name,purchase_date,amount,currency,quantity,category,location,order_id,metadata
+sarah.jones@gmail.com,SKU-1001,Classic White Sneakers,2025-11-15,89.99,USD,1,Footwear,New York,ORD-50001,size:9;color:white
+sarah.jones@gmail.com,SKU-2003,Minimalist Leather Belt,2025-12-02,45.00,USD,1,Accessories,New York,ORD-50102,color:black
+sarah.jones@gmail.com,SKU-1008,Retro Running Shoes,2026-01-10,129.99,USD,1,Footwear,New York,ORD-50287,size:9;color:navy
+mike.chen@outlook.com,SKU-3005,Organic Cotton Tee,2025-10-20,34.99,USD,2,Tops,San Francisco,ORD-49800,size:M;color:charcoal
+mike.chen@outlook.com,SKU-3012,Heavyweight Hoodie,2025-11-28,79.99,USD,1,Outerwear,San Francisco,ORD-50050,size:M;color:forest-green
+mike.chen@outlook.com,SKU-4001,Canvas Tote Bag,2026-01-05,29.99,USD,1,Accessories,San Francisco,ORD-50250,color:natural
+lisa.park@yahoo.com,SKU-5002,Yoga Leggings Pro,2025-09-14,68.00,USD,1,Activewear,Austin,ORD-49200,size:S;color:black
+lisa.park@yahoo.com,SKU-5007,Sports Bra Mesh,2025-09-14,42.00,USD,1,Activewear,Austin,ORD-49200,size:S;color:grey
+lisa.park@yahoo.com,SKU-5010,Performance Tank,2025-12-01,38.00,USD,2,Activewear,Austin,ORD-50100,size:S;color:coral
+lisa.park@yahoo.com,SKU-3008,Cropped Sweatshirt,2026-02-18,55.00,USD,1,Tops,Austin,ORD-50500,size:S;color:lavender

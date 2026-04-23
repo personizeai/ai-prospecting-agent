@@ -1,4 +1,5 @@
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { HUBSPOT_CONFIG } from '../config/prospecting.config.js';
 import { Client as HubSpotClient } from '@hubspot/api-client';
 import type { FilterGroup } from '@hubspot/api-client/lib/codegen/crm/contacts/index.js';
@@ -143,13 +144,12 @@ async function syncHubSpotContacts() {
     for (let i = 0; i < records.length; i += 50) {
       const batch = records.slice(i, i + 50);
       try {
-        await client.memory.memorizeBatch({ records: batch, enhanced: true });
+        await memory.saveBatch(batch.map((r: any) => ({ ...r, enhanced: true })));
         totalSynced += batch.length;
         log.info('Synced contacts', { totalSynced });
       } catch (err) {
         log.error('Failed to sync contact batch', { batchStart: i, error: err instanceof Error ? err.message : String(err) });
       }
-      await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
     }
 
     after = nextAfter;
@@ -227,13 +227,12 @@ async function syncHubSpotCompanies() {
     for (let i = 0; i < records.length; i += 50) {
       const batch = records.slice(i, i + 50);
       try {
-        await client.memory.memorizeBatch({ records: batch, enhanced: true });
+        await memory.saveBatch(batch.map((r: any) => ({ ...r, enhanced: true })));
         totalSynced += batch.length;
         log.info('Synced companies', { totalSynced });
       } catch (err) {
         log.error('Failed to sync company batch', { batchStart: i, error: err instanceof Error ? err.message : String(err) });
       }
-      await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
     }
 
     after = nextAfter;
@@ -428,7 +427,7 @@ async function syncContactEngagements(contactId: string, contactEmail: string): 
         tags: ['crm', 'hubspot', `engagement:${type}`],
       }));
 
-      await client.memory.memorizeBatch({ records, enhanced: true });
+      await memory.saveBatch(records.map((r: any) => ({ ...r, enhanced: true })));
       totalSynced += records.length;
     } catch (err) {
       // Non-fatal — some types may not be available on all HubSpot plans
@@ -484,7 +483,7 @@ async function syncContactEngagements(contactId: string, contactEmail: string): 
             collectionName: 'contacts',
             tags: ['crm', 'hubspot', 'deal'],
           }));
-          await client.memory.memorizeBatch({ records: dealRecords, enhanced: true });
+          await memory.saveBatch(dealRecords.map((r: any) => ({ ...r, enhanced: true })));
           totalSynced += dealRecords.length;
         }
       }

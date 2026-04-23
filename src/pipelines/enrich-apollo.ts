@@ -8,6 +8,7 @@
  */
 
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { APOLLO_CONFIG, ENRICHMENT_CONFIG } from '../config/prospecting.config.js';
 import { enrichPerson, isApolloConfigured, getPhone } from '../lib/apollo.js';
 import { ingestEnrichment } from './ingest-enrichment.js';
@@ -51,13 +52,14 @@ export async function enrichContacts(): Promise<EnrichmentRunResult> {
 
     // Check if already enriched (look for apollo enrichment tag)
     if (ENRICHMENT_CONFIG.skipAlreadyEnriched) {
-      const existing = await client.memory.recall({
+      const existing = await memory.retrieve({
         message: `[ENRICHMENT from Apollo] ${email}`,
         email,
         limit: 1,
+        mode: 'fast',
       });
 
-      if (existing.data?.length) {
+      if ((existing as any)?.length) {
         log.info('Skipping already enriched contact', { email });
         result.skipped++;
         continue;

@@ -8,6 +8,7 @@
  */
 
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { APOLLO_CONFIG, ENRICHMENT_CONFIG } from '../config/prospecting.config.js';
 import { enrichOrganization, isApolloConfigured } from '../lib/apollo.js';
 import type { EnrichmentRunResult } from '../types.js';
@@ -49,13 +50,14 @@ export async function enrichCompanies(): Promise<EnrichmentRunResult> {
 
     // Check if already enriched
     if (ENRICHMENT_CONFIG.skipAlreadyEnriched) {
-      const existing = await client.memory.recall({
+      const existing = await memory.retrieve({
         message: `[ENRICHMENT from Apollo] ${domain}`,
-        website_url: domain,
+        websiteUrl: domain,
         limit: 1,
+        mode: 'fast',
       });
 
-      if (existing.data?.length) {
+      if ((existing as any)?.length) {
         log.info('Skipping already enriched company', { domain });
         result.skipped++;
         continue;
@@ -81,8 +83,8 @@ export async function enrichCompanies(): Promise<EnrichmentRunResult> {
 
       const location = [org.city, org.state, org.country].filter(Boolean).join(', ');
 
-      await client.memory.memorize({
-        website_url: domain,
+      await memory.save({
+        websiteUrl: domain,
         content: [
           `[ENRICHMENT from Apollo]`,
           `Company: ${org.name}`,
@@ -103,8 +105,8 @@ export async function enrichCompanies(): Promise<EnrichmentRunResult> {
       });
 
       // Also update company properties for structured queries
-      await client.memory.memorize({
-        website_url: domain,
+      await memory.save({
+        websiteUrl: domain,
         collectionName: 'companies',
         content: `Apollo enrichment for ${org.name}`,
         properties: {

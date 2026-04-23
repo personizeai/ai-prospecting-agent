@@ -21,6 +21,7 @@
  */
 
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { imapAccounts } from './imap-accounts.js';
 import { logger } from './logger.js';
 import type { ImapAccount } from './imap-service.js';
@@ -100,7 +101,7 @@ interface StoredConfig {
 
 async function findGuideline(): Promise<{ id: string; config: StoredConfig } | null> {
   try {
-    const guidelines = await client.guidelines.list();
+    const guidelines = await client.context.list({ type: 'guideline' });
     const actions = guidelines.data?.actions || [];
     const match = actions.find(
       (a: any) => a.payload?.name === SENDER_PROFILES_GUIDELINE_NAME,
@@ -120,9 +121,10 @@ async function findGuideline(): Promise<{ id: string; config: StoredConfig } | n
 async function saveGuideline(config: StoredConfig, existingId?: string): Promise<void> {
   const value = JSON.stringify(config);
   if (existingId) {
-    await client.guidelines.update(existingId, { value });
+    await client.context.update(existingId, { value });
   } else {
-    await client.guidelines.create({
+    await client.context.create({
+      type: 'guideline',
       name: SENDER_PROFILES_GUIDELINE_NAME,
       value,
       tags: ['system', 'sender-profiles'],
@@ -297,13 +299,11 @@ async function assignSender(opts: {
  */
 async function resolveForContact(contactEmail: string): Promise<ResolvedSender | null> {
   try {
-    const digest = await client.memory.smartDigest({
+    const digest = await memory.retrieveDigest({
       email: contactEmail,
-      type: 'Contact',
-      token_budget: 100,
-      include_properties: true,
+      maxTokens: 100,
     });
-    const profileId = (digest.data as any)?.properties?.assigned_sender?.value;
+    const profileId = (digest as any)?.properties?.assigned_sender?.value;
     if (!profileId) return null;
 
     const profile = await getById(profileId);

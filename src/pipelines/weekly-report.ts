@@ -1,4 +1,5 @@
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'weekly-report' });
@@ -12,20 +13,21 @@ export async function generateWeeklyReport(): Promise<string> {
       query: 'outreach sent last 7 days',
       limit: 100,
     }),
-    client.memory.recall({
+    memory.retrieve({
       message: 'email engagement opens clicks replies bounces last 7 days',
       limit: 100,
+      mode: 'fast',
     }),
   ]);
 
   const outreachContent = recentOutreach.data?.map((r: any) => r.content).join('\n') || '';
-  const engagementContent = engagements.data?.map((r: any) => r.content).join('\n') || '';
+  const engagementContent = (engagements as any)?.map((r: any) => r.content).join('\n') || '';
 
   // Truncate to prevent token overflow
   const context = [
     `OUTREACH ACTIVITY (last 7 days): ${recentOutreach.data?.length || 0} records`,
     outreachContent.substring(0, MAX_CONTEXT_CHARS / 2),
-    `ENGAGEMENT DATA: ${engagements.data?.length || 0} events`,
+    `ENGAGEMENT DATA: ${(engagements as any)?.length || 0} events`,
     engagementContent.substring(0, MAX_CONTEXT_CHARS / 2),
   ].join('\n\n');
 

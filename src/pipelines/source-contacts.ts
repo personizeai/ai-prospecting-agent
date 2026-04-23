@@ -1,4 +1,5 @@
 import { client, RATE_LIMIT_PAUSE_MS, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { DISCOVERY_CONFIG } from '../config/prospecting.config.js';
 import { isApolloConfigured } from '../lib/apollo.js';
 import { discoverContactsForAccount } from './discover-contacts-apollo.js';
@@ -18,28 +19,28 @@ export async function sourceContactsForAccount(account: HotAccount) {
 
   // Fallback: AI-based sourcing plan (no real search, just identifies roles to target)
   const [guidelines, companyDigest] = await Promise.all([
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'ICP contact criteria: titles, seniority, departments to target',
+      types: ['guideline'],
       mode: 'fast',
     }),
-    client.memory.smartDigest({
-      website_url: account.domain,
-      type: 'Company',
-      token_budget: 1500,
+    memory.retrieveDigest({
+      websiteUrl: account.domain,
+      maxTokens: 1500,
     }),
   ]);
 
-  const existingContacts = await client.memory.recall({
+  const existingContacts = await memory.retrieve({
     message: `contacts at ${account.company} ${account.domain}`,
-    type: 'Contact',
     limit: 10,
+    mode: 'fast',
   });
 
   const context = [
     guidelines.data?.compiledContext || '',
-    companyDigest.data?.compiledContext || '',
-    existingContacts.data?.length
-      ? `EXISTING CONTACTS:\n${existingContacts.data.map((c: any) => `- ${c.email}: ${c.content?.substring(0, 100)}`).join('\n')}`
+    (companyDigest as any)?.compiledContext || '',
+    (existingContacts as any)?.length
+      ? `EXISTING CONTACTS:\n${(existingContacts as any).map((c: any) => `- ${c.email}: ${c.content?.substring(0, 100)}`).join('\n')}`
       : 'No existing contacts at this company.',
     `TARGET TITLES: ${DISCOVERY_CONFIG.targetTitles.join(', ')}`,
     `TARGET SENIORITIES: ${DISCOVERY_CONFIG.targetSeniorities.join(', ')}`,
@@ -67,8 +68,8 @@ ${buildJsonInstruction(CONTACT_SOURCING_SCHEMA)}`,
 
   const rolesToSearch = (parsed.roles as string[]).filter(Boolean);
 
-  await client.memory.memorize({
-    website_url: account.domain,
+  await memory.save({
+    websiteUrl: account.domain,
     content: `[CONTACT SOURCING] Initiated contact sourcing on ${new Date().toISOString().split('T')[0]}. Roles targeted: ${rolesToSearch.join(', ') || 'none identified'}. Note: Apollo not configured — no real search performed.`,
     enhanced: true,
     tags: ['sourcing', 'pipeline-activity'],

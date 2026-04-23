@@ -25,6 +25,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { accountWorkspace } from '../lib/account-workspace.js';
 import { evaluateAccountStrategy } from './account-strategy.js';
@@ -83,7 +84,7 @@ async function memorizeEvent(event: LinkedInEvent): Promise<void> {
     });
     const found = searchResult.data?.[0]?.email;
     if (found) {
-      await client.memory.memorize({
+      await memory.save({
         email: found,
         content,
         enhanced: true,
@@ -102,7 +103,7 @@ async function memorizeEvent(event: LinkedInEvent): Promise<void> {
       profileUrl: event.profileUrl,
       eventType: event.eventType,
     });
-    await client.memory.memorize({
+    await memory.save({
       content,
       enhanced: true,
       tags: ['linkedin', 'heyreach', event.eventType.toLowerCase(), 'no-email'],
@@ -110,7 +111,7 @@ async function memorizeEvent(event: LinkedInEvent): Promise<void> {
     return;
   }
 
-  await client.memory.memorize({
+  await memory.save({
     email,
     content,
     enhanced: true,
@@ -144,15 +145,16 @@ async function analyzeLinkedInReply(event: LinkedInEvent): Promise<LinkedInEvent
 
   const [digest, guidelines] = await Promise.all([
     workspace.getDigest(email, 3000),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'linkedin outreach, reply handling, outreach playbook, brand voice',
+      types: ['guideline'],
       mode: 'fast',
     }),
   ]);
 
   const context = [
     '## GOVERNANCE\n' + (guidelines.data?.compiledContext || ''),
-    '## LEAD WORKSPACE\n' + (digest.data?.compiledContext || ''),
+    '## LEAD WORKSPACE\n' + ((digest as any)?.compiledContext || ''),
     '## LINKEDIN REPLY',
     `From: ${event.firstName} ${event.lastName} (${event.profileUrl})`,
     event.company ? `Company: ${event.company}` : '',
@@ -223,7 +225,7 @@ async function handleLinkedInEvent(
       'Next: Monitor for LinkedIn reply. If email sequence active, continue.',
     ].join('\n'), 'heyreach');
 
-    await client.memory.memorize({
+    await memory.save({
       email,
       content: `[LEAD STATUS UPDATE] LinkedIn connection accepted`,
       collectionName: 'contacts',
@@ -329,7 +331,7 @@ async function handleLinkedInEvent(
         'Action: Stop all sequences. Do not contact again.',
       ].join('\n'), 'linkedin-analyzer');
 
-      await client.memory.memorize({
+      await memory.save({
         email,
         content: `[LEAD STATUS UPDATE] Not interested (LinkedIn reply). Summary: ${analysis.summary}`,
         collectionName: 'contacts',
@@ -351,7 +353,7 @@ async function handleLinkedInEvent(
 
     // Update contact properties for all reply outcomes
     if (analysis.outcome !== 'not_interested') {
-      await client.memory.memorize({
+      await memory.save({
         email,
         content: `[LINKEDIN REPLY] Outcome: ${analysis.outcome}. Summary: ${analysis.summary}`,
         collectionName: 'contacts',

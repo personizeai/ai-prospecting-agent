@@ -17,6 +17,7 @@
 import { createTransport, type Transporter } from 'nodemailer';
 import { decryptCredential, getAccessToken, type ImapAccount } from '../lib/imap-service.js';
 import { logger } from '../lib/logger.js';
+import { isDryRun } from '../lib/dry-run.js';
 
 const log = logger.child({ module: 'smtp-delivery' });
 
@@ -102,6 +103,11 @@ async function getTransport(account: ImapAccount): Promise<Transporter> {
  * Send a new email (not a reply) via SMTP.
  */
 async function send(account: ImapAccount, params: SmtpSendParams): Promise<SmtpSendResult> {
+  if (await isDryRun()) {
+    log.info('[DRY_RUN] Would send email via SMTP', { to: params.to, subject: params.subject, account: account.email });
+    return { messageId: 'dry-run', senderEmail: account.email, accepted: [params.to] };
+  }
+
   const transport = await getTransport(account);
   const fromName = account.displayName || account.label || account.email;
 
@@ -138,6 +144,11 @@ async function sendReply(
   params: SmtpSendParams,
   thread: SmtpThreadContext,
 ): Promise<SmtpSendResult> {
+  if (await isDryRun()) {
+    log.info('[DRY_RUN] Would send reply via SMTP', { to: params.to, subject: params.subject, account: account.email, inReplyTo: thread.inReplyTo });
+    return { messageId: 'dry-run', senderEmail: account.email, accepted: [params.to] };
+  }
+
   const transport = await getTransport(account);
   const fromName = account.displayName || account.label || account.email;
 

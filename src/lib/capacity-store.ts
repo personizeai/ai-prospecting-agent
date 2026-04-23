@@ -7,6 +7,7 @@ interface CapacityState {
   gmailSendsByDay: Record<string, Record<string, number>>;
   callsByDay: Record<string, number>;
   linkedinSendsByDay: Record<string, number>;
+  interviewsByDay: Record<string, number>;
 }
 
 export interface CapacityStoreStatus {
@@ -20,6 +21,7 @@ function createEmptyState(): CapacityState {
     gmailSendsByDay: {},
     callsByDay: {},
     linkedinSendsByDay: {},
+    interviewsByDay: {},
   };
 }
 
@@ -41,6 +43,7 @@ function cloneState(state: CapacityState): CapacityState {
     ),
     callsByDay: { ...state.callsByDay },
     linkedinSendsByDay: { ...state.linkedinSendsByDay },
+    interviewsByDay: { ...state.interviewsByDay },
   };
 }
 
@@ -75,7 +78,13 @@ function normalizeState(value: unknown): CapacityState {
       )
     : {};
 
-  return { gmailSendsByDay, callsByDay, linkedinSendsByDay };
+  const interviewsByDay = typeof state.interviewsByDay === 'object' && state.interviewsByDay
+    ? Object.fromEntries(
+        Object.entries(state.interviewsByDay).map(([day, count]) => [day, Number(count) || 0]),
+      )
+    : {};
+
+  return { gmailSendsByDay, callsByDay, linkedinSendsByDay, interviewsByDay };
 }
 
 function useMemoryFallback(error: unknown): void {
@@ -89,6 +98,9 @@ function pruneState(state: CapacityState, today: string): CapacityState {
     callsByDay: state.callsByDay[today] != null ? { [today]: state.callsByDay[today] } : {},
     linkedinSendsByDay: state.linkedinSendsByDay[today] != null
       ? { [today]: state.linkedinSendsByDay[today] }
+      : {},
+    interviewsByDay: state.interviewsByDay[today] != null
+      ? { [today]: state.interviewsByDay[today] }
       : {},
   };
 }
@@ -182,6 +194,19 @@ export function incrementLinkedInSendCount(): number {
   state.linkedinSendsByDay[today] = (state.linkedinSendsByDay[today] || 0) + 1;
   writeState(state);
   return state.linkedinSendsByDay[today];
+}
+
+export function getInterviewCount(): number {
+  const state = readState();
+  return state.interviewsByDay[getTodayUTC()] || 0;
+}
+
+export function incrementInterviewCount(): number {
+  const state = readState();
+  const today = getTodayUTC();
+  state.interviewsByDay[today] = (state.interviewsByDay[today] || 0) + 1;
+  writeState(state);
+  return state.interviewsByDay[today];
 }
 
 /**

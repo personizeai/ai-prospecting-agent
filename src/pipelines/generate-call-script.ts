@@ -13,6 +13,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { CALL_CONFIG, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
 import { assembleContext } from './generate-outreach.js';
 import { accountPreflight } from './account-preflight.js';
@@ -26,13 +27,14 @@ const log = logger.child({ pipeline: 'generate-call-script' });
 
 /** Check if we already generated a call script for this contact. */
 async function getCallState(email: string): Promise<{ callScriptsGenerated: number }> {
-  const history = await client.memory.recall({
+  const history = await memory.retrieve({
     message: `call script phone call for ${email}`,
     limit: 5,
+    mode: 'fast',
   });
 
   let callScriptsGenerated = 0;
-  for (const item of history.data || []) {
+  for (const item of (history as any) || []) {
     const content = (item.content || '').toUpperCase();
     if (content.includes('[CALL SCRIPT')) callScriptsGenerated++;
   }
@@ -53,14 +55,12 @@ async function getContactDetails(email: string): Promise<{
   phone: string;
   linkedinUrl: string;
 } | null> {
-  const digest = await client.memory.smartDigest({
+  const digest = await memory.retrieveDigest({
     email,
-    type: 'Contact',
-    token_budget: 500,
-    include_properties: true,
+    maxTokens: 500,
   });
 
-  const props = (digest.data as any)?.properties || {};
+  const props = (digest as any)?.properties || {};
   const firstName = props.first_name?.value || '';
   const lastName = props.last_name?.value || '';
   const name = `${firstName} ${lastName}`.trim() || 'Unknown';

@@ -13,6 +13,7 @@
  */
 
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { LINKEDIN_CONFIG, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
 import { assembleContext } from './generate-outreach.js';
 import { accountPreflight } from './account-preflight.js';
@@ -29,15 +30,16 @@ async function getLinkedInState(email: string): Promise<{
   connectionSent: boolean;
   messagesSent: number;
 }> {
-  const history = await client.memory.recall({
+  const history = await memory.retrieve({
     message: `LinkedIn connection request message sent to ${email}`,
     limit: 10,
+    mode: 'fast',
   });
 
   let connectionSent = false;
   let messagesSent = 0;
 
-  for (const item of history.data || []) {
+  for (const item of (history as any) || []) {
     const content = (item.content || '').toUpperCase();
     if (content.includes('[LINKEDIN CONNECTION REQUEST')) connectionSent = true;
     if (content.includes('[LINKEDIN MESSAGE')) messagesSent++;

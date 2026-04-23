@@ -1,8 +1,11 @@
 import { schedules } from "@trigger.dev/sdk/v3";
+import { memory } from '../lib/memory.js';
 import { collectDailyMetrics } from '../lib/metrics.js';
 import { runHealthCheck } from '../lib/health.js';
 import { notifySlack } from '../delivery/slack-notify.js';
 import { reportFailure } from './error-handler.js';
+import { campaigns } from '../lib/campaign.js';
+import { logger } from '../lib/logger.js';
 
 // Runs every weekday at 9am UTC
 export const dailyDigestTask = schedules.task({
@@ -75,6 +78,55 @@ export const dailyDigestTask = schedules.task({
       attentionSection = `\n\n*Needs Your Attention*\n${items}`;
     }
 
+    // ─── Campaign Health + Auto-Pause ──────────────────────────────
+    let campaignSection = '';
+    try {
+      const activeCampaigns = await campaigns.listActive();
+      if (activeCampaigns.length > 0) {
+        const campaignLines: string[] = ['', '*Campaigns*'];
+        for (const camp of activeCampaigns) {
+          const stats = await campaigns.getStats(camp.campaignId);
+          const reached = stats.contacts_reached;
+          const replyRate = reached > 0 ? Math.round((stats.replies / reached) * 100) : 0;
+          const positiveRate = reached > 0 ? Math.round((stats.positive_replies / reached) * 100) : 0;
+
+          const icon = replyRate >= 10 ? '\u2705' : replyRate >= 3 ? '\uD83D\uDFE1' : reached > 20 ? '\uD83D\uDD34' : '\u26AA';
+          campaignLines.push(`• ${icon} ${camp.name}: ${reached} reached, ${stats.replies} replies (${replyRate}%), ${stats.positive_replies} positive (${positiveRate}%)`);
+
+          // Auto-pause underperforming campaigns (50+ reached, <1% reply rate)
+          if (reached >= 50 && replyRate < 1) {
+            await memory.update({
+              recordId: camp.campaignId,
+              type: 'Campaign',
+              propertyName: 'status',
+              propertyValue: 'Paused',
+              updatedBy: 'auto-pause',
+            });
+            campaignLines.push(`  \u26A0\uFE0F AUTO-PAUSED: reply rate ${replyRate}% after ${reached} contacts (threshold: 1%)`);
+            metrics.needsAttention.push({
+              type: 'campaign_auto_paused',
+              description: `Campaign "${camp.name}" auto-paused: ${replyRate}% reply rate after ${reached} contacts`,
+              priority: 'high',
+            });
+            logger.warn('Campaign auto-paused', { campaignId: camp.campaignId, replyRate, reached });
+          }
+
+          // Daily stats snapshot (time series)
+          const today = new Date().toISOString().split('T')[0];
+          await memory.save({
+            email: camp.campaignId,
+            collectionName: 'campaigns',
+            content: `[DAILY SNAPSHOT ${today}] ${camp.name}: ${reached} reached, ${stats.emails_sent} sent, ${stats.replies} replies (${replyRate}%), ${stats.positive_replies} positive`,
+            tags: ['campaign-snapshot', camp.campaignId, today],
+            enhanced: false,
+          });
+        }
+        campaignSection = campaignLines.join('\n');
+      }
+    } catch (err) {
+      logger.warn('Campaign health check failed', { error: (err as Error).message });
+    }
+
     // ─── Assemble Full Message ─────────────────────────────────────
     const message = [
       `\uD83D\uDCCA *Prospecting Agent \u2014 Daily Report*`,
@@ -84,10 +136,23 @@ export const dailyDigestTask = schedules.task({
       pipelineSection,
       ``,
       healthSection,
+      campaignSection,
       attentionSection,
     ].join('\n');
 
     await notifySlack(message);
+
+    // Memorize daily brief to Personize so Claude can read it at conversation start
+    try {
+      await memory.save({
+        content: `[DAILY BRIEF ${new Date().toISOString().split('T')[0]}]\n${message}`,
+        collectionName: 'system-logs',
+        tags: ['daily-brief'],
+        enhanced: false,
+      });
+    } catch {
+      // Non-fatal — Slack notification already sent
+    }
 
     return { metrics, health };
   },

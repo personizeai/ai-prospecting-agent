@@ -12,6 +12,7 @@
  */
 
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { SALESFORCE_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
 
@@ -134,7 +135,7 @@ async function syncContacts(conn: any) {
   for (let i = 0; i < records.length; i += 50) {
     const batch = records.slice(i, i + 50);
     try {
-      await client.memory.memorizeBatch({ records: batch, enhanced: true });
+      await memory.saveBatch(batch.map((r: any) => ({ ...r, enhanced: true })));
       totalSynced += batch.length;
       log.info('Synced contacts', { totalSynced });
     } catch (err) {
@@ -143,7 +144,6 @@ async function syncContacts(conn: any) {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   log.info('Contact sync complete', { totalSynced });
@@ -201,7 +201,7 @@ async function syncAccounts(conn: any) {
   for (let i = 0; i < records.length; i += 50) {
     const batch = records.slice(i, i + 50);
     try {
-      await client.memory.memorizeBatch({ records: batch, enhanced: true });
+      await memory.saveBatch(batch.map((r: any) => ({ ...r, enhanced: true })));
       totalSynced += batch.length;
       log.info('Synced accounts', { totalSynced });
     } catch (err) {
@@ -210,7 +210,6 @@ async function syncAccounts(conn: any) {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   log.info('Account sync complete', { totalSynced });
@@ -259,7 +258,7 @@ async function syncContactActivities(conn: any) {
         }));
 
         if (activityRecords.length > 0) {
-          await client.memory.memorizeBatch({ records: activityRecords, enhanced: true });
+          await memory.saveBatch(activityRecords.map((r: any) => ({ ...r, enhanced: true })));
           totalActivities += activityRecords.length;
         }
       } catch (err) {
@@ -295,7 +294,7 @@ async function syncContactActivities(conn: any) {
         });
 
         if (oppRecords.length > 0) {
-          await client.memory.memorizeBatch({ records: oppRecords, enhanced: true });
+          await memory.saveBatch(oppRecords.map((r: any) => ({ ...r, enhanced: true })));
           totalActivities += oppRecords.length;
         }
       } catch (err) {

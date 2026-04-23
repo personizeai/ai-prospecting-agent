@@ -30,7 +30,7 @@ interface StoredConfig {
 
 async function findGuideline(): Promise<{ id: string; config: StoredConfig } | null> {
   try {
-    const guidelines = await client.guidelines.list();
+    const guidelines = await client.context.list({ type: 'guideline' });
     const actions = guidelines.data?.actions || [];
     const match = actions.find(
       (a: any) => a.payload?.name === IMAP_ACCOUNTS_GUIDELINE_NAME,
@@ -57,9 +57,10 @@ async function saveGuideline(config: StoredConfig, existingId?: string): Promise
   const value = JSON.stringify(config);
 
   if (existingId) {
-    await client.guidelines.update(existingId, { value });
+    await client.context.update(existingId, { value });
   } else {
-    await client.guidelines.create({
+    await client.context.create({
+      type: 'guideline',
       name: IMAP_ACCOUNTS_GUIDELINE_NAME,
       value,
       tags: ['system', 'imap-config'],

@@ -96,12 +96,13 @@ async function processMessages(
     const isReply = !!msg.inReplyTo || /^re:/i.test(msg.subject);
 
     if (isReply && (msg.textBody || msg.htmlBody)) {
-      // Trigger full reply analysis
+      // Trigger full reply analysis — pass inReplyTo for angle attribution
       await replyHandlerTask.trigger({
         email: contact.email,
         crmId: contact.crmId,
         replyBody: msg.textBody || msg.htmlBody,
         replySubject: msg.subject,
+        inReplyTo: msg.inReplyTo || undefined,
       });
       repliesTriggered++;
 

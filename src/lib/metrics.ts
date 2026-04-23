@@ -1,7 +1,7 @@
 import { client } from '../config.js';
+import { memory } from './memory.js';
 import { getRemainingCapacity } from '../delivery/gmail.js';
 import { GMAIL_CONFIG } from '../config/prospecting.config.js';
-import { memoryCrud } from './personize-crud.js';
 
 export interface DailyMetrics {
   timestamp: string;
@@ -31,7 +31,7 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   const needsAttention: DailyMetrics['needsAttention'] = [];
 
   // ─── Outreach Metrics ──────────────────────────────────────────────
-  const outreachResult = await memoryCrud.filterByProperty({
+  const outreachResult = await memory.filterByProperty({
     type: 'Contact',
     conditions: [{ propertyName: 'emails_sent', operator: 'gt', value: 0 }],
     limit: 100,
@@ -67,7 +67,7 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   }
 
   // ─── Reply Metrics ─────────────────────────────────────────────────
-  const replyResult = await memoryCrud.filterByProperty({
+  const replyResult = await memory.filterByProperty({
     type: 'Contact',
     conditions: [{ propertyName: 'sequence_status', operator: 'equals', value: 'Replied' }],
     limit: 50,
@@ -102,27 +102,30 @@ export async function collectDailyMetrics(): Promise<DailyMetrics> {
   }
 
   // ─── Pipeline Metrics ──────────────────────────────────────────────
-  const signalMemory = await client.memory.recall({
+  const signalMemory = await memory.retrieve({
     message: 'signal detected today',
     limit: 100,
+    mode: 'fast',
   });
-  const signalsDetected = (signalMemory.data?.results ?? []).filter(
+  const signalsDetected = ((signalMemory as any)?.results ?? []).filter(
     (e: any) => (e.memory ?? '').includes('[SIGNAL')
   ).length;
 
-  const enrichmentMemory = await client.memory.recall({
+  const enrichmentMemory = await memory.retrieve({
     message: 'contact enriched today',
     limit: 100,
+    mode: 'fast',
   });
-  const contactsEnriched = (enrichmentMemory.data?.results ?? []).filter(
+  const contactsEnriched = ((enrichmentMemory as any)?.results ?? []).filter(
     (e: any) => (e.memory ?? '').includes('[ENRICHED')
   ).length;
 
-  const researchMemory = await client.memory.recall({
+  const researchMemory = await memory.retrieve({
     message: 'company researched today',
     limit: 100,
+    mode: 'fast',
   });
-  const companiesResearched = (researchMemory.data?.results ?? []).filter(
+  const companiesResearched = ((researchMemory as any)?.results ?? []).filter(
     (e: any) => (e.memory ?? '').includes('[RESEARCH')
   ).length;
 

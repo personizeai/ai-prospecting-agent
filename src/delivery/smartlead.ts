@@ -1,5 +1,6 @@
 import { SMARTLEAD_CONFIG } from '../config/prospecting.config.js';
 import type { GeneratedEmail } from '../types.js';
+import { isDryRun } from '../lib/dry-run.js';
 
 /**
  * Smartlead email delivery.
@@ -9,7 +10,7 @@ import type { GeneratedEmail } from '../types.js';
  *
  * Setup:
  *   1. Create a Smartlead account at smartlead.ai
- *   2. Create one campaign (e.g. "AI Prospecting Agent") — set it to Active
+ *   2. Create one campaign (e.g. "Revenue OS") — set it to Active
  *   3. Add your warmed email accounts to that campaign
  *   4. Set SMARTLEAD_API_KEY and SMARTLEAD_CAMPAIGN_ID in your environment
  *
@@ -59,6 +60,11 @@ interface SmartleadLeadResponse {
  * selected from the campaign's warmed mailbox pool.
  */
 export async function sendViaSmartlead(generated: GeneratedEmail): Promise<SmartleadSendResult> {
+  if (await isDryRun()) {
+    console.info('[DRY_RUN] Would send via Smartlead', { to: generated.email, subject: generated.subject, campaign: generated.angle });
+    return { messageId: 'dry-run', leadId: 'dry-run', senderEmail: 'dry-run' };
+  }
+
   const { apiKey, baseUrl, campaignId } = SMARTLEAD_CONFIG;
 
   if (!apiKey) throw new Error('Missing SMARTLEAD_API_KEY');

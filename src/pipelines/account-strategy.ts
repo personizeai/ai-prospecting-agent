@@ -17,9 +17,16 @@ import { accountWorkspace } from '../lib/account-workspace.js';
 import { workspace } from '../lib/workspace.js';
 import { parseLLMJson, buildJsonInstruction } from '../lib/llm-output.js';
 import { ACCOUNT_STRATEGY_SCHEMA, ACCOUNT_STRATEGY_DEFAULTS } from '../lib/llm-schemas.js';
+import { SALES_ROLES, type SalesRoleId } from '../config/sales-roles.js';
+import { memory } from '../lib/memory.js';
 import { logger } from '../lib/logger.js';
 
 const log = logger.child({ pipeline: 'account-strategy' });
+
+/** Validate that a string is a known SalesRoleId. */
+function isValidRoleId(value: string): value is SalesRoleId {
+  return value in SALES_ROLES;
+}
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -50,8 +57,9 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
     accountWorkspace.getStrategy(domain),
     accountWorkspace.getIssues(domain),
     accountWorkspace.getContactRollup(domain),
-    client.ai.smartGuidelines({
+    client.context.retrieve({
       message: 'account strategy, prospecting coordination, outreach sequencing, ICP prioritization',
+      types: ['guideline'],
       mode: 'fast',
     }),
     import('../lib/sender-profiles.js').then((m) => m.senderProfiles.listActive()).catch(() => [] as any[]),
@@ -69,7 +77,9 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
   const contactSummaries = contacts.map((c) => {
     const ws = contactRollup.workspaceStates[c.email] ?? {};
     const wsContext = `Status: ${ws.sequenceStatus || 'Unknown'} | Emails: ${ws.emailsSent || 0} | Tasks: ${(ws.pendingTasks || []).length} | Issues: ${(ws.openIssues || []).length}`;
-    const assignedSender = (c as any).assignedSender || 'Not assigned';
+    const contact = c as Record<string, unknown>;
+    const assignedSender = (contact.assignedSender as string) || 'Not assigned';
+    const roleOwner = (contact.roleOwner as string) || 'unassigned';
     return [
       `- ${c.firstName} ${c.lastName} (${c.jobTitle || 'Unknown role'})`,
       `  Email: ${c.email}`,
@@ -79,6 +89,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
       `  Sentiment: ${c.sentiment || 'Unknown'}`,
       `  Last Contacted: ${c.lastContacted || 'Never'}`,
       `  Assigned Sender: ${assignedSender}`,
+      `  Role Owner: ${roleOwner}`,
       `  Workspace: ${wsContext || 'No workspace data'}`,
     ].join('\n');
   }).join('\n\n');
@@ -104,7 +115,7 @@ export async function evaluateAccountStrategy(domain: string): Promise<AccountSt
 
   const context = [
     guidelines.data?.compiledContext ? `## Governance & Guidelines\n${guidelines.data.compiledContext}` : '',
-    companyDigest.data?.compiledContext ? `## Company Profile\n${companyDigest.data.compiledContext}` : '',
+    (companyDigest as any)?.compiledContext ? `## Company Profile\n${(companyDigest as any).compiledContext}` : '',
     `## Contacts at This Account (${contacts.length})\n${contactSummaries}`,
     senderProfilesSummary ? `## Available Sender Profiles (${activeSenderProfiles.length})\n${senderProfilesSummary}` : '',
     previousStrategyText ? `## Previous Account Strategy\n${previousStrategyText}` : '',
@@ -138,6 +149,9 @@ CRITICAL EDGE CASES TO CHECK:
     - Health: avoid senders with low health scores or in early warmup
     - Format: "assign_sender|contact_email|sender_profile_id|reason"
 12. SENDER HEALTH: If a sender profile has health < 50 or is warming up, do NOT assign new high-priority leads to it. Flag: "sender_health_risk"
+13. ROLE CONFLICT: If a contact's lead_status doesn't match their role_owner's territory (e.g., status "Engaged" but role_owner is "sdr"), recommend a handoff. Format: "handoff|contact_email|from_role|to_role|reason". Flag: "role_conflict"
+14. ORPHAN CONTACT: If a contact has no role_owner (or "unassigned") but has activity (emails sent, replies, tasks), assign a role based on their lead_status. Flag: "orphan_contact"
+15. MULTI-ROLE COORDINATION: If different roles own different contacts at the same account (e.g., SDR prospecting one person while AE works another), ensure messaging is coordinated. The AE's relationship takes priority — SDR should NOT send cold outreach that contradicts AE's warm conversation. Flag: "multi_role_account"
 
 For each recommended action, specify which contact it applies to (or "account" for account-level actions).
 Prioritize actions as: urgent > high > medium > low.
@@ -152,7 +166,7 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
 
   // ── STEP 4: Persist strategy ────────────────────────────────────
 
-  const companyName = companyDigest.data?.properties?.company_name || domain;
+  const companyName = (companyDigest as any)?.properties?.company_name || domain;
 
   await accountWorkspace.setStrategy(domain, {
     accountStage: parsed.account_stage,
@@ -208,8 +222,7 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
 
       if (targetEmail && senderProfileId) {
         try {
-          const { update } = await import('../lib/personize-crud.js');
-          await update({
+          await memory.update({
             recordId: targetEmail,
             type: 'Contact',
             propertyName: 'assigned_sender',
@@ -225,6 +238,33 @@ ${buildJsonInstruction(ACCOUNT_STRATEGY_SCHEMA)}`,
           log.info('Sender assigned by strategizer', { contact: targetEmail, sender: senderProfileId });
         } catch (err) {
           log.warn('Failed to assign sender', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+      continue;
+    }
+
+    // ── Handle role handoff actions ─────────────────────────
+    if (action === 'handoff' || contactEmail === 'handoff') {
+      // Format: handoff|contact_email|from_role|to_role|reason
+      const targetEmail = action === 'handoff' ? parts[1] : contactEmail;
+      const fromRoleStr = action === 'handoff' ? parts[2] : rationale;
+      const toRoleStr = action === 'handoff' ? parts[3] : String(priority);
+      const handoffReason = action === 'handoff' ? (parts[4] || 'account strategy') : 'account strategy';
+
+      if (targetEmail && fromRoleStr && toRoleStr) {
+        if (!isValidRoleId(fromRoleStr)) {
+          log.warn('Invalid fromRole in handoff action, skipping', { targetEmail, fromRole: fromRoleStr });
+        } else if (!isValidRoleId(toRoleStr)) {
+          log.warn('Invalid toRole in handoff action, skipping', { targetEmail, toRole: toRoleStr });
+        } else {
+          try {
+            const { processHandoff } = await import('./process-handoff.js');
+            await processHandoff(targetEmail, fromRoleStr, toRoleStr, handoffReason, parsed.strategy_summary);
+            actionsCreated++;
+            log.info('Handoff triggered by strategizer', { contact: targetEmail, fromRole: fromRoleStr, toRole: toRoleStr });
+          } catch (err) {
+            log.warn('Failed to process handoff', { contact: targetEmail, error: err instanceof Error ? err.message : String(err) });
+          }
         }
       }
       continue;

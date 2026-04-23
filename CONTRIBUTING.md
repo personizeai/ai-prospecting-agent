@@ -1,6 +1,6 @@
-# Contributing to AI Prospecting Agent
+# Contributing to Revenue OS
 
-> **Early Access** — This project is under active development. APIs, configuration, and pipeline behavior may change between releases. We're building in the open and would love your help shaping the direction.
+> **Alpha** — Revenue OS is in alpha and under active development. APIs, configuration, and pipeline behavior may change between releases. We're building in the open and would love your help shaping the direction.
 
 Thank you for your interest in contributing! Whether you're fixing a bug, adding a new data connector, improving outreach pipelines, or writing docs — every contribution matters.
 
@@ -18,8 +18,8 @@ Thank you for your interest in contributing! Whether you're fixing a bug, adding
 
 ```bash
 # 1. Fork and clone
-git clone https://github.com/<your-username>/ai-prospecting-agent.git
-cd ai-prospecting-agent
+git clone https://github.com/<your-username>/revenue-os.git
+cd revenue-os
 
 # 2. Install dependencies
 npm install
@@ -72,7 +72,7 @@ Great first contributions:
 
 ## Collaborate Closely
 
-We're actively looking for contributors and partners who want to help shape the future of open-source AI prospecting. If you'd like to collaborate closely on this project or our other open-source work:
+We're actively looking for contributors and partners who want to help shape the future of open-source revenue operations. If you'd like to collaborate closely on this project or our other open-source work:
 
 - **Open an issue** with the `collaboration` label
 - **Reach out** at [team@personize.ai](mailto:team@personize.ai)
@@ -86,7 +86,7 @@ We're grateful to the companies and individuals who support this project. Sponso
 
 ### Become a Sponsor
 
-Sponsors get their logo and link displayed here and in the project README — visible to every developer evaluating open-source AI prospecting tools.
+Sponsors get their logo and link displayed here and in the project README — visible to every developer evaluating open-source revenue operations tools.
 
 | Tier | Benefits |
 |------|----------|
@@ -94,7 +94,7 @@ Sponsors get their logo and link displayed here and in the project README — vi
 | **Silver** | Medium logo in README + CONTRIBUTING + link |
 | **Bronze** | Name listed in sponsors section |
 
-**Interested?** Reach out at [sponsors@personize.ai](mailto:sponsors@personize.ai) or [open a sponsorship inquiry](https://github.com/personizeai/ai-prospecting-agent/issues/new?labels=sponsorship&title=Sponsorship+Inquiry).
+**Interested?** Reach out at [sponsors@personize.ai](mailto:sponsors@personize.ai) or [open a sponsorship inquiry](https://github.com/personizeai/revenue-os/issues/new?labels=sponsorship&title=Sponsorship+Inquiry).
 
 <!--
 ### Gold Sponsors

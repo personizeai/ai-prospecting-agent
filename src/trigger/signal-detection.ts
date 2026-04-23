@@ -3,8 +3,8 @@ import { detectAndScoreSignals } from '../pipelines/detect-signals.js';
 import { sourceContactsForHotAccounts } from '../pipelines/source-contacts.js';
 import { researchHotAccounts } from '../pipelines/research-company.js';
 import { evaluateAccountStrategies } from '../pipelines/account-strategy.js';
+import { discoverContactsForHotAccounts } from '../pipelines/discover-contacts-apollo.js';
 import { SIGNAL_CONFIG, ACCOUNT_STRATEGY_CONFIG } from '../config/prospecting.config.js';
-import { discoverContactsTask } from './discover-contacts.js';
 import { reportFailure } from './error-handler.js';
 import { logger, withContext } from '../lib/logger.js';
 
@@ -30,8 +30,8 @@ export const signalDetectionTask = schedules.task({
 
         // 2. Contact discovery — Apollo search + enrichment
         if (SIGNAL_CONFIG.autoDiscoverContacts) {
-          await discoverContactsTask.trigger({ hotAccounts });
-          logger.info('Triggered discover-contacts for hot accounts', { count: hotAccounts.length });
+          await discoverContactsForHotAccounts(hotAccounts);
+          logger.info('Discover-contacts complete for hot accounts', { count: hotAccounts.length });
         }
 
         // 3. AI sourcing plan (generates targeting strategy in memory)

@@ -236,6 +236,143 @@ export interface LinkedInEventAnalysis {
   keyPoints: string[];
 }
 
+// ─── Interview Types ───────────────────────────────────────────────
+
+/** Interview purpose — determines the question framework and analysis focus. */
+export type InterviewPurpose =
+  | 'discovery'          // Qualify leads deeper (BANT/MEDDIC extraction)
+  | 'win_loss'           // Post-deal analysis — why they bought or didn't
+  | 'customer_health'    // Periodic check-in for churn prevention
+  | 'feature_validation' // Quick customer pulse on product direction
+  | 'nps_followup';      // Deep-dive after NPS score
+
+/** A single topic with probing questions for the AI interviewer. */
+export interface InterviewTopic {
+  /** Topic name (e.g., "Current Pain Points", "Budget & Timeline"). */
+  topic: string;
+  /** Why we're asking about this — context for the AI interviewer. */
+  objective: string;
+  /** Primary question to ask. */
+  primaryQuestion: string;
+  /** Follow-up probes if the answer is vague or interesting. */
+  probes: string[];
+  /** Max time in minutes to spend on this topic before moving on. */
+  maxMinutes: number;
+}
+
+/** Generated interview guide — the AI interviewer's playbook. */
+export interface InterviewGuide {
+  email: string;
+  contactName: string;
+  contactTitle: string;
+  phone: string;
+  /** Interview purpose that shaped this guide. */
+  purpose: InterviewPurpose;
+  /** Opening: how to introduce the interview (consent, framing, rapport). */
+  opening: string;
+  /** Ordered list of topics to cover. */
+  topics: InterviewTopic[];
+  /** Closing: how to wrap up (thank, next steps, any asks). */
+  closing: string;
+  /** System prompt for the AI voice agent — full conversational instructions. */
+  aiInterviewerPrompt: string;
+  /** Target duration in minutes. */
+  targetDurationMins: number;
+  /** What we already know — gaps this interview should fill. */
+  knowledgeGaps: string[];
+}
+
+/** Structured data extracted from an interview transcript. */
+export interface InterviewAnalysis {
+  /** Overall interview quality. */
+  quality: 'excellent' | 'good' | 'partial' | 'poor';
+  /** 3-5 sentence executive summary. */
+  summary: string;
+  /** Per-topic findings. */
+  topicFindings: Array<{
+    topic: string;
+    /** What we learned — key insight from this topic. */
+    finding: string;
+    /** Direct quotes that support this finding. */
+    quotes: string[];
+    /** Confidence: how well did the contact answer? */
+    confidence: 'high' | 'medium' | 'low';
+  }>;
+  /** BANT/MEDDIC fields extracted (for discovery interviews). */
+  qualification: {
+    budget: string;
+    authority: string;
+    need: string;
+    timeline: string;
+    decisionProcess: string;
+    metrics: string;
+    champion: string;
+  };
+  /** Competitive intelligence gathered. */
+  competitiveIntel: Array<{ competitor: string; context: string }>;
+  /** Feature requests or product feedback mentioned. */
+  productFeedback: string[];
+  /** Objections or concerns raised. */
+  concerns: string[];
+  /** Sentiment arc: how did the contact's tone change over the interview? */
+  sentimentArc: 'warming' | 'steady_positive' | 'steady_neutral' | 'cooling' | 'mixed';
+  /** Recommended next steps based on interview findings. */
+  nextSteps: string[];
+  /** Overall contact sentiment. */
+  sentiment: 'positive' | 'neutral' | 'negative';
+  /** Urgency of follow-up. */
+  urgency: 'high' | 'medium' | 'low';
+}
+
+/** Result from scheduling/triggering an interview call. */
+export interface InterviewCallResult {
+  /** Reuses the standard CallResult for transcript/metadata. */
+  callResult: CallResult;
+  /** The guide that was used for this interview. */
+  guide: InterviewGuide;
+}
+
+// ─── Ecommerce Types ──────────────────────────────────────────────
+
+/** Ecommerce campaign type for outreach generation. */
+export type EcommerceCampaignType = 'winback' | 'post-purchase' | 'promotional' | 'seasonal';
+
+/** Personalized email variables for ecommerce campaigns.
+ *  Designed to be injected into ESP templates (Klaviyo, Mailchimp, Braze, etc.). */
+export interface EcommerceVariables {
+  email: string;
+  campaignType: EcommerceCampaignType;
+  /** Primary headline, 5-12 words, emotionally compelling. */
+  headline: string;
+  /** 1 sentence connecting to their personal style or purchase pattern. */
+  subheadline: string;
+  /** 2-3 sentences. The hook — why this matters to THEM. */
+  shortParagraph: string;
+  /** 4-6 sentences. Product recommendations with context. */
+  longParagraph: string;
+  /** AI image generation prompt for a lifestyle hero image. */
+  imagePrompt: string;
+  /** CTA button text. */
+  ctaText: string;
+  /** Recommended product IDs from catalog, ordered by relevance. */
+  productRecommendations: string[];
+  /** Personalization angle used. */
+  angle: string;
+  /** Email subject line. */
+  subjectLine: string;
+  /** Preview text shown after subject in inbox. */
+  previewText: string;
+}
+
+/** Result from ecommerce preference inference. */
+export interface PreferenceInference {
+  email: string;
+  stylePreferences: string;
+  priceTier: 'Budget' | 'Mid-Range' | 'Premium' | 'Luxury';
+  segment: 'New' | 'Active' | 'Loyal' | 'VIP' | 'At-Risk' | 'Lapsed' | 'Win-Back';
+  recommendations: string[];
+}
+
 /** Web research result from Tavily search + AI analysis. */
 export interface WebResearchResult {
   domain: string;

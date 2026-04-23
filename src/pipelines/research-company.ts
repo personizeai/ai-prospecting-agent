@@ -13,7 +13,9 @@
  *   → Tavily search (2 queries) → Personize AI analysis → memorize results
  */
 
+import 'dotenv/config';
 import { client, aiOptions } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { searchTavily, isTavilyConfigured } from '../lib/tavily.js';
 import { TAVILY_CONFIG } from '../config/prospecting.config.js';
 import type { HotAccount, WebResearchResult } from '../types.js';
@@ -36,13 +38,13 @@ export async function researchCompany(
 
   // ── Dedup: skip if researched recently ───────────────────────────
   if (TAVILY_CONFIG.skipIfResearchedWithinDays > 0) {
-    const existing = await client.memory.recall({
-      query: `[WEB RESEARCH] ${domain}`,
-      website_url: domain,
-      filters: { tags: ['web-research', 'tavily'] },
+    const existing = await memory.retrieve({
+      message: `[WEB RESEARCH] ${domain}`,
+      websiteUrl: domain,
+      mode: 'fast',
     });
 
-    const recent = (existing.data || []).find((m: any) => {
+    const recent = ((existing as any) || []).find((m: any) => {
       const content = String(m.content || '');
       if (!content.includes('[WEB RESEARCH]')) return false;
       const dateMatch = content.match(/Researched:\s*(\d{4}-\d{2}-\d{2})/);
@@ -109,8 +111,8 @@ export async function researchCompany(
     ].filter(Boolean).join('\n')),
   ].join('\n');
 
-  await client.memory.memorize({
-    website_url: domain,
+  await memory.save({
+    websiteUrl: domain,
     content: rawContent,
     enhanced: true,
     tags: ['web-research', 'tavily', domain],
@@ -176,8 +178,8 @@ ${buildJsonInstruction(COMPANY_RESEARCH_SCHEMA)}`,
     anglesArray.map((a) => `- ${a}`).join('\n') || 'None found',
   ].join('\n');
 
-  await client.memory.memorize({
-    website_url: domain,
+  await memory.save({
+    websiteUrl: domain,
     content: analysisContent,
     enhanced: true,
     tags: ['web-research', 'analysis', 'tavily'],

@@ -1,10 +1,12 @@
 import { task } from "@trigger.dev/sdk/v3";
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { workspace } from '../lib/workspace.js';
 import { notifySlack } from '../delivery/slack-notify.js';
 import { replyHandlerTask } from './reply-handler.js';
 import { reportFailure } from './error-handler.js';
 import { logger, withContext } from '../lib/logger.js';
+import { outreachLog } from '../lib/outreach-log.js';
 
 // HubSpot CRM update — triggered by webhook
 export const hubspotWebhookTask = task({
@@ -21,7 +23,7 @@ export const hubspotWebhookTask = task({
       }
 
       if (payload.objectType === 'DEAL' && payload.propertyName === 'dealstage') {
-        await client.memory.memorize({
+        await memory.save({
           content: `[CRM EVENT] Deal ${payload.objectId} stage changed to: ${payload.propertyValue}`,
           enhanced: true,
           tags: ['crm', 'hubspot', 'deal-update'],
@@ -120,9 +122,12 @@ export const engagementWebhookTask = task({
         'Sequence Status: BOUNCED — email delivery failed.',
         'Action: Verify email address or find alternative contact.',
       ].join('\n'), 'engagement-webhook');
+
+      // Track in outreach-log for attribution metrics
+      await outreachLog.recordBounce(payload.email);
     }
 
-    // ─── Unsubscribe / Spam Report ─────────────────────────────
+    // ─── Unsubscribe / Spam Report ���────────────────────────────
     if (payload.event === 'unsubscribe' || payload.event === 'spamreport') {
       // Soft-delete: all read paths automatically exclude this record
       await workspace.softDelete(
@@ -143,6 +148,13 @@ export const engagementWebhookTask = task({
 
     // ─── Open / Click (positive signal) ────────────────────────
     if (payload.event === 'open' || payload.event === 'click') {
+      // Track engagement in outreach-log for angle attribution metrics
+      await outreachLog.recordEngagement(
+        payload.email,
+        payload.event === 'click' ? 'clicked' : 'opened',
+        payload.url,
+      );
+
       const state = await workspace.getSequenceState(payload.email);
       if (!state.hasReplied && !state.hasOptedOut) {
         await workspace.rewriteContext(payload.email, [

@@ -21,7 +21,8 @@
  *   - Source tagging for provenance tracking
  */
 
-import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { CLAY_CONFIG } from '../config/prospecting.config.js';
 import { logger } from '../lib/logger.js';
 
@@ -193,7 +194,7 @@ export async function memorizeClayRecords(records: Record<string, any>[]): Promi
   for (let i = 0; i < records.length; i += 50) {
     const batch = records.slice(i, i + 50);
     try {
-      await client.memory.memorizeBatch({ records: batch, enhanced: true });
+      await memory.saveBatch(batch.map((r: any) => ({ ...r, enhanced: true })));
       totalSynced += batch.length;
       log.info('Synced Clay records', { totalSynced, total: records.length });
     } catch (err) {
@@ -202,7 +203,6 @@ export async function memorizeClayRecords(records: Record<string, any>[]): Promi
         error: err instanceof Error ? err.message : String(err),
       });
     }
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_PAUSE_MS));
   }
 
   return totalSynced;

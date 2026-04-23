@@ -11,6 +11,7 @@
  */
 
 import { client, RATE_LIMIT_PAUSE_MS } from '../config.js';
+import { memory } from '../lib/memory.js';
 import { APOLLO_CONFIG, DISCOVERY_CONFIG, SIGNAL_CONFIG } from '../config/prospecting.config.js';
 import { searchPeople, enrichPerson, isApolloConfigured, getPhone } from '../lib/apollo.js';
 import { ingestEnrichment } from './ingest-enrichment.js';
@@ -27,16 +28,16 @@ export async function discoverContactsForAccount(account: HotAccount): Promise<n
 
   // Dedup: skip if we discovered contacts at this company recently
   try {
-    const recent = await client.memory.smartRecall({
-      query: `CONTACT DISCOVERY via Apollo ${account.domain}`,
-      website_url: account.domain,
-      fast_mode: true,
-      prefer_recent: true,
-      min_score: 0.3,
+    // Upstream PR #7 used prefer_recent / min_score on smartRecall; SDK 0.9.x
+    // retrieve does not expose those. Relying on semantic match + mode:'fast'.
+    const recent = await memory.retrieve({
+      message: `CONTACT DISCOVERY via Apollo ${account.domain}`,
+      websiteUrl: account.domain,
       limit: 1,
+      mode: 'fast',
     });
 
-    const results = (recent.data as any)?.results ?? [];
+    const results = (recent as any)?.results ?? [];
     if (results.length > 0) {
       const content = results[0].text || results[0].content || '';
       const dateMatch = content.match(/Discovered \d+ new contacts on (\d{4}-\d{2}-\d{2})/);
@@ -56,14 +57,14 @@ export async function discoverContactsForAccount(account: HotAccount): Promise<n
   log.info('Discovering contacts', { company: account.company, domain: account.domain });
 
   // Check what contacts we already have at this company
-  const existing = await client.memory.recall({
+  const existing = await memory.retrieve({
     message: `contacts at ${account.company} ${account.domain}`,
-    type: 'Contact',
     limit: 20,
+    mode: 'fast',
   });
 
   const existingEmails = new Set(
-    (existing.data || [])
+    ((existing as any) || [])
       .map((c: any) => c.email?.toLowerCase())
       .filter(Boolean)
   );
@@ -139,8 +140,8 @@ export async function discoverContactsForAccount(account: HotAccount): Promise<n
   }
 
   // Memorize the discovery activity
-  await client.memory.memorize({
-    website_url: account.domain,
+  await memory.save({
+    websiteUrl: account.domain,
     content: `[CONTACT DISCOVERY via Apollo] Discovered ${discovered} new contacts on ${new Date().toISOString().split('T')[0]}. Titles searched: ${DISCOVERY_CONFIG.targetTitles.join(', ')}.`,
     enhanced: true,
     tags: ['sourcing', 'apollo', 'discovery'],

@@ -1,4 +1,5 @@
 import { client } from '../config.js';
+import { memory } from '../lib/memory.js';
 import type { EnrichmentData } from '../types.js';
 import { logger } from '../lib/logger.js';
 
@@ -12,9 +13,9 @@ export async function ingestEnrichment(data: EnrichmentData) {
     ? `$${data.funding_amount.toLocaleString()}`
     : 'N/A';
 
-  await client.memory.memorize({
+  await memory.save({
     email: data.email,
-    ...(data.company_domain ? { website_url: data.company_domain } : {}),
+    ...(data.company_domain ? { websiteUrl: data.company_domain } : {}),
     content: [
       `[ENRICHMENT from ${data.source}]`,
       `Title: ${data.title}${data.seniority ? ` (${data.seniority})` : ''}`,
@@ -32,8 +33,8 @@ export async function ingestEnrichment(data: EnrichmentData) {
 
   if (data.company_domain) {
     try {
-      await client.memory.memorize({
-        website_url: data.company_domain,
+      await memory.save({
+        websiteUrl: data.company_domain,
         content: [
           `[ENRICHMENT from ${data.source}]`,
           `Company: ${data.company_name}`,
